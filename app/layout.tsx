@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   title: 'Prokuro.ai | AI-Powered Supply Chain Intelligence',
   description:
     'Prokuro.ai gives hardware OEMs early warning on component risk before disruptions become production-stopping disasters.',
-  icons: { icon: '/favicon.svg' },
+  icons: { icon: '/favicon.png' },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

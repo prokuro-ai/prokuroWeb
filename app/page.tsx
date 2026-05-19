@@ -1,9 +1,18 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useEffect, useState } from 'react'
 
-const LOGOS = ['Google', 'Amazon', 'FICO', 'Southwest Airlines', 'ServiceNow', 'CarsXE', 'Cisco']
+const LOGOS = [
+  { src: '/images/logos/Google_2015_logo.svg.png', alt: 'Google logo' },
+  { src: '/images/logos/Amazon_logo.svg.png', alt: 'Amazon logo' },
+  { src: '/images/logos/fico-logo-coreblue-large.png', alt: 'FICO logo' },
+  { src: '/images/logos/Southwest_Airlines_logo_2014.svg.png', alt: 'Southwest Airlines logo' },
+  { src: '/images/logos/ServiceNow-Logo.png', alt: 'ServiceNow logo' },
+  { src: '/images/logos/CarsXE.png', alt: 'CarsXE logo' },
+  { src: '/images/logos/Cisco_logo_blue_2016.svg.png', alt: 'Cisco logo', className: 'logo-chip--cisco' },
+]
 
 export default function LandingPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -81,8 +90,8 @@ export default function LandingPage() {
               {[0, 1, 2].map((group) => (
                 <div className="logo-belt__group" aria-hidden={group > 0} key={group}>
                   {LOGOS.map((logo) => (
-                    <span className="logo-chip" key={`${group}-${logo}`}>
-                      {logo}
+                    <span className={`logo-chip ${logo.className ?? ''}`.trim()} key={`${group}-${logo.src}`}>
+                      <Image src={logo.src} alt={group === 0 ? logo.alt : ''} width={156} height={36} loading="lazy" />
                     </span>
                   ))}
                 </div>
