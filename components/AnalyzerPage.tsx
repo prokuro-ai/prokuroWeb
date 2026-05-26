@@ -62,7 +62,7 @@ function UploadView({ mode, onModeChange, onFile }: { mode: Mode; onModeChange: 
     <main className="mx-auto flex max-w-2xl flex-col items-center px-6 pb-24 pt-16">
       <div className="mb-10 text-center">
         <p className="text-eyebrow mb-4 text-primary">BOM intelligence</p>
-        <h1 className="text-display-lg mb-4 text-ink">
+        <h1 className="text-display-lg mb-4 mx-auto max-w-[18ch] text-center text-ink">
           Parse and analyze
           <br />
           your bill of materials
