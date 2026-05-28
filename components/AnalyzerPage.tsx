@@ -156,6 +156,10 @@ function AnalyzeResultsView({ result, onReset }: { result: AnalyzeResult; onRese
     <main className="mx-auto max-w-screen-xl px-6 pb-24 pt-8">
       <ResultsHeader filename={result.source_filename} sheetName={result.sheet_name} onReset={onReset} badge={<ConfidenceBadge value={result.mapping_confidence} />} />
 
+      <section className="mt-4">
+        <AnalyzeEnrichmentStatusBanner result={result} />
+      </section>
+
       <section className="mt-6">
         <AnalyzeSummaryCards result={result} />
       </section>
@@ -167,6 +171,85 @@ function AnalyzeResultsView({ result, onReset }: { result: AnalyzeResult; onRese
         </div>
       </section>
     </main>
+  )
+}
+
+function AnalyzeEnrichmentStatusBanner({ result }: { result: AnalyzeResult }) {
+  const warnings = Array.isArray(result.warnings) ? result.warnings : []
+  const total = result.summary.total || result.lines.length
+  const noMatchRatio = total > 0 ? result.summary.no_match / total : 0
+
+  const enrichmentFailure = warnings.find((warning) => {
+    if (!warning || typeof warning !== 'object') return false
+    const code = 'code' in warning ? warning.code : undefined
+    return typeof code === 'string' && code.toUpperCase() === 'ENRICHMENT_FAILED'
+  }) as { code?: string; message?: string } | undefined
+
+  const hasAnyStrongSignals = result.lines.some((line) => {
+    const availability = (line.availability_status ?? '').trim().toLowerCase()
+    const lifecycle = (line.lifecycle_status ?? '').trim().toLowerCase()
+    return (
+      line.total_avail > 0 ||
+      line.factory_lead_days != null ||
+      (availability !== '' && availability !== 'nomatch') ||
+      (lifecycle !== '' && lifecycle !== 'unknown')
+    )
+  })
+
+  if (enrichmentFailure) {
+    return (
+      <StatusPanel tone="danger" title="Enrichment is unavailable">
+        {typeof enrichmentFailure.message === 'string' && enrichmentFailure.message.length > 0
+          ? enrichmentFailure.message
+          : 'The analyzer parsed your BOM, but enrichment failed. Full analyze values may be incomplete.'}
+      </StatusPanel>
+    )
+  }
+
+  if (total > 0 && result.summary.no_match === total && !hasAnyStrongSignals) {
+    return (
+      <StatusPanel tone="warning" title="Enrichment returned no matched parts">
+        Full analyze completed, but every line came back `NoMatch/Unknown`. This usually means provider quota limits or upstream matching issues, not a parser failure.
+      </StatusPanel>
+    )
+  }
+
+  if (total >= 10 && noMatchRatio >= 0.9) {
+    return (
+      <StatusPanel tone="warning" title="Enrichment looks partial">
+        Most lines are unmatched ({result.summary.no_match}/{total}). Results are usable, but enrichment coverage is limited.
+      </StatusPanel>
+    )
+  }
+
+  return (
+    <StatusPanel tone="success" title="Enrichment is active">
+      Full analyze data is present for this run.
+    </StatusPanel>
+  )
+}
+
+function StatusPanel({
+  title,
+  children,
+  tone,
+}: {
+  title: string
+  children: React.ReactNode
+  tone: 'success' | 'warning' | 'danger'
+}) {
+  const classes =
+    tone === 'success'
+      ? 'border-green-300 bg-green-50 text-green-800'
+      : tone === 'danger'
+        ? 'border-red-300 bg-red-50 text-red-800'
+        : 'border-amber-300 bg-amber-50 text-amber-800'
+
+  return (
+    <div className={`rounded-lg border px-4 py-3 ${classes}`}>
+      <p className="text-eyebrow mb-1">{title}</p>
+      <p className="text-[13px] leading-relaxed">{children}</p>
+    </div>
   )
 }
 
