@@ -554,7 +554,7 @@ body.modal-open {
 
 .modal__dialog--upload {
   width: 70vw;
-  height: 70vh;
+  height: 80vh;
   max-width: calc(100% - 48px);
   max-height: calc(100% - 48px);
   border-radius: 12px;
