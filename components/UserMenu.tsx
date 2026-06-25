@@ -120,7 +120,16 @@ export function MarketingAuthActions() {
 
   if (loading) return null
 
-  if (user) return <UserMenu />
+  if (user) {
+    return (
+      <>
+        <Link className="btn btn--primary" href="/dashboard">
+          Dashboard
+        </Link>
+        <UserMenu />
+      </>
+    )
+  }
 
   return (
     <>

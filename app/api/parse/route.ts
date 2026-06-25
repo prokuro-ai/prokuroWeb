@@ -1,12 +1,16 @@
 import { type NextRequest, NextResponse } from 'next/server'
 
-const PARSER = process.env.PARSER_URL ?? 'http://localhost:3001'
+function parseServiceBase(): string {
+  const gateway = process.env.GATEWAY_URL?.replace(/\/$/, '')
+  if (gateway) return gateway
+  return (process.env.PARSER_URL ?? 'http://localhost:3001').replace(/\/$/, '')
+}
 
 export async function POST(req: NextRequest) {
   const form = await req.formData()
 
   try {
-    const res = await fetch(`${PARSER}/v1/parse`, {
+    const res = await fetch(`${parseServiceBase()}/v1/parse`, {
       method: 'POST',
       body: form,
     })
