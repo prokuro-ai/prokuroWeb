@@ -7,7 +7,7 @@ import { useAuth } from '@/components/AuthProvider'
 import UserAvatar from '@/components/UserAvatar'
 import { initialsForUser, signOut } from '@/lib/auth'
 
-export default function UserMenu() {
+export default function UserMenu({ variant = 'app' }: { variant?: 'app' | 'marketing' }) {
   const router = useRouter()
   const { user, refresh } = useAuth()
   const [open, setOpen] = useState(false)
@@ -27,16 +27,18 @@ export default function UserMenu() {
 
   const initials = initialsForUser(user)
   const displayName = user.name.trim() || user.email
+  const triggerClass =
+    variant === 'marketing'
+      ? `nav-profile-trigger${open ? ' is-open' : ''}`
+      : `flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors ${open ? 'bg-[#f4f6f9]' : 'hover:bg-[#f4f6f9]'}`
 
   return (
     <div className="relative" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors ${open ? 'bg-[#f4f6f9]' : 'hover:bg-[#f4f6f9]'}`}
-      >
+      <button type="button" onClick={() => setOpen((o) => !o)} className={triggerClass}>
         <UserAvatar initials={initials} size="xs" />
-        <span className="max-w-[140px] truncate text-[12px] font-medium text-[#4f5d73]">{displayName}</span>
+        <span className={variant === 'marketing' ? 'nav-profile-trigger__name' : 'max-w-[140px] truncate text-[12px] font-medium text-[#4f5d73]'}>
+          {displayName}
+        </span>
         <svg
           className={`h-3.5 w-3.5 text-[#98a3b6] transition-transform ${open ? 'rotate-180' : ''}`}
           fill="none"
@@ -126,7 +128,7 @@ export function MarketingAuthActions() {
         <Link className="btn btn--primary" href="/dashboard">
           Dashboard
         </Link>
-        <UserMenu />
+        <UserMenu variant="marketing" />
       </div>
     )
   }

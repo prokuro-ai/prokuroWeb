@@ -201,6 +201,55 @@ h3 {
   gap: var(--space-md);
 }
 
+.nav-actions--signed-in .btn {
+  min-height: 40px;
+  padding: 8px 14px;
+  font-size: 13px;
+  line-height: 1.25;
+  letter-spacing: 0.12px;
+}
+
+.nav-actions--signed-in .btn--primary:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.nav-profile-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-none);
+  background: var(--color-canvas);
+  color: var(--color-ink-muted);
+  font-size: 13px;
+  line-height: 1.25;
+  letter-spacing: 0.12px;
+  font-weight: 400;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.nav-profile-trigger:hover,
+.nav-profile-trigger.is-open {
+  background: #eef4ff;
+  color: var(--color-ink);
+}
+
+.nav-profile-trigger__name {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 400;
+}
+
 .brand {
   display: flex;
   align-items: baseline;
