@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { MarketingAuthActions } from '@/components/UserMenu'
+import ProkuroBrandLink from '@/components/ProkuroBrandLink'
 
 const LOGOS = [
   { src: '/images/logos/Google_2015_logo.svg.png', alt: 'Google' },
@@ -40,10 +41,7 @@ export default function LandingPage() {
     <div className="marketing-page">
       <header className="top-nav" id="top">
         <div className="container top-nav__inner">
-          <a className="brand" href="#top">
-            <span className="brand__dot" aria-hidden="true" />
-            <span>Prokuro.ai</span>
-          </a>
+          <ProkuroBrandLink variant="marketing" />
           <nav className="nav-links" aria-label="Primary">
             <a href="#product">Product</a>
             <a href="#how-it-works">How It Works</a>

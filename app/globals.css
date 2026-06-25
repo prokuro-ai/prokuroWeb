@@ -197,6 +197,10 @@ h3 {
   flex-wrap: wrap;
 }
 
+.nav-actions--signed-in {
+  gap: var(--space-md);
+}
+
 .brand {
   display: flex;
   align-items: baseline;

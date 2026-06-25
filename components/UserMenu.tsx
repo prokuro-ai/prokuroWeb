@@ -122,12 +122,12 @@ export function MarketingAuthActions() {
 
   if (user) {
     return (
-      <>
+      <div className="nav-actions--signed-in flex items-center">
         <Link className="btn btn--primary" href="/dashboard">
           Dashboard
         </Link>
         <UserMenu />
-      </>
+      </div>
     )
   }
 
