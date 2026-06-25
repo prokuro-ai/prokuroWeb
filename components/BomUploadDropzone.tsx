@@ -116,7 +116,7 @@ export default function BomUploadDropzone({
   }
 
   return (
-    <div className="space-y-4">
+    <div className={variant === 'modal' ? 'upload-dropzone-layout' : 'space-y-4'}>
       {displayError && <div className="upload-error-banner">{displayError}</div>}
 
       <div
@@ -134,7 +134,7 @@ export default function BomUploadDropzone({
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
-        className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed px-8 py-12 text-center transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+        className={`upload-dropzone-target flex flex-col items-center justify-center rounded-xl border-2 border-dashed px-8 py-12 text-center transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
           !isInteractive
             ? 'cursor-default border-hairline bg-surface-1 opacity-60'
             : dragOver

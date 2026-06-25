@@ -90,15 +90,6 @@ export default function BomUploadModal({ open, onClose }: BomUploadModalProps) {
             </h2>
             <p className="modal__subtitle">CSV, XLSX, XLS, or TXT</p>
           </div>
-          <button
-            className="modal__close"
-            type="button"
-            aria-label="Close upload dialog"
-            disabled={blockDismiss}
-            onClick={handleClose}
-          >
-            Close
-          </button>
         </div>
 
         <div className="modal__body" aria-live="polite">
@@ -130,15 +121,20 @@ export default function BomUploadModal({ open, onClose }: BomUploadModalProps) {
                 Upload another
               </button>
               <button type="button" className="btn btn--primary" onClick={handleClose}>
-                Close
+                Cancel
               </button>
             </>
           ) : phase === 'error' ? (
-            <button type="button" className="btn btn--primary" onClick={reset}>
-              Try again
-            </button>
+            <>
+              <button type="button" className="btn btn--ghost" onClick={reset}>
+                Try again
+              </button>
+              <button type="button" className="btn btn--primary" onClick={handleClose}>
+                Cancel
+              </button>
+            </>
           ) : (
-            <button type="button" className="btn btn--ghost" disabled={blockDismiss} onClick={handleClose}>
+            <button type="button" className="btn btn--primary" disabled={blockDismiss} onClick={handleClose}>
               Cancel
             </button>
           )}
