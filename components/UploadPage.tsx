@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import AppLayout from '@/components/AppLayout'
+import BomUploadDropzone from '@/components/BomUploadDropzone'
 import { analyzeFile, parseFile } from '@/lib/api'
 import { buildColumnMappings, extractHeaders, previewRows } from '@/lib/columnMapping'
 import { saveAnalyzeResult } from '@/lib/resultStore'
@@ -21,7 +22,6 @@ const PROCESSING_STEPS = [
 export default function UploadPage() {
   const router = useRouter()
   const [step, setStep] = useState<Step>('upload')
-  const [dragOver, setDragOver] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [parseResult, setParseResult] = useState<ParseResult | null>(null)
   const [mapping, setMapping] = useState<ColumnMapping[]>([])
@@ -30,7 +30,6 @@ export default function UploadPage() {
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [parsing, setParsing] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const handleFileSelected = async (selected: File) => {
@@ -51,18 +50,6 @@ export default function UploadPage() {
     } finally {
       setParsing(false)
     }
-  }
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-    const f = e.dataTransfer.files[0]
-    if (f) void handleFileSelected(f)
-  }
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0]
-    if (f) void handleFileSelected(f)
   }
 
   const startProgressAnimation = () => {
@@ -118,19 +105,16 @@ export default function UploadPage() {
         )}
 
         {step === 'upload' && (
-          <UploadStep
-            dragOver={dragOver}
-            parsing={parsing}
-            inputRef={inputRef}
-            onDragOver={(e) => {
-              e.preventDefault()
-              setDragOver(true)
-            }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={handleDrop}
-            onClick={() => inputRef.current?.click()}
-            onFileChange={handleFileChange}
-          />
+          <div className="w-full max-w-lg">
+            <BomUploadDropzone
+              variant="full"
+              showInfoPanel
+              parsing={parsing}
+              selectedFile={file}
+              onFileSelected={(f) => void handleFileSelected(f)}
+              onClearFile={() => setFile(null)}
+            />
+          </div>
         )}
 
         {step === 'mapping' && parseResult && (
@@ -194,81 +178,6 @@ function StepIndicator({ step }: { step: Step }) {
           </div>
         )
       })}
-    </div>
-  )
-}
-
-function UploadStep({
-  dragOver,
-  parsing,
-  inputRef,
-  onDragOver,
-  onDragLeave,
-  onDrop,
-  onClick,
-  onFileChange,
-}: {
-  dragOver: boolean
-  parsing: boolean
-  inputRef: React.RefObject<HTMLInputElement | null>
-  onDragOver: (e: React.DragEvent) => void
-  onDragLeave: () => void
-  onDrop: (e: React.DragEvent) => void
-  onClick: () => void
-  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-}) {
-  return (
-    <div className="w-full max-w-lg">
-      <div
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        onDrop={onDrop}
-        onClick={parsing ? undefined : onClick}
-        className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed px-8 py-16 text-center transition-colors ${
-          parsing ? 'cursor-wait border-[#d6deea] bg-white' : dragOver ? 'cursor-pointer border-[#0062ff] bg-[#eef4ff]' : 'cursor-pointer border-[#d6deea] bg-white hover:border-[#0062ff] hover:bg-[#f9fbff]'
-        }`}
-      >
-        {parsing ? (
-          <>
-            <svg className="mb-4 h-8 w-8 animate-spin text-[#0062ff]" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-            <p className="text-[15px] font-medium text-[#0f1b2d]">Detecting columns…</p>
-          </>
-        ) : (
-          <>
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#eef4ff]">
-              <svg className="h-6 w-6 text-[#0062ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-              </svg>
-            </div>
-            <p className="text-[15px] font-medium text-[#0f1b2d]">Drop your BOM here</p>
-            <p className="mt-1 text-[13px] text-[#7a8598]">or click to browse — CSV, XLSX, XLS, TXT</p>
-            <p className="mt-3 text-[11px] text-[#98a3b6]">Any column format. Prokuro auto-detects MPN, Qty, Ref, Manufacturer.</p>
-          </>
-        )}
-        <input ref={inputRef} type="file" accept=".csv,.xlsx,.xls,.txt" className="hidden" onChange={onFileChange} />
-      </div>
-
-      <div className="mt-6 rounded-lg border border-[#d6deea] bg-white p-4">
-        <p className="mb-3 text-[12px] font-medium text-[#4f5d73]">What Prokuro does with your BOM</p>
-        <div className="space-y-2">
-          {[
-            'AI column detection — maps messy headers to canonical fields',
-            'MPN normalization — strips whitespace, detects distributor SKUs',
-            'AML parsing — finds alternates in comma-separated cells or separate sheets',
-            'Lifecycle + stock + lead-time lookup via Nexar',
-          ].map((item) => (
-            <div key={item} className="flex items-start gap-2">
-              <svg className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#0062ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-              </svg>
-              <span className="text-[12px] text-[#4f5d73]">{item}</span>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   )
 }

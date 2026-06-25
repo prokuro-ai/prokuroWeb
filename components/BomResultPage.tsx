@@ -32,7 +32,7 @@ export default function BomResultPage() {
         <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
           <h1 className="text-[18px] font-semibold text-[#0f1b2d]">Analysis not found</h1>
           <p className="mt-2 text-[13px] text-[#7a8598]">This result may have expired from your session. Upload a new BOM to analyze again.</p>
-          <Link href="/bom/new" className="mt-6 rounded-lg bg-[#0062ff] px-4 py-2 text-[13px] font-medium text-white hover:bg-[#0050e6]">
+          <Link href="/dashboard?upload=1" className="mt-6 rounded-lg bg-[#0062ff] px-4 py-2 text-[13px] font-medium text-white hover:bg-[#0050e6]">
             Upload BOM
           </Link>
         </div>
@@ -52,7 +52,7 @@ export default function BomResultPage() {
         </div>
         <div className="flex items-center gap-3">
           <ExportButtons result={result} />
-          <Link href="/bom/new" className="rounded-md border border-[#d6deea] bg-white px-3 py-1.5 text-[13px] font-medium text-[#4f5d73] hover:bg-[#f4f6f9]">
+          <Link href="/dashboard?upload=1" className="rounded-md border border-[#d6deea] bg-white px-3 py-1.5 text-[13px] font-medium text-[#4f5d73] hover:bg-[#f4f6f9]">
             Upload another
           </Link>
         </div>

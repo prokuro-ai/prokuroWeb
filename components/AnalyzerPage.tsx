@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react'
 import { analyzeFile, parseFile } from '@/lib/api'
 import type { AnalyzeResult, Mode, ParseResult } from '@/lib/types'
 import { AnalyzeTable, ParseTable } from './BomTable'
-import DropZone from './DropZone'
+import BomUploadDropzone from './BomUploadDropzone'
 import { ExportButtons } from './ExportButtons'
 import NavBar from './NavBar'
 import { ConfidenceBadge } from './StatusBadge'
@@ -87,7 +87,7 @@ function UploadView({ mode, onModeChange, onFile }: { mode: Mode; onModeChange: 
       </p>
 
       <div className="w-full">
-        <DropZone onFile={onFile} loading={false} />
+        <BomUploadDropzone variant="full" onFileSelected={onFile} />
       </div>
 
       <p className="mt-6 text-center text-[12px] text-ink-tertiary">Supports KiCad, Altium, EasyEDA, and generic BOM exports</p>
