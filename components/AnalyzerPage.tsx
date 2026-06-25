@@ -5,6 +5,7 @@ import { analyzeFile, parseFile } from '@/lib/api'
 import type { AnalyzeResult, Mode, ParseResult } from '@/lib/types'
 import { AnalyzeTable, ParseTable } from './BomTable'
 import DropZone from './DropZone'
+import { ExportButtons } from './ExportButtons'
 import NavBar from './NavBar'
 import { ConfidenceBadge } from './StatusBadge'
 import { AnalyzeSummaryCards, ParseSummaryCards } from './SummaryCards'
@@ -154,7 +155,13 @@ function ParseResultsView({ result, onReset }: { result: ParseResult; onReset: (
 function AnalyzeResultsView({ result, onReset }: { result: AnalyzeResult; onReset: () => void }) {
   return (
     <main className="mx-auto max-w-screen-xl px-6 pb-24 pt-8">
-      <ResultsHeader filename={result.source_filename} sheetName={result.sheet_name} onReset={onReset} badge={<ConfidenceBadge value={result.mapping_confidence} />} />
+      <ResultsHeader
+        filename={result.source_filename}
+        sheetName={result.sheet_name}
+        onReset={onReset}
+        badge={<ConfidenceBadge value={result.mapping_confidence} />}
+        actions={<ExportButtons result={result} />}
+      />
 
       <section className="mt-4">
         <AnalyzeEnrichmentStatusBanner result={result} />
@@ -301,11 +308,13 @@ function ResultsHeader({
   sheetName,
   onReset,
   badge,
+  actions,
 }: {
   filename: string
   sheetName: string | null
   onReset: () => void
   badge: React.ReactNode
+  actions?: React.ReactNode
 }) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -316,9 +325,12 @@ function ResultsHeader({
           {badge}
         </div>
       </div>
-      <button onClick={onReset} className="flex-shrink-0 rounded-md border border-hairline bg-surface-1 px-3.5 py-1.5 text-[13px] font-medium text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink">
-        {'<- Parse another'}
-      </button>
+      <div className="flex flex-shrink-0 items-center gap-2">
+        {actions}
+        <button onClick={onReset} className="rounded-md border border-hairline bg-surface-1 px-3.5 py-1.5 text-[13px] font-medium text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink">
+          {'<- Parse another'}
+        </button>
+      </div>
     </div>
   )
 }

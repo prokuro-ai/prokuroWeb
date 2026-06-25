@@ -1,5 +1,30 @@
 export type Mode = 'parse' | 'analyze'
 
+export interface BomSummary {
+  id: string
+  name: string
+  filename: string
+  uploadedAt: string
+  lineCount: number
+  overallRiskScore: number
+  atRiskCount: number
+}
+
+export type LifecycleStatus = 'active' | 'nrnd' | 'eol' | 'discontinued' | 'unknown'
+export type LeadTimeTrend = 'improving' | 'stable' | 'worsening'
+
+export interface ColumnMapping {
+  canonical: string
+  label: string
+  detectedFrom: string | null
+  confirmed: boolean
+}
+
+export interface SellerOffer {
+  name: string
+  inventory_level: number
+}
+
 export type WarningCode = 'LOW_MAPPING_CONFIDENCE' | 'DIST_SKU_SUSPECT' | 'MISSING_MPN' | 'ROW_LIMIT_EXCEEDED'
 
 export interface ParseWarning {
@@ -60,7 +85,7 @@ export interface AnalyzedLine {
   match_status: string
   factory_lead_days: number | null
   total_avail: number
-  top_sellers: Record<string, unknown>[]
+  top_sellers: SellerOffer[]
 }
 
 export interface AnalyzeResult {
