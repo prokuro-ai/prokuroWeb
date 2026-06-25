@@ -81,10 +81,10 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="trusted-by" aria-label="Trusted by">
+        <section className="built-by" aria-label="Built by">
           <div className="container">
-            <p className="trusted-by__label">Trusted by engineers at</p>
-            <div className="trusted-by__logos">
+            <p className="built-by__lead">Built by engineers who solved similar problems at:</p>
+            <div className="built-by__logos">
               {LOGOS.map((logo) => (
                 <Image
                   key={logo.alt}
@@ -92,7 +92,7 @@ export default function LandingPage() {
                   alt={logo.alt}
                   width={120}
                   height={28}
-                  className="trusted-by__logo"
+                  className="built-by__logo"
                   loading="lazy"
                 />
               ))}

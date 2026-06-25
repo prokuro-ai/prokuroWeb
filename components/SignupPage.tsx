@@ -1,20 +1,40 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { useAuth } from '@/components/AuthProvider'
 import AuthLayout from '@/components/AuthLayout'
+import { signUp } from '@/lib/auth'
+
+function authErrorMessage(err: unknown): string {
+  if (err instanceof Error && err.message) return err.message
+  return 'Could not create account. Try a different email or stronger password.'
+}
 
 export default function SignupPage() {
+  const router = useRouter()
+  const { refresh } = useAuth()
   const [form, setForm] = useState({ name: '', email: '', company: '', password: '' })
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [k]: e.target.value }))
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setTimeout(() => setLoading(false), 400)
+    setError(null)
+    try {
+      await signUp(form)
+      await refresh()
+      router.push('/dashboard')
+    } catch (err) {
+      setError(authErrorMessage(err))
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -28,7 +48,11 @@ export default function SignupPage() {
         </div>
 
         <div className="rounded-xl border border-[#d6deea] bg-white p-8 shadow-sm">
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+            {error && (
+              <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-700">{error}</p>
+            )}
+
             <div>
               <label className="mb-1.5 block text-[13px] font-medium text-[#0f1b2d]">Full name</label>
               <input type="text" value={form.name} onChange={set('name')} placeholder="Your name" required className="w-full rounded-md border border-[#d6deea] bg-white px-3 py-2 text-[14px] text-[#0f1b2d] placeholder:text-[#98a3b6] focus:border-[#0062ff] focus:outline-none focus:ring-1 focus:ring-[#0062ff]" />
@@ -55,14 +79,6 @@ export default function SignupPage() {
               Create account
             </button>
           </form>
-
-          <p className="mt-4 rounded-md border border-[#d6deea] bg-[#f4f6f9] px-3 py-2.5 text-center text-[12px] text-[#7a8598]">
-            Account creation is not available yet.{' '}
-            <Link href="/bom/new" className="font-medium text-[#0062ff] hover:underline">
-              Upload a BOM
-            </Link>{' '}
-            to try the analyzer.
-          </p>
 
           <p className="mt-6 text-center text-[11px] text-[#98a3b6]">
             By creating an account you agree to our <a href="#" className="underline hover:text-[#4f5d73]">Terms of Service</a> and <a href="#" className="underline hover:text-[#4f5d73]">Privacy Policy</a>.

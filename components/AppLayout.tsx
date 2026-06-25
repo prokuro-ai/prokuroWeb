@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { AuthHeaderActions } from '@/components/UserMenu'
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -55,13 +56,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <span className="h-3 w-3 flex-shrink-0 bg-[#0062ff] [clip-path:polygon(24%_0,100%_0,100%_100%,0_100%)]" />
           <span className="text-[14px] font-semibold tracking-tight text-[#0f1b2d]">Prokuro.ai</span>
         </Link>
-        <div className="ml-auto flex items-center gap-2">
-          <Link href="/login" className="rounded-lg px-3 py-1.5 text-[12px] font-medium text-[#4f5d73] transition-colors hover:bg-[#f4f6f9] hover:text-[#0f1b2d]">
-            Sign in
-          </Link>
-          <Link href="/signup" className="rounded-lg bg-[#0062ff] px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-[#0050e6]">
-            Start free trial
-          </Link>
+        <div className="ml-auto">
+          <AuthHeaderActions />
         </div>
       </header>
 
