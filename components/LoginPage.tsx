@@ -6,11 +6,7 @@ import { useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import AuthLayout from '@/components/AuthLayout'
 import { signIn } from '@/lib/auth'
-
-function authErrorMessage(err: unknown): string {
-  if (err instanceof Error && err.message) return err.message
-  return 'Could not sign in. Check your email and password.'
-}
+import { mapAuthError } from '@/lib/auth-errors'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -29,7 +25,7 @@ export default function LoginPage() {
       await refresh()
       router.push('/dashboard')
     } catch (err) {
-      setError(authErrorMessage(err))
+      setError(mapAuthError(err, 'signIn'))
     } finally {
       setLoading(false)
     }

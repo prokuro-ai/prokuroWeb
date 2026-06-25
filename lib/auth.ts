@@ -4,6 +4,7 @@ import {
   signIn as amplifySignIn,
   signOut as amplifySignOut,
   signUp as amplifySignUp,
+  updateUserAttributes,
   autoSignIn,
 } from 'aws-amplify/auth'
 import { configureAmplify } from './amplify-config'
@@ -71,6 +72,15 @@ export async function signUp(input: {
 export async function signOut() {
   ensureConfigured()
   await amplifySignOut()
+}
+
+export async function updateProfile(input: { name?: string; company?: string }) {
+  ensureConfigured()
+  const attributes: Record<string, string> = {}
+  if (input.name !== undefined) attributes.name = input.name
+  if (input.company !== undefined) attributes['custom:company'] = input.company
+  if (Object.keys(attributes).length === 0) return
+  await updateUserAttributes({ userAttributes: attributes })
 }
 
 export function initialsForUser(user: AuthUser): string {

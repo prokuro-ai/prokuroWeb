@@ -6,11 +6,7 @@ import { useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import AuthLayout from '@/components/AuthLayout'
 import { signUp } from '@/lib/auth'
-
-function authErrorMessage(err: unknown): string {
-  if (err instanceof Error && err.message) return err.message
-  return 'Could not create account. Try a different email or stronger password.'
-}
+import { mapAuthError } from '@/lib/auth-errors'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -31,7 +27,7 @@ export default function SignupPage() {
       await refresh()
       router.push('/dashboard')
     } catch (err) {
-      setError(authErrorMessage(err))
+      setError(mapAuthError(err, 'signUp'))
     } finally {
       setLoading(false)
     }

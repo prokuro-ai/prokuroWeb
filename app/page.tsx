@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
+import { MarketingAuthActions } from '@/components/UserMenu'
 
 const LOGOS = [
   { src: '/images/logos/Google_2015_logo.svg.png', alt: 'Google' },
@@ -50,12 +51,7 @@ export default function LandingPage() {
             <a href="#company">Company</a>
           </nav>
           <div className="nav-actions">
-            <Link className="btn btn--ghost" href="/login">
-              Sign in
-            </Link>
-            <Link className="btn btn--primary" href="/signup">
-              Start free trial
-            </Link>
+            <MarketingAuthActions />
           </div>
         </div>
       </header>
