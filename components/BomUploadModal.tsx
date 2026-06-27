@@ -7,7 +7,7 @@ import { useModal } from '@/hooks/useModal'
 import { parseFile } from '@/lib/api'
 import type { ParseResult } from '@/lib/types'
 
-type ModalPhase = 'idle' | 'parsing' | 'success' | 'error'
+type ModalPhase = 'idle' | 'parsing' | 'success'
 
 interface BomUploadModalProps {
   open: boolean
@@ -18,7 +18,6 @@ export default function BomUploadModal({ open, onClose }: BomUploadModalProps) {
   const [phase, setPhase] = useState<ModalPhase>('idle')
   const [file, setFile] = useState<File | null>(null)
   const [parseResult, setParseResult] = useState<ParseResult | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [validationError, setValidationError] = useState<string | null>(null)
 
   const blockDismiss = phase === 'parsing'
@@ -27,7 +26,6 @@ export default function BomUploadModal({ open, onClose }: BomUploadModalProps) {
     setPhase('idle')
     setFile(null)
     setParseResult(null)
-    setError(null)
     setValidationError(null)
   }, [])
 
@@ -51,7 +49,6 @@ export default function BomUploadModal({ open, onClose }: BomUploadModalProps) {
     }
 
     setValidationError(null)
-    setError(null)
     setFile(selected)
     setPhase('parsing')
 
@@ -60,15 +57,16 @@ export default function BomUploadModal({ open, onClose }: BomUploadModalProps) {
       setParseResult(result)
       setPhase('success')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to parse file')
-      setPhase('error')
+      setFile(null)
+      setValidationError(err instanceof Error ? err.message : 'Failed to parse file')
+      setPhase('idle')
     }
   }
 
   const handleClearFile = () => {
     setFile(null)
     setPhase('idle')
-    setError(null)
+    setValidationError(null)
   }
 
   if (!open) return null
@@ -95,12 +93,6 @@ export default function BomUploadModal({ open, onClose }: BomUploadModalProps) {
         <div className="modal__body" aria-live="polite">
           {phase === 'success' && parseResult ? (
             <SuccessView result={parseResult} filename={file?.name ?? parseResult.source_filename} />
-          ) : phase === 'error' ? (
-            <BomUploadDropzone
-              variant="modal"
-              onFileSelected={(f) => void handleFileSelected(f)}
-              validationError={error}
-            />
           ) : (
             <BomUploadDropzone
               variant="modal"
@@ -119,15 +111,6 @@ export default function BomUploadModal({ open, onClose }: BomUploadModalProps) {
             <>
               <button type="button" className="btn btn--ghost" onClick={reset}>
                 Upload another
-              </button>
-              <button type="button" className="btn btn--primary" onClick={handleClose}>
-                Cancel
-              </button>
-            </>
-          ) : phase === 'error' ? (
-            <>
-              <button type="button" className="btn btn--ghost" onClick={reset}>
-                Try again
               </button>
               <button type="button" className="btn btn--primary" onClick={handleClose}>
                 Cancel

@@ -9,6 +9,7 @@ Unified Next.js frontend for Prokuro:
 
 ```bash
 npm install
+cp .env.local.example .env.local
 npm run dev
 ```
 
@@ -16,20 +17,27 @@ Runs at `http://localhost:3010`.
 
 ## Backend integration
 
-This frontend stays in its own repository and talks to backend services via environment variables.
+Both `/api/parse` and `/api/analyze` proxy to the gateway via `GATEWAY_URL`.
 
-Set these in `.env.local`:
+Local `.env.local`:
 
 ```bash
-PARSER_URL=http://localhost:3001
 GATEWAY_URL=http://localhost:3000
 ```
 
-API proxy routes:
+Start the backend:
 
-- `POST /api/parse` -> `${PARSER_URL}/v1/parse`
-- `POST /api/analyze` -> `${GATEWAY_URL}/v1/analyze`
+```bash
+cd ../prokuroBackend && docker compose up --build
+```
 
-## Deploying
+API routes:
 
-For AWS deployment, point `PARSER_URL` and `GATEWAY_URL` at your deployed backend endpoints in the runtime environment.
+- `POST /api/parse` → `${GATEWAY_URL}/v1/parse`
+- `POST /api/analyze` → `${GATEWAY_URL}/v1/analyze`
+
+## Deploying (Amplify)
+
+CDK sets `GATEWAY_URL` on the Amplify `main` branch. [`amplify.yml`](amplify.yml) writes it into `.env.production` at build time so SSR API routes can read it.
+
+After changing `GATEWAY_URL` in CDK or the Amplify console, redeploy the branch.
