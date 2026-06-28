@@ -38,6 +38,6 @@ API routes:
 
 ## Deploying (Amplify)
 
-Deployed by CDK (`prokuroInfrastructureCDK`). One `cdk deploy` creates the Amplify app, connects GitHub, and sets branch env vars (`GATEWAY_URL`, Cognito). [`amplify.yml`](amplify.yml) is a standard Next.js build only.
+CDK sets `GATEWAY_URL` on the Amplify `main` branch. [`amplify.yml`](amplify.yml) writes it into `.env.production` at build time so SSR API routes can read it.
 
-Pushes to `main` trigger auto-builds.
+After changing `GATEWAY_URL` in CDK or the Amplify console, redeploy the branch.
