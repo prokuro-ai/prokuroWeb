@@ -5,6 +5,8 @@ import BomUploadDropzone, { ACCEPTED } from '@/components/BomUploadDropzone'
 import { ParseSummaryCards } from '@/components/SummaryCards'
 import { useModal } from '@/hooks/useModal'
 import { parseFile } from '@/lib/api'
+import { saveParsedBom, type StoredBom } from '@/lib/bomStore'
+import { canonicalFieldLabel } from '@/lib/columnMapping'
 import type { ParseResult } from '@/lib/types'
 
 type ModalPhase = 'idle' | 'parsing' | 'success'
@@ -12,9 +14,10 @@ type ModalPhase = 'idle' | 'parsing' | 'success'
 interface BomUploadModalProps {
   open: boolean
   onClose: () => void
+  onBomSaved?: (bom: StoredBom) => void
 }
 
-export default function BomUploadModal({ open, onClose }: BomUploadModalProps) {
+export default function BomUploadModal({ open, onClose, onBomSaved }: BomUploadModalProps) {
   const [phase, setPhase] = useState<ModalPhase>('idle')
   const [file, setFile] = useState<File | null>(null)
   const [parseResult, setParseResult] = useState<ParseResult | null>(null)
@@ -22,7 +25,7 @@ export default function BomUploadModal({ open, onClose }: BomUploadModalProps) {
 
   const blockDismiss = phase === 'parsing'
 
-  const reset = useCallback(() => {
+  const resetForNewUpload = useCallback(() => {
     setPhase('idle')
     setFile(null)
     setParseResult(null)
@@ -31,15 +34,15 @@ export default function BomUploadModal({ open, onClose }: BomUploadModalProps) {
 
   const handleClose = useCallback(() => {
     if (phase === 'parsing') return
-    reset()
+    resetForNewUpload()
     onClose()
-  }, [phase, reset, onClose])
+  }, [phase, resetForNewUpload, onClose])
 
   const { onBackdropClick } = useModal({ open, onClose: handleClose, blockDismiss })
 
   useEffect(() => {
-    if (!open) reset()
-  }, [open, reset])
+    if (!open) resetForNewUpload()
+  }, [open, resetForNewUpload])
 
   const handleFileSelected = async (selected: File) => {
     const ext = '.' + selected.name.split('.').pop()?.toLowerCase()
@@ -54,6 +57,8 @@ export default function BomUploadModal({ open, onClose }: BomUploadModalProps) {
 
     try {
       const result = await parseFile(selected)
+      const bom = saveParsedBom(result, selected.name)
+      onBomSaved?.(bom)
       setParseResult(result)
       setPhase('success')
     } catch (err) {
@@ -109,11 +114,11 @@ export default function BomUploadModal({ open, onClose }: BomUploadModalProps) {
         <div className="modal__footer">
           {phase === 'success' ? (
             <>
-              <button type="button" className="btn btn--ghost" onClick={reset}>
+              <button type="button" className="btn btn--ghost" onClick={resetForNewUpload}>
                 Upload another
               </button>
               <button type="button" className="btn btn--primary" onClick={handleClose}>
-                Cancel
+                Done
               </button>
             </>
           ) : (
@@ -129,6 +134,7 @@ export default function BomUploadModal({ open, onClose }: BomUploadModalProps) {
 
 function SuccessView({ result, filename }: { result: ParseResult; filename: string }) {
   const mappings = Object.entries(result.column_mapping)
+  const lowConfidence = result.mapping_confidence < 0.6
 
   return (
     <div>
@@ -139,19 +145,25 @@ function SuccessView({ result, filename }: { result: ParseResult; filename: stri
           </svg>
         </div>
         <p className="text-[15px] font-semibold text-ink">{filename}</p>
-        <p className="mt-1 text-[13px] text-ink-subtle">Columns detected successfully</p>
+        <p className="mt-1 text-[13px] text-ink-subtle">Saved to your dashboard</p>
       </div>
 
       <ParseSummaryCards result={result} />
+
+      {lowConfidence && (
+        <p className="mt-3 text-[13px] text-amber-800">
+          Low mapping confidence — some columns may be missing. Review the mapping below before analyzing.
+        </p>
+      )}
 
       {mappings.length > 0 && (
         <div className="mt-4">
           <p className="text-[11px] font-medium uppercase tracking-wider text-ink-subtle">Detected mapping</p>
           <div className="upload-column-chips">
-            {mappings.map(([canonical, source]) => (
-              <span key={canonical} className="upload-column-chip">
-                <strong>{canonical}</strong>
-                <span>← {source}</span>
+            {mappings.map(([sourceHeader, canonicalField]) => (
+              <span key={sourceHeader} className="upload-column-chip">
+                <strong>{canonicalFieldLabel(canonicalField)}</strong>
+                <span>← {sourceHeader.trim()}</span>
               </span>
             ))}
           </div>

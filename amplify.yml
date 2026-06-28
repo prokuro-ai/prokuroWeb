@@ -6,9 +6,6 @@ frontend:
         - npm ci
     build:
       commands:
-        # Server-side API routes need GATEWAY_URL in .env.production (Amplify SSR)
-        - env | grep -e GATEWAY_URL >> .env.production
-        - env | grep -e NEXT_PUBLIC_ >> .env.production
         - npm run build
   artifacts:
     baseDirectory: .next
