@@ -143,3 +143,14 @@ export function initialsForUser(user: AuthUser): string {
   }
   return user.email.slice(0, 2).toUpperCase()
 }
+
+export async function getIdToken(): Promise<string | null> {
+  ensureConfigured()
+  try {
+    const { fetchAuthSession } = await import('aws-amplify/auth')
+    const session = await fetchAuthSession()
+    return session.tokens?.idToken?.toString() ?? null
+  } catch {
+    return null
+  }
+}

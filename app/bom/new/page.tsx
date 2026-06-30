@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation'
+import UploadPage from '@/components/UploadPage'
 
 export default function NewBomPage() {
-  redirect('/dashboard?upload=1')
+  return <UploadPage />
 }

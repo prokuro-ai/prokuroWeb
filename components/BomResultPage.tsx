@@ -1,39 +1,78 @@
 'use client'
 
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import AppLayout from '@/components/AppLayout'
 import { AnalyzeTable } from '@/components/BomTable'
 import { ExportButtons } from '@/components/ExportButtons'
+import { useAuth } from '@/components/AuthProvider'
 import { ConfidenceBadge } from '@/components/StatusBadge'
 import { AnalyzeSummaryCards } from '@/components/SummaryCards'
-import { getAnalyzeResult } from '@/lib/resultStore'
+import { getBom } from '@/lib/api'
 import type { AnalyzeResult } from '@/lib/types'
+
+function PlaceholderSection({ title, description }: { title: string; description: string }) {
+  return (
+    <section className="rounded-xl border border-dashed border-[#d6deea] bg-[#fafbfc] p-5">
+      <h2 className="text-[13px] font-semibold text-[#0f1b2d]">{title}</h2>
+      <p className="mt-1 text-[12px] text-[#7a8598]">{description}</p>
+      <p className="mt-3 text-[11px] font-medium uppercase tracking-wide text-[#98a3b6]">Coming soon</p>
+    </section>
+  )
+}
 
 export default function BomResultPage() {
   const params = useParams()
+  const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
   const uploadId = typeof params.id === 'string' ? params.id : ''
   const [result, setResult] = useState<AnalyzeResult | null>(null)
   const [loaded, setLoaded] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (uploadId) {
-      setResult(getAnalyzeResult(uploadId))
-      setLoaded(true)
+    if (authLoading) return
+    if (!user) {
+      router.replace('/login')
+      return
     }
-  }, [uploadId])
+    if (!uploadId) {
+      setLoaded(true)
+      return
+    }
 
-  if (!loaded) return null
+    let cancelled = false
+    setError(null)
+
+    getBom(uploadId)
+      .then((record) => {
+        if (!cancelled) setResult(record.analyze)
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load BOM')
+      })
+      .finally(() => {
+        if (!cancelled) setLoaded(true)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [authLoading, user, uploadId, router])
+
+  if (!loaded || authLoading) return null
 
   if (!result) {
     return (
       <AppLayout>
         <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
-          <h1 className="text-[18px] font-semibold text-[#0f1b2d]">Analysis not found</h1>
-          <p className="mt-2 text-[13px] text-[#7a8598]">This result may have expired from your session. Upload a new BOM to analyze again.</p>
-          <Link href="/dashboard?upload=1" className="mt-6 rounded-lg bg-[#0062ff] px-4 py-2 text-[13px] font-medium text-white hover:bg-[#0050e6]">
-            Upload BOM
+          <h1 className="text-[18px] font-semibold text-[#0f1b2d]">{error ? 'Could not load BOM' : 'BOM not found'}</h1>
+          <p className="mt-2 text-[13px] text-[#7a8598]">
+            {error ?? 'This BOM may not exist in your account, or you may not have access to it.'}
+          </p>
+          <Link href="/dashboard" className="mt-6 rounded-lg bg-[#0062ff] px-4 py-2 text-[13px] font-medium text-white hover:bg-[#0050e6]">
+            Back to dashboard
           </Link>
         </div>
       </AppLayout>
@@ -52,7 +91,7 @@ export default function BomResultPage() {
         </div>
         <div className="flex items-center gap-3">
           <ExportButtons result={result} />
-          <Link href="/dashboard?upload=1" className="rounded-md border border-[#d6deea] bg-white px-3 py-1.5 text-[13px] font-medium text-[#4f5d73] hover:bg-[#f4f6f9]">
+          <Link href="/bom/new" className="rounded-md border border-[#d6deea] bg-white px-3 py-1.5 text-[13px] font-medium text-[#4f5d73] hover:bg-[#f4f6f9]">
             Upload another
           </Link>
         </div>
@@ -61,8 +100,23 @@ export default function BomResultPage() {
       <div className="flex-1 overflow-y-auto p-6">
         <AnalyzeSummaryCards result={result} />
 
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <PlaceholderSection
+            title="Risk report"
+            description="Per-line risk scores, lifecycle flags, and tariff exposure will appear here."
+          />
+          <PlaceholderSection
+            title="Top actions this week"
+            description="Recommended procurement actions based on at-risk lines will appear here."
+          />
+          <PlaceholderSection
+            title="Alternates"
+            description="Network-validated and parametric alternate suggestions will appear here."
+          />
+        </div>
+
         <section className="mt-6">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-[#7a8598]">Components</p>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-[#7a8598]">Components</p>
           <div className="mt-3">
             <AnalyzeTable result={result} />
           </div>

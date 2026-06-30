@@ -1,12 +1,12 @@
 'use client'
 
-import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import AppLayout from '@/components/AppLayout'
+import { useEffect, useRef, useState } from 'react'
 import BomUploadDropzone from '@/components/BomUploadDropzone'
-import { analyzeFile, parseFile } from '@/lib/api'
+import AppLayout from '@/components/AppLayout'
+import { useAuth } from '@/components/AuthProvider'
+import { analyzeFile, parseFile, saveBom } from '@/lib/api'
 import { buildColumnMappings, extractHeaders, previewRows } from '@/lib/columnMapping'
-import { saveAnalyzeResult } from '@/lib/resultStore'
 import type { ColumnMapping, ParseResult } from '@/lib/types'
 
 type Step = 'upload' | 'mapping' | 'processing'
@@ -21,6 +21,7 @@ const PROCESSING_STEPS = [
 
 export default function UploadPage() {
   const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
   const [step, setStep] = useState<Step>('upload')
   const [file, setFile] = useState<File | null>(null)
   const [parseResult, setParseResult] = useState<ParseResult | null>(null)
@@ -31,6 +32,11 @@ export default function UploadPage() {
   const [error, setError] = useState<string | null>(null)
   const [parsing, setParsing] = useState(false)
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    if (authLoading) return
+    if (!user) router.replace('/login')
+  }, [authLoading, user, router])
 
   const handleFileSelected = async (selected: File) => {
     setFile(selected)
@@ -80,7 +86,7 @@ export default function UploadPage() {
       const result = await analyzeFile(file)
       stopProgressAnimation()
       setProgress(100)
-      saveAnalyzeResult(result)
+      await saveBom(file, result, { parse: parseResult })
       setTimeout(() => router.push(`/bom/${result.upload_id}`), 500)
     } catch (err) {
       stopProgressAnimation()
@@ -88,6 +94,8 @@ export default function UploadPage() {
       setStep('mapping')
     }
   }
+
+  if (authLoading || !user) return null
 
   return (
     <AppLayout>

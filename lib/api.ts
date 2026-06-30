@@ -1,4 +1,17 @@
-import type { AnalyzeResult, ParseResult } from './types'
+import { getIdToken } from './auth'
+import type { AnalyzeResult, BomSummary, ParseResult } from './types'
+
+export interface BomRecord {
+  summary: BomSummary
+  analyze: AnalyzeResult
+  parse: ParseResult | null
+}
+
+async function authHeaders(): Promise<HeadersInit> {
+  const token = await getIdToken()
+  if (!token) throw new Error('Not signed in')
+  return { Authorization: `Bearer ${token}` }
+}
 
 async function postFile(endpoint: string, file: File): Promise<Response> {
   const form = new FormData()
@@ -31,4 +44,44 @@ export async function analyzeFile(file: File): Promise<AnalyzeResult> {
     throw new Error(message)
   }
   return body as AnalyzeResult
+}
+
+export async function listBoms(): Promise<BomSummary[]> {
+  const res = await fetch('/api/boms', { headers: await authHeaders() })
+  const body: unknown = await res.json()
+  if (!res.ok) {
+    const message = typeof body === 'object' && body && 'error' in body && typeof body.error === 'string' ? body.error : `HTTP ${res.status}`
+    throw new Error(message)
+  }
+  return (body as { boms: BomSummary[] }).boms
+}
+
+export async function getBom(id: string): Promise<BomRecord> {
+  const res = await fetch(`/api/boms/${encodeURIComponent(id)}`, { headers: await authHeaders() })
+  const body: unknown = await res.json()
+  if (!res.ok) {
+    const message = typeof body === 'object' && body && 'error' in body && typeof body.error === 'string' ? body.error : `HTTP ${res.status}`
+    throw new Error(message)
+  }
+  return body as BomRecord
+}
+
+export async function saveBom(file: File, analyze: AnalyzeResult, options?: { name?: string; parse?: ParseResult | null }): Promise<BomSummary> {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('analyze', JSON.stringify(analyze))
+  if (options?.parse) form.append('parse', JSON.stringify(options.parse))
+  if (options?.name) form.append('name', options.name)
+
+  const res = await fetch('/api/boms', {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: form,
+  })
+  const body: unknown = await res.json()
+  if (!res.ok) {
+    const message = typeof body === 'object' && body && 'error' in body && typeof body.error === 'string' ? body.error : `HTTP ${res.status}`
+    throw new Error(message)
+  }
+  return body as BomSummary
 }
