@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import UserAvatar from '@/components/UserAvatar'
-import { initialsForUser, signOut } from '@/lib/auth'
+import { displayNameForUser, initialsForUser, signOut } from '@/lib/auth'
 
 export default function UserMenu() {
   const router = useRouter()
@@ -26,7 +26,7 @@ export default function UserMenu() {
   if (!user) return null
 
   const initials = initialsForUser(user)
-  const displayName = user.name.trim() || user.email
+  const displayName = displayNameForUser(user)
 
   return (
     <div className="relative" ref={ref}>

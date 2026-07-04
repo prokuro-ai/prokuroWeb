@@ -14,7 +14,8 @@ import { EmailConfirmationRequired } from './auth-errors'
 export interface AuthUser {
   userId: string
   email: string
-  name: string
+  firstName: string
+  lastName: string
   company: string
 }
 
@@ -52,7 +53,8 @@ export async function getAuthUser(): Promise<AuthUser | null> {
     return {
       userId: current.userId,
       email: attributes.email ?? '',
-      name: attributes.name ?? '',
+      firstName: attributes.given_name ?? '',
+      lastName: attributes.family_name ?? '',
       company: attributes['custom:company'] ?? '',
     }
   } catch {
@@ -70,7 +72,8 @@ export async function signIn(email: string, password: string): Promise<AuthFlowS
 export async function signUp(input: {
   email: string
   password: string
-  name: string
+  firstName: string
+  lastName: string
   company: string
 }): Promise<AuthFlowStatus> {
   ensureConfigured()
@@ -81,7 +84,8 @@ export async function signUp(input: {
     options: {
       userAttributes: {
         email: username,
-        name: input.name,
+        given_name: input.firstName.trim(),
+        family_name: input.lastName.trim(),
         'custom:company': input.company,
       },
       autoSignIn: true,
@@ -124,22 +128,31 @@ export async function signOut() {
   await amplifySignOut()
 }
 
-export async function updateProfile(input: { name?: string; company?: string }) {
+export async function updateProfile(input: {
+  firstName?: string
+  lastName?: string
+  company?: string
+}) {
   ensureConfigured()
   const attributes: Record<string, string> = {}
-  if (input.name !== undefined) attributes.name = input.name
+  if (input.firstName !== undefined) attributes.given_name = input.firstName.trim()
+  if (input.lastName !== undefined) attributes.family_name = input.lastName.trim()
   if (input.company !== undefined) attributes['custom:company'] = input.company
   if (Object.keys(attributes).length === 0) return
   await updateUserAttributes({ userAttributes: attributes })
 }
 
+export function displayNameForUser(user: AuthUser): string {
+  const full = [user.firstName.trim(), user.lastName.trim()].filter(Boolean).join(' ')
+  return full || user.email
+}
+
 export function initialsForUser(user: AuthUser): string {
-  if (user.name.trim()) {
-    const parts = user.name.trim().split(/\s+/)
-    return parts
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase() ?? '')
-      .join('')
+  const first = user.firstName.trim()
+  const last = user.lastName.trim()
+  if (first || last) {
+    const initials = [first[0], last[0]].filter(Boolean).map((char) => char.toUpperCase())
+    if (initials.length > 0) return initials.join('')
   }
   return user.email.slice(0, 2).toUpperCase()
 }

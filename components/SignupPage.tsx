@@ -13,7 +13,7 @@ import { mapAuthError } from '@/lib/auth-errors'
 export default function SignupPage() {
   const router = useRouter()
   const { refresh } = useAuth()
-  const [form, setForm] = useState({ name: '', email: '', company: '', password: '' })
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', company: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmEmail, setConfirmEmail] = useState<string | null>(null)
@@ -70,9 +70,15 @@ export default function SignupPage() {
                 <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-700">{error}</p>
               )}
 
-              <div>
-                <label className="mb-1.5 block text-[13px] font-medium text-[#0f1b2d]">Full name</label>
-                <input type="text" value={form.name} onChange={set('name')} placeholder="Your name" required className="w-full rounded-md border border-[#d6deea] bg-white px-3 py-2 text-[14px] text-[#0f1b2d] placeholder:text-[#98a3b6] focus:border-[#0062ff] focus:outline-none focus:ring-1 focus:ring-[#0062ff]" />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-medium text-[#0f1b2d]">First name</label>
+                  <input type="text" value={form.firstName} onChange={set('firstName')} placeholder="Jane" required className="w-full rounded-md border border-[#d6deea] bg-white px-3 py-2 text-[14px] text-[#0f1b2d] placeholder:text-[#98a3b6] focus:border-[#0062ff] focus:outline-none focus:ring-1 focus:ring-[#0062ff]" />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-medium text-[#0f1b2d]">Last name</label>
+                  <input type="text" value={form.lastName} onChange={set('lastName')} placeholder="Doe" required className="w-full rounded-md border border-[#d6deea] bg-white px-3 py-2 text-[14px] text-[#0f1b2d] placeholder:text-[#98a3b6] focus:border-[#0062ff] focus:outline-none focus:ring-1 focus:ring-[#0062ff]" />
+                </div>
               </div>
               <div>
                 <label className="mb-1.5 block text-[13px] font-medium text-[#0f1b2d]">Work email</label>

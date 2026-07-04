@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import AppLayout from '@/components/AppLayout'
 import { useAuth } from '@/components/AuthProvider'
-import UserAvatar, { joinName, splitName } from '@/components/UserAvatar'
-import { initialsForUser, updateProfile } from '@/lib/auth'
+import UserAvatar from '@/components/UserAvatar'
+import { displayNameForUser, initialsForUser, updateProfile } from '@/lib/auth'
 
 const SECTIONS = [
   { id: 'profile', label: 'Your profile' },
@@ -77,9 +77,8 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (!user) return
-    const { firstName: first, lastName: last } = splitName(user.name)
-    setFirstName(first)
-    setLastName(last)
+    setFirstName(user.firstName)
+    setLastName(user.lastName)
     setCompany(user.company)
   }, [user])
 
@@ -108,7 +107,10 @@ export default function AccountPage() {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  const handleSave = async (section: string, fields: { name?: string; company?: string }) => {
+  const handleSave = async (
+    section: string,
+    fields: { firstName?: string; lastName?: string; company?: string },
+  ) => {
     setSaving(true)
     try {
       await updateProfile(fields)
@@ -122,9 +124,8 @@ export default function AccountPage() {
 
   const resetProfile = () => {
     if (!user) return
-    const { firstName: first, lastName: last } = splitName(user.name)
-    setFirstName(first)
-    setLastName(last)
+    setFirstName(user.firstName)
+    setLastName(user.lastName)
   }
 
   if (loading) {
@@ -146,7 +147,7 @@ export default function AccountPage() {
   }
 
   const initials = initialsForUser(user)
-  const displayName = user.name.trim() || user.email
+  const displayName = displayNameForUser(user)
   const companyLabel = user.company.trim() || 'Your workspace'
 
   return (
@@ -228,7 +229,7 @@ export default function AccountPage() {
                   <SaveButton
                     saved={saved === 'profile'}
                     disabled={saving}
-                    onClick={() => void handleSave('profile', { name: joinName(firstName, lastName) })}
+                    onClick={() => void handleSave('profile', { firstName, lastName })}
                   />
                   <button
                     type="button"

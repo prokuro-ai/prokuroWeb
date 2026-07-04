@@ -42,14 +42,3 @@ export default function UserAvatar({ initials, size = 'sm', showEdit = false }: 
     </div>
   )
 }
-
-export function splitName(full: string): { firstName: string; lastName: string } {
-  const parts = full.trim().split(/\s+/).filter(Boolean)
-  if (parts.length === 0) return { firstName: '', lastName: '' }
-  if (parts.length === 1) return { firstName: parts[0], lastName: '' }
-  return { firstName: parts[0], lastName: parts.slice(1).join(' ') }
-}
-
-export function joinName(firstName: string, lastName: string): string {
-  return [firstName.trim(), lastName.trim()].filter(Boolean).join(' ')
-}
