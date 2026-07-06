@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import AppLayout from '@/components/AppLayout'
 import { AnalyzeTable } from '@/components/BomTable'
+import { DeleteBomButton } from '@/components/DeleteBomButton'
 import { ExportButtons } from '@/components/ExportButtons'
 import { useAuth } from '@/components/AuthProvider'
 import { ConfidenceBadge } from '@/components/StatusBadge'
@@ -89,11 +90,16 @@ export default function BomResultPage() {
           )}
           <ConfidenceBadge value={result.mapping_confidence} />
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <ExportButtons result={result} />
-          <Link href="/bom/new" className="rounded-md border border-[#d6deea] bg-white px-3 py-1.5 text-[13px] font-medium text-[#4f5d73] hover:bg-[#f4f6f9]">
+          <Link
+            href="/bom/new"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#0062ff] px-3.5 py-1.5 text-[13px] font-medium text-white transition-colors hover:bg-[#0050e6]"
+          >
+            <UploadIcon />
             Upload another
           </Link>
+          <DeleteBomButton bomId={uploadId} bomName={result.source_filename} />
         </div>
       </div>
 
@@ -123,5 +129,13 @@ export default function BomResultPage() {
         </section>
       </div>
     </AppLayout>
+  )
+}
+
+function UploadIcon() {
+  return (
+    <svg className="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+    </svg>
   )
 }

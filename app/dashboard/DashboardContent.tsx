@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react'
 import AppLayout from '@/components/AppLayout'
 import { useAuth } from '@/components/AuthProvider'
 import { listBoms } from '@/lib/api'
+import { formatUploadedAt } from '@/lib/format'
+import { DeleteBomButton } from '@/components/DeleteBomButton'
 import type { BomSummary } from '@/lib/types'
 
 function RiskBar({ score }: { score: number }) {
@@ -18,13 +20,6 @@ function RiskBar({ score }: { score: number }) {
   )
 }
 
-function formatUploadedAt(iso: string): string {
-  try {
-    return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-  } catch {
-    return iso
-  }
-}
 
 export default function DashboardContent() {
   const router = useRouter()
@@ -199,9 +194,20 @@ export default function DashboardContent() {
                     </td>
                     <td className="px-4 py-3 text-[13px] text-[#7a8598]">{formatUploadedAt(bom.uploadedAt)}</td>
                     <td className="px-4 py-3 text-right">
-                      <Link href={`/bom/${bom.id}`} className="text-[13px] font-medium text-[#0062ff] hover:text-[#0050e6]">
-                        View →
-                      </Link>
+                      <div className="flex items-center justify-end gap-3">
+                        <Link href={`/bom/${bom.id}`} className="text-[13px] font-medium text-[#0062ff] hover:text-[#0050e6]">
+                          View →
+                        </Link>
+                        <DeleteBomButton
+                          bomId={bom.id}
+                          bomName={bom.name}
+                          redirectTo={null}
+                          variant="ghost"
+                          label="Delete"
+                          className="px-2 py-1 text-[12px]"
+                          onDeleted={() => setBoms((prev) => prev.filter((item) => item.id !== bom.id))}
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))
