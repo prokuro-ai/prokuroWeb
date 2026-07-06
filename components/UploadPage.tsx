@@ -83,11 +83,12 @@ export default function UploadPage() {
     startProgressAnimation()
 
     try {
-      const result = await analyzeFile(file)
+      const analyzeResult = await analyzeFile(file)
       stopProgressAnimation()
       setProgress(100)
-      await saveBom(file, result, { parse: parseResult })
-      setTimeout(() => router.push(`/bom/${result.upload_id}`), 500)
+      const saved = await saveBom(file, analyzeResult, { parse: parseResult })
+      const bomId = saved.id ?? analyzeResult.upload_id
+      setTimeout(() => router.push(`/bom/${bomId}`), 500)
     } catch (err) {
       stopProgressAnimation()
       setError(err instanceof Error ? err.message : 'Analysis failed')

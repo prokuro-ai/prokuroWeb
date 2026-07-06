@@ -601,6 +601,11 @@ body.modal-open {
   border-top: 1px solid var(--color-hairline);
 }
 
+/* Standalone dropzone target — used on the full-page /upload route (not inside .modal__dialog--upload) */
+.upload-dropzone-target {
+  min-height: 240px;
+}
+
 .upload-file-card {
   display: flex;
   align-items: center;
