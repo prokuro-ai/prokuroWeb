@@ -13,6 +13,13 @@ async function authHeaders(): Promise<HeadersInit> {
   return { Authorization: `Bearer ${token}` }
 }
 
+async function readErrorMessage(res: Response, body: unknown): Promise<string> {
+  if (typeof body === 'object' && body && 'error' in body && typeof body.error === 'string') {
+    return body.error
+  }
+  return `HTTP ${res.status}`
+}
+
 async function postFile(endpoint: string, file: File): Promise<Response> {
   const form = new FormData()
   form.append('file', file)
@@ -32,37 +39,27 @@ export async function parseFile(file: File): Promise<ParseResult> {
 
   if (res.status === 422 && isParseResult(body)) return body
 
-  const message = typeof body === 'object' && body && 'error' in body && typeof body.error === 'string' ? body.error : `HTTP ${res.status}`
-  throw new Error(message)
+  throw new Error(await readErrorMessage(res, body))
 }
 
 export async function analyzeFile(file: File): Promise<AnalyzeResult> {
   const res = await postFile('/api/analyze', file)
   const body: unknown = await res.json()
-  if (!res.ok) {
-    const message = typeof body === 'object' && body && 'error' in body && typeof body.error === 'string' ? body.error : `HTTP ${res.status}`
-    throw new Error(message)
-  }
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
   return body as AnalyzeResult
 }
 
 export async function listBoms(): Promise<BomSummary[]> {
   const res = await fetch('/api/boms', { headers: await authHeaders() })
   const body: unknown = await res.json()
-  if (!res.ok) {
-    const message = typeof body === 'object' && body && 'error' in body && typeof body.error === 'string' ? body.error : `HTTP ${res.status}`
-    throw new Error(message)
-  }
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
   return (body as { boms: BomSummary[] }).boms
 }
 
 export async function getBom(id: string): Promise<BomRecord> {
   const res = await fetch(`/api/boms/${encodeURIComponent(id)}`, { headers: await authHeaders() })
   const body: unknown = await res.json()
-  if (!res.ok) {
-    const message = typeof body === 'object' && body && 'error' in body && typeof body.error === 'string' ? body.error : `HTTP ${res.status}`
-    throw new Error(message)
-  }
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
   return body as BomRecord
 }
 
@@ -74,8 +71,7 @@ export async function deleteBom(id: string): Promise<void> {
   if (res.ok) return
 
   const body: unknown = await res.json().catch(() => null)
-  const message = typeof body === 'object' && body && 'error' in body && typeof body.error === 'string' ? body.error : `HTTP ${res.status}`
-  throw new Error(message)
+  throw new Error(await readErrorMessage(res, body))
 }
 
 export async function saveBom(file: File, analyze: AnalyzeResult, options?: { name?: string; parse?: ParseResult | null }): Promise<BomSummary> {
@@ -91,9 +87,6 @@ export async function saveBom(file: File, analyze: AnalyzeResult, options?: { na
     body: form,
   })
   const body: unknown = await res.json()
-  if (!res.ok) {
-    const message = typeof body === 'object' && body && 'error' in body && typeof body.error === 'string' ? body.error : `HTTP ${res.status}`
-    throw new Error(message)
-  }
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
   return body as BomSummary
 }

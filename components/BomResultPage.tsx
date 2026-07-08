@@ -23,6 +23,21 @@ function PlaceholderSection({ title, description }: { title: string; description
   )
 }
 
+function BackToDashboard() {
+  return (
+    <Link
+      href="/dashboard"
+      className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-[#d6deea] bg-white text-[#4f5d73] transition-colors hover:border-[#0062ff] hover:text-[#0062ff]"
+      aria-label="Back to dashboard"
+      title="Back to dashboard"
+    >
+      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+      </svg>
+    </Link>
+  )
+}
+
 export default function BomResultPage() {
   const params = useParams()
   const router = useRouter()
@@ -83,7 +98,8 @@ export default function BomResultPage() {
   return (
     <AppLayout>
       <div className="flex h-14 flex-shrink-0 items-center justify-between border-b border-[#d6deea] bg-white px-6">
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 items-center gap-3">
+          <BackToDashboard />
           <h1 className="truncate text-[15px] font-semibold text-[#0f1b2d]">{result.source_filename}</h1>
           {result.sheet_name && (
             <span className="rounded border border-[#d6deea] bg-[#f4f6f9] px-2 py-0.5 font-mono text-[11px] text-[#7a8598]">{result.sheet_name}</span>
@@ -99,7 +115,7 @@ export default function BomResultPage() {
             <UploadIcon />
             Upload another
           </Link>
-          <DeleteBomButton bomId={uploadId} bomName={result.source_filename} />
+          <DeleteBomButton bomId={uploadId} bomName={result.source_filename} redirectTo="/dashboard" />
         </div>
       </div>
 
