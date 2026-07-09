@@ -18,9 +18,9 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Prokuro.ai | AI-Powered Supply Chain Intelligence',
+  title: 'Prokuro.ai | Agentic BOM Management',
   description:
-    'Prokuro.ai gives hardware OEMs early warning on component risk before disruptions become production-stopping disasters.',
+    'Prokuro turns your bill of materials into a plan of action — every part scored for lifecycle, availability, and tariff risk, with vetted alternates ready when you need them.',
   icons: { icon: '/favicon.png' },
 }
 

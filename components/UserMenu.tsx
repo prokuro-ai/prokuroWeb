@@ -132,13 +132,16 @@ export function MarketingAuthActions() {
   }
 
   return (
-    <>
-      <Link className="btn btn--ghost" href="/login">
-        Sign in
+    <div className="nav-actions--signed-out flex items-center gap-4">
+      <Link href="/login" className="nav-text-link">
+        Login
       </Link>
-      <Link className="btn btn--primary" href="/signup">
-        Start free trial
+      <a href="#company" className="nav-text-link">
+        Contact Us
+      </a>
+      <Link className="btn btn--primary btn--nav" href="/login">
+        Try Prokuro
       </Link>
-    </>
+    </div>
   )
 }
