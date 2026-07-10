@@ -104,7 +104,7 @@ export default function LoginPage() {
         </div>
 
         {!confirmEmail && (
-          <p className="mt-6 text-center text-[13px] text-[#7a8598]">
+          <p className="mt-3 text-center text-[13px] text-[#7a8598]">
             Don&apos;t have an account?{' '}
             <Link href="/signup" className="font-medium text-[#0062ff] hover:underline">
               Start free trial

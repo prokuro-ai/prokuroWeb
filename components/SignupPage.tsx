@@ -116,7 +116,7 @@ export default function SignupPage() {
         </div>
 
         {!confirmEmail && (
-          <p className="mt-8 text-center text-[13px] text-[#7a8598]">
+          <p className="mt-3 text-center text-[13px] text-[#7a8598]">
             Already have an account?{' '}
             <Link href="/login" className="font-medium text-[#0062ff] hover:underline">
               Sign in
