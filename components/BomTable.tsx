@@ -1,4 +1,6 @@
 import type { AnalyzeResult, ParseResult, SellerOffer } from '@/lib/types'
+import { hasTariffData } from '@/lib/risk'
+import RiskBadge from './RiskBadge'
 import StatusBadge from './StatusBadge'
 
 function formatTopSellers(sellers: SellerOffer[]): string {
@@ -54,11 +56,13 @@ export function ParseTable({ result }: { result: ParseResult }) {
 export function AnalyzeTable({ result }: { result: AnalyzeResult }) {
   const { lines } = result
   if (lines.length === 0) return <EmptyTable />
+  const showTariff = hasTariffData(lines)
 
   return (
     <TableShell rowCount={lines.length}>
       <thead>
         <tr>
+          <Th>Risk</Th>
           <Th>Ref</Th>
           <Th>MPN</Th>
           <Th>Manufacturer</Th>
@@ -69,6 +73,8 @@ export function AnalyzeTable({ result }: { result: AnalyzeResult }) {
           <Th>Lifecycle</Th>
           <Th right>Stock</Th>
           <Th right>Lead (days)</Th>
+          {showTariff && <Th>HTS</Th>}
+          {showTariff && <Th right>Duty %</Th>}
           <Th>AML</Th>
           <Th>Top sellers</Th>
         </tr>
@@ -76,6 +82,9 @@ export function AnalyzeTable({ result }: { result: AnalyzeResult }) {
       <tbody>
         {lines.map((line, i) => (
           <tr key={line.row_index} className={`border-b border-hairline/60 transition-colors hover:bg-surface-2/45 ${i % 2 === 0 ? 'bg-canvas' : 'bg-surface-1/50'}`}>
+            <Td>
+              <RiskBadge level={line.risk_level ?? 'green'} />
+            </Td>
             <Td mono>{line.refdes}</Td>
             <Td mono highlight>{line.mpn}</Td>
             <Td>{line.manufacturer}</Td>
@@ -86,6 +95,12 @@ export function AnalyzeTable({ result }: { result: AnalyzeResult }) {
             <Td><StatusBadge status={line.lifecycle_status} type="lifecycle" /></Td>
             <Td right mono>{line.total_avail > 0 ? line.total_avail.toLocaleString() : <Dash />}</Td>
             <Td right mono>{line.factory_lead_days != null ? line.factory_lead_days : <Dash />}</Td>
+            {showTariff && <Td mono small>{line.hts_code ?? undefined}</Td>}
+            {showTariff && (
+              <Td right mono>
+                {line.total_duty_pct != null ? line.total_duty_pct.toFixed(1) : undefined}
+              </Td>
+            )}
             <Td small>{line.aml_candidates.length > 0 ? line.aml_candidates.join(', ') : undefined}</Td>
             <Td small muted>{formatTopSellers(line.top_sellers) || undefined}</Td>
           </tr>

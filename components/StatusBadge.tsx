@@ -11,9 +11,9 @@ const AVAILABILITY: Record<string, { label: string; cls: string }> = {
   instock: { label: 'In Stock', cls: 'bg-green-100 text-green-700 border-green-300' },
   outofstock: { label: 'Out of Stock', cls: 'bg-red-100 text-red-700 border-red-300' },
   eolornrnd: { label: 'EOL / NRND', cls: 'bg-amber-100 text-amber-700 border-amber-300' },
+  error: { label: 'Lookup failed', cls: 'bg-surface-2 text-ink-subtle border-hairline' },
   nomatch: { label: 'No Match', cls: 'bg-surface-2 text-ink-subtle border-hairline' },
   longlead: { label: 'Long Lead', cls: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
-  error: { label: 'Error', cls: 'bg-red-100 text-red-700 border-red-300' },
 }
 
 const LIFECYCLE: Record<string, { label: string; cls: string }> = {

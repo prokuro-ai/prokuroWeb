@@ -69,8 +69,14 @@ export interface AnalyzeSummary {
   out_of_stock: number
   eol_or_nrnd: number
   no_match: number
+  error_count?: number
   long_lead: number
+  red_count?: number
+  yellow_count?: number
+  green_count?: number
 }
+
+export type RiskLevel = 'red' | 'yellow' | 'green'
 
 export interface AnalyzedLine {
   row_index: number
@@ -86,6 +92,16 @@ export interface AnalyzedLine {
   factory_lead_days: number | null
   total_avail: number
   top_sellers: SellerOffer[]
+  risk_level?: RiskLevel
+  hts_code?: string | null
+  tariff_confidence?: string | null
+  base_duty_pct?: number | null
+  section_301_pct?: number | null
+  total_duty_pct?: number | null
+  tariff_notes?: string | null
+  rate_basis?: string | null
+  is_stale?: boolean | null
+  tariff_disclaimer?: string | null
 }
 
 export interface AnalyzeResult {
@@ -95,6 +111,7 @@ export interface AnalyzeResult {
   mapping_confidence: number
   summary: AnalyzeSummary
   lines: AnalyzedLine[]
+  top_risks?: AnalyzedLine[]
   warnings: unknown[]
   stats: Record<string, unknown>
   analyzed_at: string

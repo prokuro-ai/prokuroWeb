@@ -2,11 +2,13 @@
 
 import { useCallback, useState } from 'react'
 import { analyzeFile, parseFile } from '@/lib/api'
+import { anyTariffStale, hasTariffData, riskReason, tariffDisclaimer } from '@/lib/risk'
 import type { AnalyzeResult, Mode, ParseResult } from '@/lib/types'
 import { AnalyzeTable, ParseTable } from './BomTable'
 import BomUploadDropzone from './BomUploadDropzone'
 import { ExportButtons } from './ExportButtons'
 import NavBar from './NavBar'
+import RiskBadge from './RiskBadge'
 import { ConfidenceBadge } from './StatusBadge'
 import { AnalyzeSummaryCards, ParseSummaryCards } from './SummaryCards'
 
@@ -153,6 +155,11 @@ function ParseResultsView({ result, onReset }: { result: ParseResult; onReset: (
 }
 
 function AnalyzeResultsView({ result, onReset }: { result: AnalyzeResult; onReset: () => void }) {
+  const showTariff = hasTariffData(result.lines)
+  const disclaimer = tariffDisclaimer(result.lines)
+  const stale = anyTariffStale(result.lines)
+  const topRisks = result.top_risks ?? []
+
   return (
     <main className="mx-auto max-w-screen-xl px-6 pb-24 pt-8">
       <ResultsHeader
@@ -167,12 +174,36 @@ function AnalyzeResultsView({ result, onReset }: { result: AnalyzeResult; onRese
         <AnalyzeEnrichmentStatusBanner result={result} />
       </section>
 
+      {stale && (
+        <section className="mt-4">
+          <WarningBanner warnings={['Tariff data is due for review — figures may not reflect current rates.']} />
+        </section>
+      )}
+
       <section className="mt-6">
         <AnalyzeSummaryCards result={result} />
       </section>
 
+      {topRisks.length > 0 && (
+        <section className="mt-6">
+          <SectionLabel>Top risks</SectionLabel>
+          <ul className="mt-3 divide-y divide-hairline overflow-hidden rounded-xl border border-hairline bg-surface-1">
+            {topRisks.map((line) => (
+              <li key={`${line.row_index}-${line.mpn ?? 'unknown'}`} className="flex items-center gap-3 px-4 py-3">
+                <RiskBadge level={line.risk_level ?? 'green'} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-mono text-[13px] text-primary-hover">{line.mpn ?? '—'}</p>
+                  <p className="mt-0.5 text-[13px] text-ink-muted">{riskReason(line)}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="mt-6">
         <SectionLabel>Components</SectionLabel>
+        {showTariff && disclaimer && <p className="mt-2 text-[12px] text-ink-tertiary">{disclaimer}</p>}
         <div className="mt-3">
           <AnalyzeTable result={result} />
         </div>
@@ -185,6 +216,11 @@ function AnalyzeEnrichmentStatusBanner({ result }: { result: AnalyzeResult }) {
   const warnings = Array.isArray(result.warnings) ? result.warnings : []
   const total = result.summary.total || result.lines.length
   const noMatchRatio = total > 0 ? result.summary.no_match / total : 0
+  const errorCount = result.lines.filter((line) => {
+    const availability = (line.availability_status ?? '').trim().toLowerCase().replace(/[_\s-]/g, '')
+    return availability === 'error'
+  }).length
+  const errorRatio = total > 0 ? errorCount / total : 0
 
   const enrichmentFailure = warnings.find((warning) => {
     if (!warning || typeof warning !== 'object') return false
@@ -193,12 +229,12 @@ function AnalyzeEnrichmentStatusBanner({ result }: { result: AnalyzeResult }) {
   }) as { code?: string; message?: string } | undefined
 
   const hasAnyStrongSignals = result.lines.some((line) => {
-    const availability = (line.availability_status ?? '').trim().toLowerCase()
+    const availability = (line.availability_status ?? '').trim().toLowerCase().replace(/[_\s-]/g, '')
     const lifecycle = (line.lifecycle_status ?? '').trim().toLowerCase()
     return (
       line.total_avail > 0 ||
       line.factory_lead_days != null ||
-      (availability !== '' && availability !== 'nomatch') ||
+      (availability !== '' && availability !== 'nomatch' && availability !== 'error') ||
       (lifecycle !== '' && lifecycle !== 'unknown')
     )
   })
@@ -213,15 +249,24 @@ function AnalyzeEnrichmentStatusBanner({ result }: { result: AnalyzeResult }) {
     )
   }
 
-  if (total > 0 && result.summary.no_match === total && !hasAnyStrongSignals) {
+  if (total > 0 && (errorCount === total || errorRatio >= 0.9)) {
     return (
-      <StatusPanel tone="warning" title="Enrichment returned no matched parts">
-        Full analyze completed, but every line came back `NoMatch/Unknown`. This usually means provider quota limits or upstream matching issues, not a parser failure.
+      <StatusPanel tone="warning" title="Component availability lookup unavailable">
+        Component availability lookup unavailable — provider quota or connection issue. Parsed data and
+        tariff classification are unaffected.
       </StatusPanel>
     )
   }
 
-  if (total >= 10 && noMatchRatio >= 0.9) {
+  if (total > 0 && result.summary.no_match === total && errorCount === 0 && !hasAnyStrongSignals) {
+    return (
+      <StatusPanel tone="warning" title="Enrichment returned no matched parts">
+        Full analyze completed, but every line came back with no catalog match. This is a genuine miss from the parts provider, not a parser failure.
+      </StatusPanel>
+    )
+  }
+
+  if (total >= 10 && noMatchRatio >= 0.9 && errorRatio < 0.5) {
     return (
       <StatusPanel tone="warning" title="Enrichment looks partial">
         Most lines are unmatched ({result.summary.no_match}/{total}). Results are usable, but enrichment coverage is limited.
