@@ -15,7 +15,8 @@ export async function proxyAuthorizedRequest(
   upstreamPath: string,
   init: RequestInit = {},
 ): Promise<NextResponse> {
-  const targetUrl = gatewayProxyUrl(upstreamPath)
+  const search = req.nextUrl.search
+  const targetUrl = gatewayProxyUrl(`${upstreamPath}${search}`)
   if (!targetUrl) return missingGateway()
 
   const auth = req.headers.get('authorization')

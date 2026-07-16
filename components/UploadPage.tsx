@@ -86,7 +86,7 @@ export default function UploadPage() {
       const analyzeResult = await analyzeFile(file)
       stopProgressAnimation()
       setProgress(100)
-      const saved = await saveBom(file, analyzeResult, { parse: parseResult })
+      const saved = await saveBom(file, analyzeResult)
       const bomId = saved.id ?? analyzeResult.upload_id
       setTimeout(() => router.push(`/bom/${bomId}`), 500)
     } catch (err) {

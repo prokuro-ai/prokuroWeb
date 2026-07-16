@@ -3,7 +3,9 @@
 Unified Next.js frontend for Prokuro:
 
 - Landing page at `/`
-- BOM parser/analyzer app at `/analyze`
+- Authenticated dashboard at `/dashboard`
+- BOM upload at `/bom/new`
+- BOM results at `/bom/[id]`
 
 ## Local development
 
@@ -16,20 +18,21 @@ Runs at `http://localhost:3010`.
 
 ## Backend integration
 
-This frontend stays in its own repository and talks to backend services via environment variables.
+This frontend talks to the gateway via environment variables.
 
 Set these in `.env.local`:
 
 ```bash
-PARSER_URL=http://localhost:3001
 GATEWAY_URL=http://localhost:3000
 ```
 
-API proxy routes:
+API proxy routes (all via gateway):
 
-- `POST /api/parse` -> `${PARSER_URL}/v1/parse`
+- `POST /api/parse` -> `${GATEWAY_URL}/v1/parse`
 - `POST /api/analyze` -> `${GATEWAY_URL}/v1/analyze`
+- `GET|POST /api/boms` -> `${GATEWAY_URL}/v1/boms` (`GET` supports `limit` + `next_token`)
+- `GET|DELETE /api/boms/[id]` -> `${GATEWAY_URL}/v1/boms/{id}`
 
 ## Deploying
 
-For AWS deployment, point `PARSER_URL` and `GATEWAY_URL` at your deployed backend endpoints in the runtime environment.
+For AWS deployment, point `GATEWAY_URL` at your deployed gateway endpoint in the runtime environment.

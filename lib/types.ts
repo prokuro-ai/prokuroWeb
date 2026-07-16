@@ -1,5 +1,3 @@
-export type Mode = 'parse' | 'analyze'
-
 export interface BomSummary {
   id: string
   name: string

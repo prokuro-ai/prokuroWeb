@@ -4,7 +4,11 @@ import type { AnalyzeResult, BomSummary, ParseResult } from './types'
 export interface BomRecord {
   summary: BomSummary
   analyze: AnalyzeResult
-  parse: ParseResult | null
+}
+
+export interface Page<T> {
+  items: T[]
+  next_token?: string | null
 }
 
 async function authHeaders(): Promise<HeadersInit> {
@@ -49,11 +53,18 @@ export async function analyzeFile(file: File): Promise<AnalyzeResult> {
   return body as AnalyzeResult
 }
 
-export async function listBoms(): Promise<BomSummary[]> {
-  const res = await fetch('/api/boms', { headers: await authHeaders() })
+export async function listBoms(params?: {
+  limit?: number
+  next_token?: string | null
+}): Promise<Page<BomSummary>> {
+  const qs = new URLSearchParams()
+  if (params?.limit != null) qs.set('limit', String(params.limit))
+  if (params?.next_token) qs.set('next_token', params.next_token)
+  const query = qs.toString()
+  const res = await fetch(`/api/boms${query ? `?${query}` : ''}`, { headers: await authHeaders() })
   const body: unknown = await res.json()
   if (!res.ok) throw new Error(await readErrorMessage(res, body))
-  return (body as { boms: BomSummary[] }).boms
+  return body as Page<BomSummary>
 }
 
 export async function getBom(id: string): Promise<BomRecord> {
@@ -74,11 +85,10 @@ export async function deleteBom(id: string): Promise<void> {
   throw new Error(await readErrorMessage(res, body))
 }
 
-export async function saveBom(file: File, analyze: AnalyzeResult, options?: { name?: string; parse?: ParseResult | null }): Promise<BomSummary> {
+export async function saveBom(file: File, analyze: AnalyzeResult, options?: { name?: string }): Promise<BomSummary> {
   const form = new FormData()
   form.append('file', file)
   form.append('analyze', JSON.stringify(analyze))
-  if (options?.parse) form.append('parse', JSON.stringify(options.parse))
   if (options?.name) form.append('name', options.name)
 
   const res = await fetch('/api/boms', {

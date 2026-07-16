@@ -25,7 +25,9 @@ export default function DashboardContent() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
   const [boms, setBoms] = useState<BomSummary[]>([])
+  const [nextToken, setNextToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -40,8 +42,10 @@ export default function DashboardContent() {
     setError(null)
 
     listBoms()
-      .then((items) => {
-        if (!cancelled) setBoms(items)
+      .then((page) => {
+        if (cancelled) return
+        setBoms(page.items)
+        setNextToken(page.next_token ?? null)
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load BOMs')
@@ -54,6 +58,21 @@ export default function DashboardContent() {
       cancelled = true
     }
   }, [authLoading, user, router])
+
+  async function loadMore() {
+    if (!nextToken || loadingMore) return
+    setLoadingMore(true)
+    setError(null)
+    try {
+      const page = await listBoms({ next_token: nextToken })
+      setBoms((prev) => [...prev, ...page.items])
+      setNextToken(page.next_token ?? null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load more BOMs')
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   const { totalAtRisk, totalLines, avgRisk } = useMemo(() => {
     const totalAtRisk = boms.reduce((sum, bom) => sum + bom.atRiskCount, 0)
@@ -210,6 +229,19 @@ export default function DashboardContent() {
               )}
             </tbody>
           </table>
+
+          {nextToken && !loading && (
+            <div className="flex justify-center border-t border-[#d6deea] px-5 py-4">
+              <button
+                type="button"
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="rounded-lg border border-[#d6deea] bg-white px-4 py-2 text-[13px] font-medium text-[#0f1b2d] transition-colors hover:bg-[#f4f6f9] disabled:opacity-50"
+              >
+                {loadingMore ? 'Loading…' : 'Load more'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </AppLayout>
