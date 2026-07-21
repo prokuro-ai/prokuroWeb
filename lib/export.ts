@@ -14,10 +14,11 @@ function baseFilename(result: AnalyzeResult): string {
   return name || 'bom-analysis'
 }
 
-function formatTopSellers(sellers: SellerOffer[]): string {
+function formatTopSellers(sellers: SellerOffer[] | null | undefined): string {
+  if (!sellers?.length) return ''
   return sellers
     .map((seller) => {
-      const stock = seller.inventory_level
+      const stock = seller.inventory_level ?? 0
       return `${seller.name} (${stock.toLocaleString()})`
     })
     .join('; ')
@@ -33,9 +34,9 @@ function lineToCsvRow(line: AnalyzedLine): string[] {
     line.availability_status,
     line.lifecycle_status,
     line.match_status,
-    line.total_avail.toString(),
+    (line.total_avail ?? 0).toString(),
     line.factory_lead_days?.toString() ?? '',
-    line.aml_candidates.join('; '),
+    (line.aml_candidates ?? []).join('; '),
     formatTopSellers(line.top_sellers),
   ]
 }

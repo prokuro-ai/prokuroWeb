@@ -3,11 +3,11 @@ import { hasTariffData } from '@/lib/risk'
 import RiskBadge from './RiskBadge'
 import StatusBadge from './StatusBadge'
 
-function formatTopSellers(sellers: SellerOffer[]): string {
-  if (sellers.length === 0) return ''
+function formatTopSellers(sellers: SellerOffer[] | null | undefined): string {
+  if (!sellers?.length) return ''
   return sellers
     .slice(0, 3)
-    .map((s) => `${s.name} (${s.inventory_level.toLocaleString()})`)
+    .map((s) => `${s.name} (${(s.inventory_level ?? 0).toLocaleString()})`)
     .join(', ')
 }
 
@@ -41,7 +41,7 @@ export function ParseTable({ result }: { result: ParseResult }) {
             <Td>{line.manufacturer}</Td>
             <Td right mono>{line.quantity?.toString()}</Td>
             <Td muted>{line.description}</Td>
-            <Td small>{line.aml_candidates.length > 0 ? line.aml_candidates.join(', ') : undefined}</Td>
+            <Td small>{line.aml_candidates?.length ? line.aml_candidates.join(', ') : undefined}</Td>
             <Td mono small>{line.footprint}</Td>
             {extraCols.map((column) => (
               <Td key={column} small>{line.extras[column]}</Td>
@@ -93,7 +93,7 @@ export function AnalyzeTable({ result }: { result: AnalyzeResult }) {
             <Td><StatusBadge status={line.match_status} type="match" /></Td>
             <Td><StatusBadge status={line.availability_status} type="availability" /></Td>
             <Td><StatusBadge status={line.lifecycle_status} type="lifecycle" /></Td>
-            <Td right mono>{line.total_avail > 0 ? line.total_avail.toLocaleString() : <Dash />}</Td>
+            <Td right mono>{(line.total_avail ?? 0) > 0 ? (line.total_avail ?? 0).toLocaleString() : <Dash />}</Td>
             <Td right mono>{line.factory_lead_days != null ? line.factory_lead_days : <Dash />}</Td>
             {showTariff && <Td mono small>{line.hts_code ?? undefined}</Td>}
             {showTariff && (
@@ -101,7 +101,7 @@ export function AnalyzeTable({ result }: { result: AnalyzeResult }) {
                 {line.total_duty_pct != null ? line.total_duty_pct.toFixed(1) : undefined}
               </Td>
             )}
-            <Td small>{line.aml_candidates.length > 0 ? line.aml_candidates.join(', ') : undefined}</Td>
+            <Td small>{line.aml_candidates?.length ? line.aml_candidates.join(', ') : undefined}</Td>
             <Td small muted>{formatTopSellers(line.top_sellers) || undefined}</Td>
           </tr>
         ))}

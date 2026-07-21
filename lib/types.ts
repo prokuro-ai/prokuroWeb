@@ -89,7 +89,7 @@ export interface AnalyzedLine {
   match_status: string
   factory_lead_days: number | null
   total_avail: number
-  top_sellers: SellerOffer[]
+  top_sellers?: SellerOffer[]
   risk_level?: RiskLevel
   hts_code?: string | null
   tariff_confidence?: string | null
