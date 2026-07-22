@@ -1,6 +1,11 @@
-import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
+import BomResultPage from '@/components/BomResultPage'
 
-export default async function BomDetailRedirect({ params }: { params: Promise<{ id: string }> }) {
-  await params
-  redirect('/dashboard?tab=boms')
+export default async function BomDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  return (
+    <Suspense fallback={null}>
+      <BomResultPage id={id} />
+    </Suspense>
+  )
 }

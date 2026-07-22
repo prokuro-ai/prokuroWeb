@@ -167,9 +167,10 @@ function PortfolioRisk({ boms }: { boms: BomSummary[] }) {
 
 // ─── Pages ────────────────────────────────────────────────────────────────────
 
-function OverviewPage({ boms, loading, goToBoms, goToUpload }: {
+function OverviewPage({ boms, loading, goToBoms, goToUpload, onViewBom }: {
   boms: BomSummary[], loading: boolean
   goToBoms: () => void, goToUpload: () => void
+  onViewBom: (id: string) => void
 }) {
   const totalLines         = boms.reduce((s, b) => s + b.lineCount, 0)
   const criticalCount      = boms.filter(b => b.overallRiskScore >= 7).length
@@ -222,7 +223,7 @@ function OverviewPage({ boms, loading, goToBoms, goToUpload }: {
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
                 <tr>
-                  {['BOM Name', 'At-Risk Parts', 'Last Updated'].map(h => (
+                  {['BOM Name', 'At-Risk Parts', 'Last Updated', ''].map(h => (
                     <th key={h} className="px-5 py-3.5 font-semibold">{h}</th>
                   ))}
                 </tr>
@@ -240,6 +241,12 @@ function OverviewPage({ boms, loading, goToBoms, goToUpload }: {
                       <span className="text-xs font-bold text-red-600">{bom.atRiskCount} parts</span>
                     </td>
                     <td className="px-5 py-4 text-slate-500">{bom.uploadedAt}</td>
+                    <td className="px-5 py-4 text-right">
+                      <button onClick={() => onViewBom(bom.id)}
+                        className="font-semibold flex items-center gap-1 ml-auto text-[#0062ff] hover:text-blue-700">
+                        View <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -251,8 +258,9 @@ function OverviewPage({ boms, loading, goToBoms, goToUpload }: {
   )
 }
 
-function BomsPage({ boms, loading, onDelete, onUpload }: {
+function BomsPage({ boms, loading, onViewBom, onDelete, onUpload }: {
   boms: BomSummary[], loading: boolean
+  onViewBom: (id: string) => void
   onDelete: (id: string) => void, onUpload: () => void
 }) {
   const [search, setSearch] = useState('')
@@ -330,7 +338,11 @@ function BomsPage({ boms, loading, onDelete, onUpload }: {
                       <div className="text-xs text-slate-500">Uploaded</div>
                     </div>
                   </div>
-                  <div className="mt-4 flex justify-end">
+                  <div className="mt-4 flex gap-2">
+                    <button onClick={() => onViewBom(bom.id)}
+                      className="flex-1 py-2 text-sm font-semibold text-[#0062ff] hover:text-blue-700 border border-slate-200 rounded-lg hover:border-[#0062ff] transition-colors flex items-center justify-center gap-1">
+                      View Full Report <ArrowRight className="w-4 h-4" />
+                    </button>
                     <DeleteBomButton
                       bomId={bom.id} bomName={bom.name}
                       redirectTo={null} variant="ghost" label="Delete"
@@ -446,12 +458,9 @@ export default function DashboardContent() {
     router.push(dashboardUrl(next))
   }
 
-  // Drop legacy ?bom= links — detail view removed
-  useEffect(() => {
-    if (searchParams.get('bom')) {
-      router.replace(dashboardUrl(page))
-    }
-  }, [searchParams, page, router])
+  const viewBom = (id: string) => {
+    router.push(`/bom/${encodeURIComponent(id)}`)
+  }
 
   // Load BOMs
   useEffect(() => {
@@ -727,10 +736,12 @@ export default function DashboardContent() {
             boms={boms} loading={loading}
             goToBoms={() => setPage('boms')}
             goToUpload={openUpload}
+            onViewBom={viewBom}
           />
         ) : page === 'boms' ? (
           <BomsPage
             boms={boms} loading={loading}
+            onViewBom={viewBom}
             onDelete={id => setBoms(prev => prev.filter(b => b.id !== id))}
             onUpload={openUpload}
           />
