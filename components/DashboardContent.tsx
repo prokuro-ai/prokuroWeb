@@ -437,7 +437,7 @@ type Page = 'dashboard' | 'boms' | 'alerts'
 
 export default function DashboardContent() {
   const [, navigate]   = useLocation()
-  const { user, loading, refresh } = useAuth()
+  const { user, loading: authLoading, refresh } = useAuth()
   const [boms, setBoms]   = useState<BomSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage]   = useState<Page>('dashboard')
@@ -448,7 +448,7 @@ export default function DashboardContent() {
 
   // Load BOMs
   useEffect(() => {
-    if (loading) return
+    if (authLoading) return
     let cancelled = false
     setLoading(true)
     listBoms()
@@ -456,7 +456,7 @@ export default function DashboardContent() {
       .catch(() => { /* API not yet configured */ })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [loading])
+  }, [authLoading])
 
   // Click-outside for dropdowns
   useEffect(() => {
