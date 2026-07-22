@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import {
   AlertTriangle,
   TrendingDown,
@@ -20,6 +20,7 @@ import {
   Check,
 } from 'lucide-react'
 import { MarketingAuthActions } from '@/components/UserMenu'
+import { AuthEntryLink } from '@/components/AuthEntryLink'
 import ProkuroBrandLink from '@/components/ProkuroBrandLink'
 
 function UploadBomIcon({ size = 28 }: { size?: number }) {
@@ -77,44 +78,6 @@ function RiskPlanIcon({ size = 28 }: { size?: number }) {
     </svg>
   )
 }
-
-const GRAPH_NODES = [
-  { id: 1, x: 18, y: 28, type: 'bom', label: 'STM32F4' },
-  { id: 2, x: 46, y: 12, type: 'distributor', label: 'Digi-Key' },
-  { id: 3, x: 78, y: 22, type: 'mfg', label: 'STMicro' },
-  { id: 4, x: 86, y: 56, type: 'distributor', label: 'Mouser' },
-  { id: 5, x: 56, y: 84, type: 'distributor', label: 'Avnet' },
-  { id: 6, x: 24, y: 72, type: 'bom', label: 'MAX3232' },
-  { id: 7, x: 8, y: 50, type: 'bom', label: 'LM317' },
-  { id: 8, x: 50, y: 46, type: 'core', label: 'Prokuro' },
-  { id: 9, x: 82, y: 88, type: 'mfg', label: 'TI' },
-]
-
-const GRAPH_EDGES = [
-  { source: 1, target: 8 },
-  { source: 8, target: 2 },
-  { source: 6, target: 8 },
-  { source: 8, target: 4 },
-  { source: 7, target: 8 },
-  { source: 8, target: 5 },
-  { source: 2, target: 3 },
-  { source: 4, target: 9 },
-  { source: 5, target: 9 },
-]
-
-const RISK_CALLOUTS: Record<number, { mpn: string; risk: number; stock: string; alt: string }> = {
-  1: { mpn: 'STM32F405', risk: 8.2, stock: '0 units', alt: 'GD32F4' },
-  2: { mpn: 'TPS54331DR', risk: 3.1, stock: '4,820 units', alt: 'TPS54331' },
-  3: { mpn: 'STM32H743ZI', risk: 6.4, stock: '96 units', alt: 'STM32H750' },
-  4: { mpn: 'ATMEGA328P-PU', risk: 4.8, stock: '1,240 units', alt: 'ATMEGA328PB' },
-  5: { mpn: 'LPC1768FBD100', risk: 5.9, stock: '210 units', alt: 'LPC1769FBD100' },
-  6: { mpn: 'MAX3232', risk: 6.7, stock: '112 units', alt: 'SP3232E' },
-  7: { mpn: 'LM317', risk: 7.4, stock: '48 units', alt: 'LM317BST' },
-  9: { mpn: 'LM358P', risk: 5.2, stock: '860 units', alt: 'LM358AP' },
-}
-
-const EDGE_CYCLE_MS = 1500
-const PULSE_ARRIVAL_MS = 750
 
 const PROBLEM_STATS = [
   { value: '15–25%', label: 'Higher total BOM cost from poor sourcing data and part mismatches', source: 'AGS Devices' },
@@ -250,124 +213,6 @@ const LOGOS = [
   { src: '/images/logos/Cisco_logo_blue_2016.svg.png', alt: 'Cisco' },
 ]
 
-function DataGraphVisual() {
-  const [activeEdge, setActiveEdge] = useState(0)
-  const [litNodeId, setLitNodeId] = useState<number | null>(null)
-  const [activeCalloutNode, setActiveCalloutNode] = useState(1)
-  const shouldReduceMotion = useReducedMotion()
-
-  useEffect(() => {
-    if (shouldReduceMotion) return
-    const interval = setInterval(() => {
-      setActiveEdge((prev) => (prev + 1) % GRAPH_EDGES.length)
-    }, EDGE_CYCLE_MS)
-    return () => clearInterval(interval)
-  }, [shouldReduceMotion])
-
-  useEffect(() => {
-    if (shouldReduceMotion) return
-    setLitNodeId(null)
-    const edge = GRAPH_EDGES[activeEdge]
-    const timer = setTimeout(() => {
-      setLitNodeId(edge.target)
-      const calloutNodeId = [edge.target, edge.source].find((id) => RISK_CALLOUTS[id] !== undefined)
-      if (calloutNodeId !== undefined) setActiveCalloutNode(calloutNodeId)
-    }, PULSE_ARRIVAL_MS)
-    return () => clearTimeout(timer)
-  }, [activeEdge, shouldReduceMotion])
-
-  const callout = RISK_CALLOUTS[activeCalloutNode]
-
-  return (
-    <div className="data-graph">
-      <div className="data-graph__grid" aria-hidden="true" />
-      <svg className="data-graph__edges" aria-hidden="true">
-        {GRAPH_EDGES.map((edge, idx) => {
-          const sourceNode = GRAPH_NODES.find((n) => n.id === edge.source)!
-          const targetNode = GRAPH_NODES.find((n) => n.id === edge.target)!
-          const isActive = activeEdge === idx
-          return (
-            <g key={`edge-${idx}`}>
-              <line
-                x1={`${sourceNode.x}%`}
-                y1={`${sourceNode.y}%`}
-                x2={`${targetNode.x}%`}
-                y2={`${targetNode.y}%`}
-                stroke="#e7ecf5"
-                strokeWidth={1.5}
-              />
-              {!shouldReduceMotion && (
-                <motion.line
-                  x1={`${sourceNode.x}%`}
-                  y1={`${sourceNode.y}%`}
-                  x2={`${targetNode.x}%`}
-                  y2={`${targetNode.y}%`}
-                  stroke="var(--color-primary)"
-                  strokeWidth={2}
-                  initial={{ pathLength: 0, opacity: 0 }}
-                  animate={{ pathLength: isActive ? [0, 1] : 0, opacity: isActive ? [0, 1, 0] : 0 }}
-                  transition={{ duration: 1.5, ease: 'easeInOut', times: [0, 0.5, 1] }}
-                />
-              )}
-            </g>
-          )
-        })}
-      </svg>
-
-      {GRAPH_NODES.map((node) => {
-        const isCore = node.type === 'core'
-        const isActive = !shouldReduceMotion && litNodeId === node.id
-        return (
-          <motion.div
-            key={node.id}
-            className={`data-graph__node${isCore ? ' data-graph__node--core' : ''}${isActive ? ' data-graph__node--active' : ''}`}
-            style={{ left: `${node.x}%`, top: `${node.y}%` }}
-            animate={shouldReduceMotion ? undefined : { y: [0, -5, 0] }}
-            transition={{ duration: 4 + (node.id % 3), repeat: Infinity, ease: 'easeInOut', delay: node.id * 0.15 }}
-          >
-            <span className="data-graph__node-label">{node.label}</span>
-          </motion.div>
-        )
-      })}
-
-      <div className="data-graph__callout-anchor">
-        <motion.div
-          className="data-graph__callout"
-          initial={shouldReduceMotion ? undefined : { opacity: 0, y: 10, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.55, ease: 'easeOut' }}
-        >
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={callout.mpn}
-              initial={shouldReduceMotion ? undefined : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={shouldReduceMotion ? undefined : { opacity: 0 }}
-              transition={{ duration: 0.4, ease: 'easeInOut' }}
-            >
-              <div className="risk-card__row">
-                <span>{callout.mpn}</span>
-                <span className="risk-pill risk-pill--high">Risk {callout.risk}</span>
-              </div>
-              <div className="data-graph__callout-divider" />
-              <div className="data-graph__callout-line">
-                <span>Stock depth</span>
-                <span className="data-graph__callout-value data-graph__callout-value--danger">{callout.stock}</span>
-              </div>
-              <div className="data-graph__callout-line">
-                <span>Alt matched</span>
-                <span className="data-graph__callout-value data-graph__callout-value--success">
-                  {callout.alt} <ArrowRight size={12} />
-                </span>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-        </motion.div>
-      </div>
-    </div>
-  )
-}
-
 function Reveal({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
   const shouldReduceMotion = useReducedMotion()
   return (
@@ -461,22 +306,13 @@ export default function LandingPage() {
                 Prokuro turns your bill of materials into a plan of action: every part scored for lifecycle, availability, and tariff risk — and a vetted alternate ready for each one that needs it.
               </p>
               <div className="hero__cta">
-                <Link className="btn btn--primary" href="/login">
+                <AuthEntryLink className="btn btn--primary">
                   Explore the product
-                </Link>
+                </AuthEntryLink>
                 <a className="btn btn--ghost" href="#waitlist" onClick={openWaitlistModal}>
                   See Demo
                 </a>
               </div>
-            </motion.div>
-            <motion.div
-              className="hero__visual"
-              aria-hidden="true"
-              initial={{ opacity: 0, y: 20, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.7, delay: 0.15, ease: 'easeOut' }}
-            >
-              <DataGraphVisual />
             </motion.div>
           </div>
         </section>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import AppLayout from '@/components/AppLayout'
+import AppShell from '@/components/app/AppShell'
 import { useAuth } from '@/components/AuthProvider'
 import UserAvatar from '@/components/UserAvatar'
 import { displayNameForUser, initialsForUser, updateProfile } from '@/lib/auth'
@@ -130,19 +130,19 @@ export default function AccountPage() {
 
   if (loading) {
     return (
-      <AppLayout>
+      <AppShell>
         <div className="flex flex-1 items-center justify-center text-[13px] text-[#7a8598]">Loading…</div>
-      </AppLayout>
+      </AppShell>
     )
   }
 
   if (!user) {
     return (
-      <AppLayout>
+      <AppShell>
         <div className="flex flex-1 items-center justify-center text-[13px] text-[#7a8598]">
           Sign in to manage your profile.
         </div>
-      </AppLayout>
+      </AppShell>
     )
   }
 
@@ -151,7 +151,7 @@ export default function AccountPage() {
   const companyLabel = user.company.trim() || 'Your workspace'
 
   return (
-    <AppLayout>
+    <AppShell>
       <div className="flex h-14 flex-shrink-0 items-center border-b border-[#d6deea] bg-white px-6">
         <h1 className="text-[15px] font-semibold text-[#0f1b2d]">Settings</h1>
       </div>
@@ -278,6 +278,6 @@ export default function AccountPage() {
           </div>
         </div>
       </div>
-    </AppLayout>
+    </AppShell>
   )
 }

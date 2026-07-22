@@ -36,9 +36,17 @@ function isParseResult(body: unknown): body is ParseResult {
   return typeof candidate.mapping_confidence === 'number' && Array.isArray(candidate.lines) && typeof candidate.source_filename === 'string'
 }
 
+async function readJsonBody(res: Response): Promise<unknown> {
+  try {
+    return await res.json()
+  } catch {
+    throw new Error(res.ok ? 'Invalid response from server' : `HTTP ${res.status}: Could not reach backend service`)
+  }
+}
+
 export async function parseFile(file: File): Promise<ParseResult> {
   const res = await postFile('/api/parse', file)
-  const body: unknown = await res.json()
+  const body: unknown = await readJsonBody(res)
   if (res.ok) return body as ParseResult
 
   if (res.status === 422 && isParseResult(body)) return body
@@ -48,7 +56,7 @@ export async function parseFile(file: File): Promise<ParseResult> {
 
 export async function analyzeFile(file: File): Promise<AnalyzeResult> {
   const res = await postFile('/api/analyze', file)
-  const body: unknown = await res.json()
+  const body: unknown = await readJsonBody(res)
   if (!res.ok) throw new Error(await readErrorMessage(res, body))
   return body as AnalyzeResult
 }
@@ -62,14 +70,14 @@ export async function listBoms(params?: {
   if (params?.next_token) qs.set('next_token', params.next_token)
   const query = qs.toString()
   const res = await fetch(`/api/boms${query ? `?${query}` : ''}`, { headers: await authHeaders() })
-  const body: unknown = await res.json()
+  const body: unknown = await readJsonBody(res)
   if (!res.ok) throw new Error(await readErrorMessage(res, body))
   return body as Page<BomSummary>
 }
 
 export async function getBom(id: string): Promise<BomRecord> {
   const res = await fetch(`/api/boms/${encodeURIComponent(id)}`, { headers: await authHeaders() })
-  const body: unknown = await res.json()
+  const body: unknown = await readJsonBody(res)
   if (!res.ok) throw new Error(await readErrorMessage(res, body))
   return body as BomRecord
 }
@@ -96,7 +104,7 @@ export async function saveBom(file: File, analyze: AnalyzeResult, options?: { na
     headers: await authHeaders(),
     body: form,
   })
-  const body: unknown = await res.json()
+  const body: unknown = await readJsonBody(res)
   if (!res.ok) throw new Error(await readErrorMessage(res, body))
   return body as BomSummary
 }

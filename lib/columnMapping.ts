@@ -28,6 +28,11 @@ export function buildColumnMappings(parseResult: ParseResult): ColumnMapping[] {
   })
 }
 
+export function hasMpnMapping(mapping: ColumnMapping[]): boolean {
+  const mpn = mapping.find((item) => item.canonical === 'mpn')
+  return Boolean(mpn?.detectedFrom)
+}
+
 export function extractHeaders(parseResult: ParseResult): string[] {
   const fromMapping = Object.keys(parseResult.column_mapping)
   const fromExtras = parseResult.lines.flatMap((line) => Object.keys(line.extras))

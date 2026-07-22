@@ -349,12 +349,6 @@ h3 {
   margin: 0 0 var(--space-lg);
 }
 
-.hero__visual {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-}
-
 .hero__subheadline {
   max-width: 58ch;
   font-size: 18px;
@@ -401,131 +395,6 @@ h3 {
 .risk-pill--high {
   background: rgb(255 77 77 / 12%);
   color: #c62828;
-}
-
-.data-graph {
-  position: relative;
-  width: 100%;
-  height: 500px;
-  border: 1px solid rgb(214 222 234 / 55%);
-  background: linear-gradient(180deg, #fcfdff, #f5f8fc);
-  border-radius: 20px;
-  box-shadow: 0 30px 60px -30px rgb(15 27 45 / 18%);
-  overflow: hidden;
-}
-
-.data-graph__grid {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.5;
-  background-image:
-    linear-gradient(rgb(15 27 45 / 4%) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(15 27 45 / 4%) 1px, transparent 1px);
-  background-size: 32px 32px;
-}
-
-.data-graph__edges {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.data-graph__node {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  margin-left: -5px;
-  margin-top: -5px;
-  border-radius: 999px;
-  background: #d7dfec;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
-}
-
-.data-graph__node--active {
-  background: var(--color-primary);
-  box-shadow: 0 0 0 5px rgb(0 98 255 / 18%);
-  transform: scale(1.15);
-}
-
-.data-graph__node--core.data-graph__node--active {
-  box-shadow: 0 0 0 10px rgb(0 98 255 / 26%);
-  transform: scale(1.1);
-}
-
-.data-graph__node--core {
-  width: 18px;
-  height: 18px;
-  margin-left: -9px;
-  margin-top: -9px;
-  background: var(--color-primary);
-  box-shadow: 0 0 0 7px rgb(0 98 255 / 16%), 0 6px 16px -4px rgb(0 98 255 / 55%);
-}
-
-.data-graph__node-label {
-  position: absolute;
-  top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--color-ink-subtle);
-}
-
-.data-graph__callout-anchor {
-  position: absolute;
-  left: 5%;
-  top: 64%;
-  width: 280px;
-  height: 108px;
-  z-index: 20;
-}
-
-.data-graph__callout {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid rgb(214 222 234 / 45%);
-  background: rgb(255 255 255 / 32%);
-  border-radius: 12px;
-}
-
-.data-graph__callout-divider {
-  height: 1px;
-  background: var(--color-hairline);
-}
-
-.data-graph__callout-line {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 12px;
-  color: var(--color-ink-muted);
-}
-
-.data-graph__callout-value {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  font-weight: 600;
-  color: var(--color-ink);
-}
-
-.data-graph__callout-value--danger {
-  color: #c62828;
-}
-
-.data-graph__callout-value--success {
-  color: #1a7f4e;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -796,35 +665,6 @@ body.modal-open {
   overflow: hidden;
 }
 
-.modal__dialog--upload {
-  width: 70vw;
-  height: 80vh;
-  max-width: calc(100% - 48px);
-  max-height: calc(100% - 48px);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.modal__dialog--upload .modal__body {
-  flex: 1;
-  padding: var(--space-lg);
-  display: flex;
-  flex-direction: column;
-}
-
-.modal__dialog--upload .upload-dropzone-layout {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  min-height: 0;
-}
-
-.modal__dialog--upload .upload-dropzone-target {
-  flex: 1;
-  min-height: 280px;
-}
-
 .modal__subtitle {
   margin: 2px 0 0;
   font-size: 13px;
@@ -845,7 +685,6 @@ body.modal-open {
   border-top: 1px solid var(--color-hairline);
 }
 
-/* Standalone dropzone target — used on the full-page /upload route (not inside .modal__dialog--upload) */
 .upload-dropzone-target {
   min-height: 240px;
 }
@@ -1356,10 +1195,6 @@ body.modal-open {
 }
 
 @media (min-width: 860px) {
-  .hero__grid {
-    grid-template-columns: 1.1fr 0.9fr;
-  }
-
   .split-panel {
     grid-template-columns: 1.05fr 0.95fr;
   }

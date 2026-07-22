@@ -16,7 +16,6 @@ interface BomUploadDropzoneProps {
   onFileSelected: (file: File) => void
   parsing?: boolean
   disabled?: boolean
-  variant?: 'modal' | 'full'
   selectedFile?: File | null
   onClearFile?: () => void
   validationError?: string | null
@@ -33,18 +32,16 @@ export default function BomUploadDropzone({
   onFileSelected,
   parsing = false,
   disabled = false,
-  variant = 'modal',
   selectedFile = null,
   onClearFile,
   validationError = null,
-  showInfoPanel,
+  showInfoPanel = false,
 }: BomUploadDropzoneProps) {
   const [dragOver, setDragOver] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const isInteractive = !disabled && !parsing
-  const displayInfoPanel = showInfoPanel ?? variant === 'modal'
   const displayError = validationError ?? localError
 
   const validateAndSelect = useCallback(
@@ -116,7 +113,7 @@ export default function BomUploadDropzone({
   }
 
   return (
-    <div className={variant === 'modal' ? 'upload-dropzone-layout' : 'space-y-4'}>
+    <div className="upload-dropzone-layout">
       {displayError && <div className="upload-error-banner">{displayError}</div>}
 
       <div
@@ -147,16 +144,16 @@ export default function BomUploadDropzone({
         {dragOver ? (
           <DropOverContent />
         ) : (
-          <IdleContent variant={variant} />
+          <IdleContent />
         )}
       </div>
 
-      {displayInfoPanel && <InfoPanel />}
+      {showInfoPanel && <InfoPanel />}
     </div>
   )
 }
 
-function IdleContent({ variant }: { variant: 'modal' | 'full' }) {
+function IdleContent() {
   return (
     <>
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#eef4ff]">
@@ -171,9 +168,7 @@ function IdleContent({ variant }: { variant: 'modal' | 'full' }) {
           </span>
         ))}
       </div>
-      {variant === 'modal' && (
-        <p className="mt-3 text-[11px] text-ink-tertiary">Any column format. Prokuro auto-detects MPN, Qty, Ref, Manufacturer.</p>
-      )}
+      <p className="mt-3 text-[11px] text-ink-tertiary">Any column format. Prokuro auto-detects MPN, Qty, Ref, Manufacturer.</p>
     </>
   )
 }

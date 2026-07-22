@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import ConfirmEmailForm from '@/components/ConfirmEmailForm'
 import { useAuth } from '@/components/AuthProvider'
 import AuthLayout from '@/components/AuthLayout'
@@ -12,12 +12,19 @@ import { isEmailConfirmationRequired, mapAuthError } from '@/lib/auth-errors'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { refresh } = useAuth()
+  const { user, loading: authLoading, refresh } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmEmail, setConfirmEmail] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (authLoading) return
+    if (user) router.replace('/dashboard')
+  }, [authLoading, user, router])
+
+  if (authLoading || user) return null
 
   const finishSignIn = async () => {
     await refresh()

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
+import { AuthEntryLink } from '@/components/AuthEntryLink'
 import UserAvatar from '@/components/UserAvatar'
 import { displayNameForUser, initialsForUser, signOut } from '@/lib/auth'
 
@@ -96,25 +97,6 @@ export default function UserMenu() {
   )
 }
 
-export function AuthHeaderActions() {
-  const { user, loading } = useAuth()
-
-  if (loading) return null
-
-  if (user) return <UserMenu />
-
-  return (
-    <div className="flex items-center gap-2">
-      <Link href="/login" className="rounded-lg px-3 py-1.5 text-[12px] font-medium text-[#4f5d73] transition-colors hover:bg-[#f4f6f9] hover:text-[#0f1b2d]">
-        Sign in
-      </Link>
-      <Link href="/signup" className="rounded-lg bg-[#0062ff] px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-[#0050e6]">
-        Start free trial
-      </Link>
-    </div>
-  )
-}
-
 export function MarketingAuthActions() {
   const { user, loading } = useAuth()
 
@@ -133,15 +115,15 @@ export function MarketingAuthActions() {
 
   return (
     <div className="nav-actions--signed-out flex items-center gap-4">
-      <Link href="/login" className="nav-text-link">
+      <AuthEntryLink className="nav-text-link">
         Login
-      </Link>
+      </AuthEntryLink>
       <a href="#company" className="nav-text-link">
         Contact Us
       </a>
-      <Link className="btn btn--primary btn--nav" href="/login">
+      <AuthEntryLink className="btn btn--primary btn--nav">
         Try Prokuro
-      </Link>
+      </AuthEntryLink>
     </div>
   )
 }

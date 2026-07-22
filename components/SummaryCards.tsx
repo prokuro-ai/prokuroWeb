@@ -1,24 +1,7 @@
-import type { AnalyzeResult, AnalyzeSummary, ParseResult } from '@/lib/types'
-import { ConfidenceBadge } from './StatusBadge'
-
-interface ParseSummaryProps {
-  result: ParseResult
-}
+import type { AnalyzeResult, AnalyzeSummary } from '@/lib/types'
 
 interface AnalyzeSummaryProps {
   result: AnalyzeResult
-}
-
-export function ParseSummaryCards({ result }: ParseSummaryProps) {
-  const { stats, mapping_confidence, warnings } = result
-  return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <MetricCard label="Confidence" value={<ConfidenceBadge value={mapping_confidence} />} />
-      <MetricCard label="Total rows" value={stats.total_rows} />
-      <MetricCard label="Parsed" value={stats.parsed_rows} accent />
-      <MetricCard label="Warnings" value={warnings.length} dimmed={warnings.length === 0} />
-    </div>
-  )
 }
 
 export function AnalyzeSummaryCards({ result }: AnalyzeSummaryProps) {
