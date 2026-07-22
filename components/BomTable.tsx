@@ -3,11 +3,11 @@ import { hasTariffData } from '@/lib/risk'
 import RiskBadge from './RiskBadge'
 import StatusBadge from './StatusBadge'
 
-function formatTopSellers(sellers: SellerOffer[]): string {
-  if (sellers.length === 0) return ''
+function formatTopSellers(sellers: SellerOffer[] | null | undefined): string {
+  if (!sellers?.length) return ''
   return sellers
     .slice(0, 3)
-    .map((s) => `${s.name} (${s.inventory_level.toLocaleString()})`)
+    .map((s) => `${s.name} (${(s.inventory_level ?? 0).toLocaleString()})`)
     .join(', ')
 }
 
