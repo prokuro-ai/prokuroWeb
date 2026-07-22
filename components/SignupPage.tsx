@@ -1,7 +1,9 @@
 'use client'
 
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+
+
+import { Link, useLocation } from '@/lib/navigation'
+
 import { useState } from 'react'
 import ConfirmEmailForm from '@/components/ConfirmEmailForm'
 import { useAuth } from '@/components/AuthProvider'
@@ -11,7 +13,7 @@ import { normalizeEmail, signUp } from '@/lib/auth'
 import { mapAuthError } from '@/lib/auth-errors'
 
 export default function SignupPage() {
-  const router = useRouter()
+  const [, navigate] = useLocation()
   const { refresh } = useAuth()
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', company: '', password: '' })
   const [loading, setLoading] = useState(false)
@@ -23,7 +25,7 @@ export default function SignupPage() {
 
   const finishSignUp = async () => {
     await refresh()
-    router.push('/dashboard')
+    navigate('/dashboard')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

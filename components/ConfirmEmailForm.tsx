@@ -1,5 +1,7 @@
 'use client'
 
+
+
 import { useState } from 'react'
 import { confirmAccount } from '@/lib/auth'
 import { mapAuthError } from '@/lib/auth-errors'

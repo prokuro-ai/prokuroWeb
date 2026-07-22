@@ -1,4 +1,4 @@
-'use client'
+
 
 import type { AnalyzeResult } from '@/lib/types'
 import { exportAnalyzeResultCsv, exportAnalyzeResultJson } from '@/lib/export'

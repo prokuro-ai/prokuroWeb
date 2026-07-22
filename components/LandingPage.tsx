@@ -1,8 +1,11 @@
 'use client'
 
-import Link from 'next/link'
-import Image from 'next/image'
-import { useEffect, useState } from 'react'
+
+
+import { Link, useLocation } from '@/lib/navigation'
+
+import { useEffect, useRef, useState } from 'react'
+import { useAuth } from '@/components/AuthProvider'
 import { motion, useReducedMotion } from 'framer-motion'
 import {
   AlertTriangle,
@@ -20,7 +23,6 @@ import {
   Check,
 } from 'lucide-react'
 import { MarketingAuthActions } from '@/components/UserMenu'
-import { AuthEntryLink } from '@/components/AuthEntryLink'
 import ProkuroBrandLink from '@/components/ProkuroBrandLink'
 
 function UploadBomIcon({ size = 28 }: { size?: number }) {
@@ -253,7 +255,29 @@ function PricingCta({ tier, onContact }: { tier: (typeof PRICING_TIERS)[number];
 }
 
 export default function LandingPage() {
+  const [, navigate] = useLocation()
+  const { user } = useAuth()
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const navRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    let lastY = window.scrollY
+    const onScroll = () => {
+      const currentY = window.scrollY
+      const nav = navRef.current
+      if (!nav) return
+      if (currentY <= 0) {
+        nav.classList.remove('top-nav--hidden')
+      } else if (currentY > lastY) {
+        nav.classList.add('top-nav--hidden')
+      } else {
+        nav.classList.remove('top-nav--hidden')
+      }
+      lastY = currentY
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   useEffect(() => {
     document.body.classList.toggle('modal-open', isModalOpen)
@@ -275,7 +299,7 @@ export default function LandingPage() {
 
   return (
     <div className="marketing-page">
-      <header className="top-nav" id="top">
+      <header className="top-nav" id="top" ref={navRef}>
         <div className="container top-nav__inner">
           <ProkuroBrandLink variant="marketing" />
           <nav className="nav-links" aria-label="Primary">
@@ -298,22 +322,24 @@ export default function LandingPage() {
             animate={{ opacity: [0.5, 0.85, 0.5], scale: [1, 1.06, 1] }}
             transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
           />
-          <div className="container hero__grid">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }}>
-              <p className="eyebrow">The agentic platform for BOM management</p>
-              <h1>Which parts in your BOM are about to become a problem — and what to order instead.</h1>
-              <p className="hero__subheadline">
-                Prokuro turns your bill of materials into a plan of action: every part scored for lifecycle, availability, and tariff risk — and a vetted alternate ready for each one that needs it.
-              </p>
-              <div className="hero__cta">
-                <AuthEntryLink className="btn btn--primary">
-                  Explore the product
-                </AuthEntryLink>
-                <a className="btn btn--ghost" href="#waitlist" onClick={openWaitlistModal}>
-                  See Demo
-                </a>
-              </div>
-            </motion.div>
+          <div className="container">
+            <div className="hero__centered">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }}>
+                <p className="eyebrow">The agentic platform for BOM management</p>
+                <h1>Which parts in your BOM are about to become a problem — and what to order instead.</h1>
+                <p className="hero__subheadline">
+                  Prokuro turns your bill of materials into a plan of action: every part scored for lifecycle, availability, and tariff risk — and a vetted alternate ready for each one that needs it.
+                </p>
+                <div className="hero__cta">
+                  <button className="btn btn--primary" onClick={() => navigate(user ? '/dashboard' : '/login')}>
+                    Explore the product
+                  </button>
+                  <a className="btn btn--ghost" href="#waitlist" onClick={openWaitlistModal}>
+                    See Demo
+                  </a>
+                </div>
+              </motion.div>
+            </div>
           </div>
         </section>
 
@@ -322,7 +348,7 @@ export default function LandingPage() {
             <p className="built-by__lead">Built by engineers who solved similar problems at:</p>
             <div className="built-by__logos">
               {LOGOS.map((logo) => (
-                <Image
+                <img
                   key={logo.alt}
                   src={logo.src}
                   alt={logo.alt}
@@ -410,7 +436,6 @@ export default function LandingPage() {
                     </div>
                     <h3>{title}</h3>
                     <p>{copy}</p>
-                    {i < 2 && <span className="step-flow-sep" aria-hidden="true" />}
                   </div>
                 ))}
               </div>
@@ -728,9 +753,9 @@ export default function LandingPage() {
               <h2>See what our agents find in your BOM.</h2>
               <p>Book a 20-minute walkthrough with a real BOM — yours or a sample, or explore the plans above and start free.</p>
               <div className="cta-banner__actions">
-                <Link className="btn btn--primary" href="/signup">
+                <button className="btn btn--primary" onClick={() => navigate(user ? '/dashboard' : '/signup')}>
                   Start free
-                </Link>
+                </button>
                 <a className="btn btn--ghost" href="#waitlist" onClick={openWaitlistModal}>
                   Book a Demo
                 </a>

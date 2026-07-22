@@ -1,6 +1,9 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useLocation } from '@/lib/navigation'
+
+
+
 import { useState } from 'react'
 import { deleteBom } from '@/lib/api'
 
@@ -29,7 +32,7 @@ export function DeleteBomButton({
   label = 'Delete',
   className = '',
 }: DeleteBomButtonProps) {
-  const router = useRouter()
+  const [, navigate] = useLocation()
   const [deleting, setDeleting] = useState(false)
   const styles = variant === 'ghost' ? btnGhost : btnDanger
 
@@ -40,7 +43,7 @@ export function DeleteBomButton({
     try {
       await deleteBom(bomId)
       onDeleted?.()
-      if (redirectTo) router.push(redirectTo)
+      if (redirectTo) navigate(redirectTo)
     } catch (err) {
       window.alert(err instanceof Error ? err.message : 'Failed to delete BOM')
     } finally {

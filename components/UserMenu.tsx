@@ -1,15 +1,13 @@
 'use client'
 
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { Link, useLocation } from '@/lib/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
-import { AuthEntryLink } from '@/components/AuthEntryLink'
 import UserAvatar from '@/components/UserAvatar'
 import { displayNameForUser, initialsForUser, signOut } from '@/lib/auth'
 
 export default function UserMenu() {
-  const router = useRouter()
+  const [, navigate] = useLocation()
   const { user, refresh } = useAuth()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -81,14 +79,14 @@ export default function UserMenu() {
                 setOpen(false)
                 await signOut()
                 await refresh()
-                router.push('/login')
+                navigate('/login')
               }}
               className="flex w-full items-center gap-3 px-3.5 py-2.5 text-left transition-colors hover:bg-[#f4f6f9]"
             >
               <svg className="h-4 w-4 flex-shrink-0 text-[#98a3b6]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
               </svg>
-              <span className="text-[13px] font-medium text-[#4f5d73]">Sign out</span>
+              <div className="text-[13px] font-medium text-[#da1e28]">Sign out</div>
             </button>
           </div>
         </div>
@@ -97,33 +95,47 @@ export default function UserMenu() {
   )
 }
 
-export function MarketingAuthActions() {
+export function AuthHeaderActions() {
   const { user, loading } = useAuth()
 
   if (loading) return null
 
   if (user) {
-    return (
-      <div className="nav-actions--signed-in flex items-center">
-        <Link className="btn btn--primary" href="/dashboard">
-          Dashboard
-        </Link>
-        <UserMenu />
-      </div>
-    )
+    return <UserMenu />
   }
 
   return (
-    <div className="nav-actions--signed-out flex items-center gap-4">
-      <AuthEntryLink className="nav-text-link">
-        Login
-      </AuthEntryLink>
-      <a href="#company" className="nav-text-link">
-        Contact Us
-      </a>
-      <AuthEntryLink className="btn btn--primary btn--nav">
-        Try Prokuro
-      </AuthEntryLink>
+    <div className="flex items-center gap-2">
+      <Link href="/login" className="text-[13px] font-medium text-[#4f5d73] transition-colors hover:text-[#0f1b2d]">
+        Sign in
+      </Link>
+      <Link
+        href="/signup"
+        className="rounded-md bg-[#0062ff] px-3 py-1.5 text-[13px] font-medium text-white transition-colors hover:bg-[#0050e6]"
+      >
+        Get started
+      </Link>
     </div>
+  )
+}
+
+export function MarketingAuthActions() {
+  const { user, loading } = useAuth()
+  const [, navigate] = useLocation()
+
+  if (loading) return null
+
+  return (
+    <>
+      <Link href="/login" className="nav-text-link">
+        Sign in
+      </Link>
+      <button
+        className="btn btn--primary btn--nav"
+        onClick={() => navigate(user ? '/dashboard' : '/login')}
+      >
+        Try Prokuro
+      </button>
+    </>
   )
 }

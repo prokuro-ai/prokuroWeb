@@ -14,7 +14,6 @@ const AVAILABILITY: Record<string, { label: string; cls: string }> = {
   error: { label: 'Lookup failed', cls: 'bg-surface-2 text-ink-subtle border-hairline' },
   nomatch: { label: 'No Match', cls: 'bg-surface-2 text-ink-subtle border-hairline' },
   longlead: { label: 'Long Lead', cls: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
-  pending: { label: 'Pending', cls: 'bg-amber-100 text-amber-700 border-amber-300' },
 }
 
 const LIFECYCLE: Record<string, { label: string; cls: string }> = {
@@ -32,7 +31,6 @@ const MATCH: Record<string, { label: string; cls: string }> = {
   matched: { label: 'Matched', cls: 'bg-blue-100 text-blue-700 border-blue-300' },
   nompn: { label: 'No MPN', cls: 'bg-surface-2 text-ink-subtle border-hairline' },
   notfound: { label: 'Not Found', cls: 'bg-surface-2 text-ink-tertiary border-hairline' },
-  pending: { label: 'Pending', cls: 'bg-amber-100 text-amber-700 border-amber-300' },
 }
 
 export default function StatusBadge({ status, type = 'availability' }: StatusBadgeProps) {

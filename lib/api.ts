@@ -93,10 +93,15 @@ export async function deleteBom(id: string): Promise<void> {
   throw new Error(await readErrorMessage(res, body))
 }
 
-export async function saveBom(file: File, analyze: AnalyzeResult, options?: { name?: string }): Promise<BomSummary> {
+export async function saveBom(
+  file: File,
+  analyze: AnalyzeResult,
+  options?: { name?: string; parse?: ParseResult | null },
+): Promise<BomSummary> {
   const form = new FormData()
   form.append('file', file)
   form.append('analyze', JSON.stringify(analyze))
+  if (options?.parse) form.append('parse', JSON.stringify(options.parse))
   if (options?.name) form.append('name', options.name)
 
   const res = await fetch('/api/boms', {

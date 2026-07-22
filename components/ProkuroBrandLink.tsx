@@ -1,17 +1,15 @@
 'use client'
 
-import Link from 'next/link'
+import { Link } from '@/lib/navigation'
 import { useAuth } from '@/components/AuthProvider'
 
-type BrandVariant = 'marketing' | 'app' | 'auth'
-
 interface ProkuroBrandLinkProps {
-  variant?: BrandVariant
+  variant?: 'marketing' | 'auth' | 'app'
 }
 
 export default function ProkuroBrandLink({ variant = 'app' }: ProkuroBrandLinkProps) {
   const { user } = useAuth()
-  const href = user ? '/dashboard' : variant === 'marketing' ? '#top' : '/'
+  const href = user ? '/dashboard' : '/'
 
   if (variant === 'marketing') {
     if (user) {
