@@ -128,7 +128,7 @@ export function MarketingAuthActions() {
   return (
     <>
       <Link href="/login" className="nav-text-link">
-        Sign in
+        Login
       </Link>
       <button
         className="btn btn--primary btn--nav"

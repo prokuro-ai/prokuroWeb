@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${plexSans.variable} ${jetbrainsMono.variable}`}>
-      <body>
+      <body className={plexSans.className}>
         <Providers>{children}</Providers>
       </body>
     </html>

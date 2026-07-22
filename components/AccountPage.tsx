@@ -86,7 +86,8 @@ export default function AccountPage() {
 
   const handleSignOut = async () => {
     await signOut()
-    navigate('/')
+    await refresh()
+    navigate('/login')
   }
 
   const handleCancel = () => {

@@ -125,7 +125,7 @@ export async function confirmAccount(email: string, code: string, password?: str
 
 export async function signOut() {
   ensureConfigured()
-  await amplifySignOut()
+  await amplifySignOut({ global: false })
 }
 
 export async function updateProfile(input: {

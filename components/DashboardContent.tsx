@@ -437,7 +437,7 @@ type Page = 'dashboard' | 'boms' | 'alerts'
 
 export default function DashboardContent() {
   const [, navigate]   = useLocation()
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading, refresh } = useAuth()
   const [boms, setBoms]   = useState<BomSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage]   = useState<Page>('dashboard')
@@ -448,7 +448,7 @@ export default function DashboardContent() {
 
   // Load BOMs
   useEffect(() => {
-    if (authLoading) return
+    if (loading) return
     let cancelled = false
     setLoading(true)
     listBoms()
@@ -456,7 +456,7 @@ export default function DashboardContent() {
       .catch(() => { /* API not yet configured */ })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [authLoading])
+  }, [loading])
 
   // Click-outside for dropdowns
   useEffect(() => {
@@ -470,7 +470,8 @@ export default function DashboardContent() {
 
   const handleSignOut = async () => {
     await signOut()
-    navigate('/')
+    await refresh()
+    navigate('/login')
   }
 
   // ── Upload modal state ──────────────────────────────────────────────────────
@@ -552,7 +553,7 @@ export default function DashboardContent() {
     }
   }
 
-  const activeAlerts = ALERTS.filter(a => a.severity !== 'info')
+  const newAlertCount = 0
   const initials = user
     ? (user.firstName?.[0] ?? '') + (user.lastName?.[0] ?? '')
     : 'U'
@@ -607,7 +608,7 @@ export default function DashboardContent() {
             <button onClick={() => setBellOpen(o => !o)}
               className={`relative p-1.5 rounded-md transition-colors ${bellOpen ? 'text-[#0062ff] bg-blue-50' : 'text-slate-400 hover:text-slate-600'}`}>
               <Bell className="w-5 h-5" />
-              {activeAlerts.length > 0 && (
+              {newAlertCount > 0 && (
                 <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full border border-white" />
               )}
             </button>
@@ -615,38 +616,13 @@ export default function DashboardContent() {
               <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-lg z-50 flex flex-col overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
                   <span className="text-sm font-bold text-slate-900">Alerts</span>
-                  <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{activeAlerts.length} New</span>
+                  <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{newAlertCount} New</span>
                 </div>
-                <div className="overflow-y-auto" style={{ maxHeight: 340 }}>
-                  <div className="p-3 space-y-2">
-                    {activeAlerts.slice(0, 6).map(alert => {
-                      const isHigh = alert.severity === 'high'; const isMed = alert.severity === 'medium'
-                      const iconBg    = isHigh ? 'bg-red-100'    : isMed ? 'bg-amber-100' : 'bg-blue-100'
-                      const iconColor = isHigh ? 'text-red-600'  : isMed ? 'text-amber-600' : 'text-blue-600'
-                      const Icon = isHigh ? ShieldAlert : isMed ? Clock : Bell
-                      return (
-                        <div key={alert.id} className="flex gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors">
-                          <div className={`mt-0.5 w-7 h-7 rounded-full ${iconBg} flex items-center justify-center shrink-0`}>
-                            <Icon className={`w-3.5 h-3.5 ${iconColor}`} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-0.5">
-                              <span className="font-mono text-xs font-bold text-slate-900 truncate">{alert.part}</span>
-                              <span className="text-[10px] text-slate-400 ml-2 shrink-0">{alert.time}</span>
-                            </div>
-                            <p className="text-xs text-slate-600 leading-snug">{alert.message}</p>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-                <div className="p-3 border-t border-slate-100">
-                  <button
-                    onClick={() => { setPage('alerts'); setBellOpen(false) }}
-                    className="w-full py-2 text-sm font-semibold text-white bg-[#0062ff] hover:bg-blue-700 rounded-lg transition-colors">
-                    View all alerts
-                  </button>
+                <div className="px-4 py-8 text-center">
+                  <p className="text-sm font-medium text-slate-900">Alerts coming soon</p>
+                  <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                    Lifecycle, stock, and tariff alerts will appear here once monitoring is enabled.
+                  </p>
                 </div>
               </div>
             )}
