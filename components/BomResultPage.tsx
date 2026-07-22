@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import AppLayout from '@/components/AppLayout'
-import BomAnalyzeContent from '@/components/BomAnalyzeContent'
+import { AnalyzeTable } from '@/components/BomTable'
 import { DeleteBomButton } from '@/components/DeleteBomButton'
 import { ExportButtons } from '@/components/ExportButtons'
 import { useAuth } from '@/components/AuthProvider'
 import { ConfidenceBadge } from '@/components/StatusBadge'
+import { AnalyzeSummaryCards } from '@/components/SummaryCards'
 import { Link } from '@/lib/navigation'
 import { getBom } from '@/lib/api'
 import type { AnalyzeResult } from '@/lib/types'
@@ -124,6 +125,8 @@ export default function BomResultPage({ id }: BomResultPageProps) {
 
       <div className="flex-1 overflow-auto p-6">
         <div className="mx-auto max-w-7xl space-y-6">
+          <AnalyzeSummaryCards result={result} />
+
           <div className="grid grid-cols-2 gap-4">
             <PlaceholderSection
               title="Alternate Parts"
@@ -135,7 +138,10 @@ export default function BomResultPage({ id }: BomResultPageProps) {
             />
           </div>
 
-          <BomAnalyzeContent result={result} />
+          <section>
+            <h2 className="mb-3 text-[13px] font-semibold text-[#0f1b2d]">BOM Lines</h2>
+            <AnalyzeTable result={result} />
+          </section>
         </div>
       </div>
     </AppLayout>
