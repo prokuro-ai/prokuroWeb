@@ -1,7 +1,8 @@
 {
-  "name": "prokuro-web",
-  "version": "0.1.0",
+  "name": "prokuroweb",
+  "version": "1.0.0",
   "private": true,
+  "description": "Unified Next.js frontend for Prokuro",
   "scripts": {
     "dev": "next dev --port 3010",
     "clean": "rm -rf .next out tsconfig.tsbuildinfo",
@@ -72,5 +73,14 @@
     "eslint": "^9.0.0",
     "eslint-config-next": "^15.3.0",
     "typescript": "^5.7.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prokuro-ai/prokuroWeb.git"
+  },
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/prokuro-ai/prokuroWeb/issues"
+  },
+  "homepage": "https://github.com/prokuro-ai/prokuroWeb#readme"
 }
