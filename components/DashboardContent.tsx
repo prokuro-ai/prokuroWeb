@@ -167,9 +167,9 @@ function PortfolioRisk({ boms }: { boms: BomSummary[] }) {
 
 // ─── Pages ────────────────────────────────────────────────────────────────────
 
-function OverviewPage({ boms, loading, goToBoms, goToUpload, onViewBom }: {
+function OverviewPage({ boms, loading, goToBoms, onViewBom }: {
   boms: BomSummary[], loading: boolean
-  goToBoms: () => void, goToUpload: () => void
+  goToBoms: () => void
   onViewBom: (id: string) => void
 }) {
   const totalLines         = boms.reduce((s, b) => s + b.lineCount, 0)
@@ -205,10 +205,10 @@ function OverviewPage({ boms, loading, goToBoms, goToUpload, onViewBom }: {
       ) : boms.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-64 text-center">
           <p className="text-slate-700 font-medium text-base">No BOMs yet</p>
-          <p className="text-slate-400 text-sm">Upload a BOM to start monitoring risk.</p>
-          <button onClick={goToUpload}
+          <p className="text-slate-400 text-sm">Upload a BOM from the BOMs tab to start monitoring risk.</p>
+          <button onClick={goToBoms}
             className="mt-4 bg-[#0062ff] text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 hover:bg-blue-700 transition-colors">
-            <UploadCloud className="w-4 h-4" /> Upload your first BOM
+            Go to BOMs <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       ) : (
@@ -616,17 +616,13 @@ export default function DashboardContent() {
           </nav>
         </div>
 
-        {/* Right: search, upload, bell, avatar */}
+        {/* Right: search, bell, avatar */}
         <div className="flex items-center gap-3">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input type="text" placeholder="Search parts, BOMs…"
               className="pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#0062ff] w-56" />
           </div>
-          <button onClick={openUpload}
-            className="bg-[#0062ff] hover:bg-blue-700 text-white px-3.5 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors shadow-sm">
-            <UploadCloud className="w-4 h-4" /> Upload BOM
-          </button>
 
           {/* Bell */}
           <div className="relative" ref={bellRef}>
@@ -735,7 +731,6 @@ export default function DashboardContent() {
           <OverviewPage
             boms={boms} loading={loading}
             goToBoms={() => setPage('boms')}
-            goToUpload={openUpload}
             onViewBom={viewBom}
           />
         ) : page === 'boms' ? (
