@@ -1,6 +1,6 @@
 interface StatusBadgeProps {
   status: string
-  type?: 'availability' | 'lifecycle' | 'match' | 'confidence'
+  type?: 'availability' | 'lifecycle' | 'match'
 }
 
 function normalizeKey(status: string): string {
@@ -43,11 +43,4 @@ export default function StatusBadge({ status, type = 'availability' }: StatusBad
       {cfg.label}
     </span>
   )
-}
-
-export function ConfidenceBadge({ value }: { value: number }) {
-  const pct = Math.round(value * 100)
-  const cls = pct >= 70 ? 'bg-green-100 text-green-700 border-green-300' : pct >= 40 ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-red-100 text-red-700 border-red-300'
-
-  return <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[12px] font-medium ${cls}`}>{pct}% confidence</span>
 }

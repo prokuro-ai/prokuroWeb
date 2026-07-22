@@ -4,19 +4,16 @@ import { useEffect, useState } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import DashboardShell from '@/components/DashboardShell'
-import { DeleteBomButton } from '@/components/DeleteBomButton'
 import { useAuth } from '@/components/AuthProvider'
 import { Link } from '@/lib/navigation'
 import { getBom, refreshBom } from '@/lib/api'
 import { formatUploadedAt } from '@/lib/format'
 import type { AnalyzeResult, AnalyzedLine, BomSummary } from '@/lib/types'
 
-function riskBadge(result: AnalyzeResult) {
-  const red = result.summary.red_count ?? 0
-  const yellow = result.summary.yellow_count ?? 0
-  if (red > 0) return { label: 'Critical', cls: 'bg-red-100 text-red-700' }
-  if (yellow > 0) return { label: 'Warning', cls: 'bg-amber-100 text-amber-700' }
-  return { label: 'Healthy', cls: 'bg-emerald-100 text-emerald-700' }
+function isLookupFailed(line: AnalyzedLine): boolean {
+  const avail = line.availability_status?.toLowerCase() ?? ''
+  const match = line.match_status?.toLowerCase() ?? ''
+  return avail === 'pending' || match === 'pending'
 }
 
 function lifecycleBadge(status: string) {
@@ -32,12 +29,22 @@ function lifecycleLabel(status: string) {
   if (s === 'eol' || s === 'discontinued') return 'EOL'
   if (s === 'nrnd') return 'NRND'
   if (s === 'active') return 'Active'
+  if (s === 'unknown' || !s) return 'Unknown'
   return status
 }
 
 function isUrgent(line: AnalyzedLine) {
+  if (isLookupFailed(line)) return false
   const s = line.lifecycle_status.toLowerCase()
   return s === 'eol' || s === 'nrnd' || s === 'discontinued'
+}
+
+function riskBadge(result: AnalyzeResult) {
+  const red = result.summary.red_count ?? 0
+  const yellow = result.summary.yellow_count ?? 0
+  if (red > 0) return { label: 'Critical', cls: 'bg-red-100 text-red-700' }
+  if (yellow > 0) return { label: 'Warning', cls: 'bg-amber-100 text-amber-700' }
+  return { label: 'Healthy', cls: 'bg-emerald-100 text-emerald-700' }
 }
 
 function BomDetailTable({ lines }: { lines: AnalyzedLine[] }) {
@@ -56,7 +63,9 @@ function BomDetailTable({ lines }: { lines: AnalyzedLine[] }) {
         <tbody className="divide-y divide-slate-100">
           {lines.map((line, i) => {
             const urgent = isUrgent(line)
+            const lookupFailed = isLookupFailed(line)
             const leadWeeks = line.factory_lead_days != null ? Math.round(line.factory_lead_days / 7) : null
+            const avail = line.availability_status?.toLowerCase() ?? ''
 
             return (
               <tr key={line.row_index ?? i} className={`hover:bg-slate-50/80 ${urgent ? 'bg-red-50/40' : ''}`}>
@@ -69,15 +78,17 @@ function BomDetailTable({ lines }: { lines: AnalyzedLine[] }) {
                   </span>
                 </td>
                 <td className="px-4 py-3 font-medium">
-                  {line.total_avail === 0 ? (
+                  {lookupFailed ? (
+                    <span className="text-xs text-slate-400">Unknown</span>
+                  ) : avail === 'outofstock' ? (
                     <span className="text-xs font-bold text-red-600">Out of stock</span>
                   ) : (
                     <span className="text-xs text-slate-700">{line.total_avail.toLocaleString()}</span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-xs">
-                  {leadWeeks == null ? (
-                    <span className="font-medium text-red-500">Unknown</span>
+                  {lookupFailed || leadWeeks == null ? (
+                    <span className="text-slate-400">Unknown</span>
                   ) : (
                     <span className={leadWeeks > 30 ? 'font-semibold text-amber-600' : 'text-slate-600'}>{leadWeeks}w</span>
                   )}
@@ -228,8 +239,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
                 type="button"
                 onClick={() => void handleRunAnalysis()}
                 disabled={refreshing}
-                className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-60"
-                style={{ background: 'linear-gradient(135deg, #0062ff 0%, #7c3aed 100%)' }}
+                className="rounded-md bg-[#0062ff] px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {refreshing ? 'Running…' : 'Run Analysis'}
               </button>
@@ -241,13 +251,6 @@ export default function BomResultPage({ id }: BomResultPageProps) {
               >
                 Export
               </button>
-              <DeleteBomButton
-                bomId={id}
-                bomName={displayName}
-                redirectTo="/dashboard?tab=boms"
-                variant="ghost"
-                label="Delete"
-              />
             </div>
           </div>
 

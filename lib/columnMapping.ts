@@ -19,11 +19,10 @@ function detectedHeaderForCanonical(
 
 export function buildColumnMappings(parseResult: ParseResult): ColumnMapping[] {
   const mapping = parseResult.column_mapping
-  const confidence = parseResult.mapping_confidence
 
   return CANONICAL_FIELDS.map(({ canonical, label }) => {
     const detectedFrom = detectedHeaderForCanonical(mapping, canonical)
-    const confirmed = detectedFrom != null && confidence >= 0.4
+    const confirmed = detectedFrom != null
     return { canonical, label, detectedFrom, confirmed }
   })
 }

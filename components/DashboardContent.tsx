@@ -7,6 +7,7 @@ import { useAuth } from '@/components/AuthProvider'
 import { listBoms, analyzeFile, parseFile, saveBom } from '@/lib/api'
 import { signOut } from '@/lib/auth'
 import { DeleteBomButton } from '@/components/DeleteBomButton'
+import BomBulkUploadModal from '@/components/BomBulkUploadModal'
 import BomUploadDropzone from '@/components/BomUploadDropzone'
 import { buildColumnMappings, extractHeaders, hasMpnMapping, previewRows } from '@/lib/columnMapping'
 import type { BomSummary, ColumnMapping, ParseResult } from '@/lib/types'
@@ -14,7 +15,7 @@ import { formatUploadedAt } from '@/lib/format'
 import {
   AlertTriangle, Bell, ChevronRight, FileText, Search,
   ShieldAlert, UploadCloud, CheckCircle, ArrowRight,
-  AlertCircle, Settings, LogOut, X,
+  AlertCircle, Settings, LogOut, X, Files,
 } from 'lucide-react'
 
 // ─── Static alert data ────────────────────────────────────────────────────────
@@ -259,10 +260,43 @@ function OverviewPage({ boms, loading, goToBoms, onViewBom }: {
   )
 }
 
-function BomsPage({ boms, loading, onViewBom, onDelete, onUpload }: {
+function BomsEmptyState({ onUpload, onBulkUpload }: { onUpload: () => void; onBulkUpload: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white px-8 py-16 text-center shadow-sm">
+      <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#eef4ff]">
+        <Files className="h-7 w-7 text-[#0062ff]" />
+      </div>
+      <h3 className="text-lg font-bold text-slate-900">Upload your first BOMs</h3>
+      <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+        Bring in one file with column mapping, or upload your whole portfolio at once — we&apos;ll auto-detect columns
+        and start monitoring risk immediately.
+      </p>
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <button
+          type="button"
+          onClick={onUpload}
+          className="flex items-center gap-2 rounded-lg bg-[#0062ff] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
+        >
+          <UploadCloud className="h-4 w-4" /> Upload one BOM
+        </button>
+        <button
+          type="button"
+          onClick={onBulkUpload}
+          className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
+        >
+          <Files className="h-4 w-4 text-[#0062ff]" /> Upload multiple
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function BomsPage({ boms, loading, onViewBom, onDelete, onUpload, onBulkUpload }: {
   boms: BomSummary[], loading: boolean
   onViewBom: (id: string) => void
-  onDelete: (id: string) => void, onUpload: () => void
+  onDelete: (id: string) => void
+  onUpload: () => void
+  onBulkUpload: () => void
 }) {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('All')
@@ -285,10 +319,22 @@ function BomsPage({ boms, loading, onViewBom, onDelete, onUpload }: {
             {boms.length} BOMs · {boms.reduce((s, b) => s + b.lineCount, 0).toLocaleString()} total lines monitored
           </p>
         </div>
-        <button onClick={onUpload}
-          className="bg-[#0062ff] text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm">
-          <UploadCloud className="w-4 h-4" /> Upload BOM
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onUpload}
+            className="flex items-center gap-2 rounded-md bg-[#0062ff] px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
+          >
+            <UploadCloud className="h-4 w-4" /> Upload BOM
+          </button>
+          <button
+            type="button"
+            onClick={onBulkUpload}
+            className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
+          >
+            <Files className="h-4 w-4 text-[#0062ff]" /> Upload multiple
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center gap-3 mb-6">
@@ -310,6 +356,8 @@ function BomsPage({ boms, loading, onViewBom, onDelete, onUpload }: {
 
       {loading ? (
         <div className="flex items-center justify-center h-48 text-slate-400 text-sm">Loading BOMs…</div>
+      ) : boms.length === 0 ? (
+        <BomsEmptyState onUpload={onUpload} onBulkUpload={onBulkUpload} />
       ) : (
         <>
           <div className="grid grid-cols-2 gap-4">
@@ -497,6 +545,7 @@ export default function DashboardContent() {
 
   // ── Upload modal state ──────────────────────────────────────────────────────
   const [uploadOpen, setUploadOpen]       = useState(false)
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false)
   const [uploadFile, setUploadFile]       = useState<File | null>(null)
   const [uploadStep, setUploadStep]       = useState<'upload' | 'mapping' | 'processing' | 'success'>('upload')
   const [parseResult, setParseResult]     = useState<ParseResult | null>(null)
@@ -508,6 +557,26 @@ export default function DashboardContent() {
   const [uploadError, setUploadError]     = useState<string | null>(null)
   const [parsing, setParsing]             = useState(false)
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const openBulkUpload = () => {
+    setBulkUploadOpen(true)
+  }
+
+  const closeBulkUpload = () => {
+    setBulkUploadOpen(false)
+  }
+
+  const handleBulkComplete = (saved: BomSummary[]) => {
+    if (saved.length === 0) return
+    setBoms((prev) => {
+      const ids = new Set(prev.map((b) => b.id))
+      const merged = [...saved.filter((b) => !ids.has(b.id)), ...prev]
+      return merged
+    })
+    listBoms()
+      .then((result) => setBoms(result.items))
+      .catch(() => { /* keep merged list */ })
+  }
 
   const openUpload = () => {
     setUploadOpen(true)
@@ -748,11 +817,19 @@ export default function DashboardContent() {
             onViewBom={viewBom}
             onDelete={id => setBoms(prev => prev.filter(b => b.id !== id))}
             onUpload={openUpload}
+            onBulkUpload={openBulkUpload}
           />
         ) : (
           <AlertsPage />
         )}
       </div>
+
+      <BomBulkUploadModal
+        open={bulkUploadOpen}
+        onClose={closeBulkUpload}
+        onComplete={handleBulkComplete}
+        existingBomCount={boms.length}
+      />
 
       {/* ── Upload modal ── */}
       {uploadOpen && (
@@ -894,7 +971,6 @@ export default function DashboardContent() {
                     ← Back
                   </button>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-slate-400">{Math.round(parseResult.mapping_confidence * 100)}% confidence</span>
                     <button
                       onClick={() => void handleConfirmMapping()}
                       disabled={!hasMpnMapping(mapping)}
