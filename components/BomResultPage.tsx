@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import AppLayout from '@/components/AppLayout'
+import DashboardShell from '@/components/DashboardShell'
 import { AnalyzeTable } from '@/components/BomTable'
 import { DeleteBomButton } from '@/components/DeleteBomButton'
 import { ExportButtons } from '@/components/ExportButtons'
@@ -15,10 +15,10 @@ import type { AnalyzeResult } from '@/lib/types'
 
 function PlaceholderSection({ title, description }: { title: string; description: string }) {
   return (
-    <section className="rounded-xl border border-dashed border-[#d6deea] bg-[#fafbfc] p-5">
-      <h2 className="text-[13px] font-semibold text-[#0f1b2d]">{title}</h2>
-      <p className="mt-1 text-[12px] text-[#7a8598]">{description}</p>
-      <p className="mt-3 text-[11px] font-medium uppercase tracking-wide text-[#98a3b6]">Coming soon</p>
+    <section className="rounded-xl border border-dashed border-hairline bg-canvas p-5">
+      <h2 className="text-[13px] font-semibold text-ink">{title}</h2>
+      <p className="mt-1 text-[12px] text-ink-subtle">{description}</p>
+      <p className="mt-3 text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">Coming soon</p>
     </section>
   )
 }
@@ -27,7 +27,7 @@ function BackToBoms() {
   return (
     <Link
       href="/dashboard?tab=boms"
-      className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-[#d6deea] bg-white text-[#4f5d73] transition-colors hover:border-[#0062ff] hover:text-[#0062ff]"
+      className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-hairline bg-canvas text-ink-muted transition-colors hover:border-primary hover:text-primary"
       aria-label="Back to BOMs"
       title="Back to BOMs"
     >
@@ -83,31 +83,31 @@ export default function BomResultPage({ id }: BomResultPageProps) {
 
   if (!result) {
     return (
-      <AppLayout>
+      <DashboardShell activeTab="boms">
         <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
-          <h1 className="text-[18px] font-semibold text-[#0f1b2d]">{error ? 'Could not load BOM' : 'BOM not found'}</h1>
-          <p className="mt-2 text-[13px] text-[#7a8598]">
+          <h1 className="text-[18px] font-semibold text-ink">{error ? 'Could not load BOM' : 'BOM not found'}</h1>
+          <p className="mt-2 text-[13px] text-ink-subtle">
             {error ?? 'This BOM may not exist in your account, or you may not have access to it.'}
           </p>
           <Link
             href="/dashboard?tab=boms"
-            className="mt-6 rounded-lg bg-[#0062ff] px-4 py-2 text-[13px] font-medium text-white hover:bg-[#0050e6]"
+            className="mt-6 rounded-lg bg-primary px-4 py-2 text-[13px] font-medium text-white hover:bg-primary-hover"
           >
             Back to BOMs
           </Link>
         </div>
-      </AppLayout>
+      </DashboardShell>
     )
   }
 
   return (
-    <AppLayout>
-      <div className="flex h-14 flex-shrink-0 items-center justify-between border-b border-[#d6deea] bg-white px-6">
+    <DashboardShell activeTab="boms">
+      <div className="flex h-14 flex-shrink-0 items-center justify-between border-b border-hairline bg-canvas px-6">
         <div className="flex min-w-0 items-center gap-3">
           <BackToBoms />
-          <h1 className="truncate text-[15px] font-semibold text-[#0f1b2d]">{result.source_filename}</h1>
+          <h1 className="truncate text-[15px] font-semibold text-ink">{result.source_filename}</h1>
           {result.sheet_name && (
-            <span className="rounded border border-[#d6deea] bg-[#f4f6f9] px-2 py-0.5 font-mono text-[11px] text-[#7a8598]">
+            <span className="rounded border border-hairline bg-surface-1 px-2 py-0.5 font-mono text-[11px] text-ink-subtle">
               {result.sheet_name}
             </span>
           )}
@@ -139,11 +139,11 @@ export default function BomResultPage({ id }: BomResultPageProps) {
           </div>
 
           <section>
-            <h2 className="mb-3 text-[13px] font-semibold text-[#0f1b2d]">BOM Lines</h2>
+            <h2 className="mb-3 text-[13px] font-semibold text-ink">BOM Lines</h2>
             <AnalyzeTable result={result} />
           </section>
         </div>
       </div>
-    </AppLayout>
+    </DashboardShell>
   )
 }

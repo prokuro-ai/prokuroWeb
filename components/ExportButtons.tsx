@@ -1,10 +1,8 @@
-
-
 import type { AnalyzeResult } from '@/lib/types'
 import { exportAnalyzeResultCsv, exportAnalyzeResultJson } from '@/lib/export'
 
 const btnSecondary =
-  'inline-flex items-center gap-1.5 rounded-lg border border-[#d6deea] bg-white px-3.5 py-1.5 text-[13px] font-medium text-[#4f5d73] transition-colors hover:bg-[#f4f6f9] hover:text-[#0f1b2d]'
+  'inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-canvas px-3.5 py-1.5 text-[13px] font-medium text-ink-muted transition-colors hover:bg-surface-1 hover:text-ink'
 
 export function ExportButtons({ result }: { result: AnalyzeResult }) {
   return (

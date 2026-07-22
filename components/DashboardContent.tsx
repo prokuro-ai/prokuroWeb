@@ -8,8 +8,9 @@ import { listBoms, analyzeFile, parseFile, saveBom } from '@/lib/api'
 import { signOut } from '@/lib/auth'
 import { DeleteBomButton } from '@/components/DeleteBomButton'
 import BomUploadDropzone from '@/components/BomUploadDropzone'
-import { buildColumnMappings, extractHeaders, previewRows } from '@/lib/columnMapping'
+import { buildColumnMappings, extractHeaders, hasMpnMapping, previewRows } from '@/lib/columnMapping'
 import type { BomSummary, ColumnMapping, ParseResult } from '@/lib/types'
+import { formatUploadedAt } from '@/lib/format'
 import {
   AlertTriangle, Bell, ChevronRight, FileText, Search,
   ShieldAlert, UploadCloud, CheckCircle, ArrowRight,
@@ -240,7 +241,7 @@ function OverviewPage({ boms, loading, goToBoms, onViewBom }: {
                     <td className="px-5 py-4">
                       <span className="text-xs font-bold text-red-600">{bom.atRiskCount} parts</span>
                     </td>
-                    <td className="px-5 py-4 text-slate-500">{bom.uploadedAt}</td>
+                    <td className="px-5 py-4 text-slate-500">{formatUploadedAt(bom.uploadedAt)}</td>
                     <td className="px-5 py-4 text-right">
                       <button onClick={() => onViewBom(bom.id)}
                         className="font-semibold flex items-center gap-1 ml-auto text-[#0062ff] hover:text-blue-700">
@@ -334,7 +335,7 @@ function BomsPage({ boms, loading, onViewBom, onDelete, onUpload }: {
                       <div className="text-xs text-slate-500">At Risk</div>
                     </div>
                     <div>
-                      <div className="text-xs text-slate-400 mt-1">{bom.uploadedAt}</div>
+                      <div className="text-xs text-slate-400 mt-1">{formatUploadedAt(bom.uploadedAt)}</div>
                       <div className="text-xs text-slate-500">Uploaded</div>
                     </div>
                   </div>
@@ -465,14 +466,18 @@ export default function DashboardContent() {
   // Load BOMs
   useEffect(() => {
     if (authLoading) return
+    if (!user) {
+      router.push('/login')
+      return
+    }
     let cancelled = false
     setLoading(true)
     listBoms()
       .then((page) => { if (!cancelled) setBoms(page.items) })
-      .catch(() => { /* API not yet configured */ })
+      .catch(() => { /* keep empty list; banner via upload errors */ })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [authLoading])
+  }, [authLoading, user, router])
 
   // Click-outside for dropdowns
   useEffect(() => {
@@ -557,6 +562,10 @@ export default function DashboardContent() {
 
   const handleConfirmMapping = async () => {
     if (!uploadFile) return
+    if (!hasMpnMapping(mapping)) {
+      setUploadError('Map at least one column to MPN / Part Number before analyzing.')
+      return
+    }
     setUploadStep('processing')
     setProgress(0)
     setUploadError(null)
@@ -886,8 +895,15 @@ export default function DashboardContent() {
                   </button>
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-slate-400">{Math.round(parseResult.mapping_confidence * 100)}% confidence</span>
-                    <button onClick={() => void handleConfirmMapping()}
-                      className="bg-[#0062ff] hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+                    <button
+                      onClick={() => void handleConfirmMapping()}
+                      disabled={!hasMpnMapping(mapping)}
+                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                        hasMpnMapping(mapping)
+                          ? 'bg-brand text-white hover:bg-blue-700'
+                          : 'cursor-not-allowed bg-slate-100 text-slate-400'
+                      }`}
+                    >
                       Confirm & analyze →
                     </button>
                   </div>

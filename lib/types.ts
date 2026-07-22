@@ -1,5 +1,3 @@
-export type Mode = 'parse' | 'analyze'
-
 export interface BomSummary {
   id: string
   name: string
@@ -91,6 +89,7 @@ export interface AnalyzedLine {
   match_status: string
   factory_lead_days: number | null
   total_avail: number
+  /** Optional — gateway may omit when no seller offers are present. */
   top_sellers?: SellerOffer[]
   risk_level?: RiskLevel
   hts_code?: string | null

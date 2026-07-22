@@ -34,9 +34,9 @@ function lineToCsvRow(line: AnalyzedLine): string[] {
     line.availability_status,
     line.lifecycle_status,
     line.match_status,
-    (line.total_avail ?? 0).toString(),
+    line.total_avail.toString(),
     line.factory_lead_days?.toString() ?? '',
-    (line.aml_candidates ?? []).join('; '),
+    line.aml_candidates.join('; '),
     formatTopSellers(line.top_sellers),
   ]
 }

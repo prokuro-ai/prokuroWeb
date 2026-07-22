@@ -4,6 +4,7 @@ import type { AnalyzeResult, BomSummary, ParseResult } from './types'
 export interface BomRecord {
   summary: BomSummary
   analyze: AnalyzeResult
+  parse?: ParseResult | null
 }
 
 export interface Page<T> {

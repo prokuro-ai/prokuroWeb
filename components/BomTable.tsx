@@ -1,4 +1,4 @@
-import type { AnalyzeResult, ParseResult, SellerOffer } from '@/lib/types'
+import type { AnalyzeResult, SellerOffer } from '@/lib/types'
 import { hasTariffData } from '@/lib/risk'
 import RiskBadge from './RiskBadge'
 import StatusBadge from './StatusBadge'
@@ -9,48 +9,6 @@ function formatTopSellers(sellers: SellerOffer[] | null | undefined): string {
     .slice(0, 3)
     .map((s) => `${s.name} (${(s.inventory_level ?? 0).toLocaleString()})`)
     .join(', ')
-}
-
-export function ParseTable({ result }: { result: ParseResult }) {
-  const { lines } = result
-  if (lines.length === 0) return <EmptyTable />
-
-  const extraCols = Array.from(new Set(lines.flatMap((line) => Object.keys(line.extras))))
-
-  return (
-    <TableShell rowCount={lines.length}>
-      <thead>
-        <tr>
-          <Th>Ref</Th>
-          <Th>MPN</Th>
-          <Th>Manufacturer</Th>
-          <Th right>Qty</Th>
-          <Th>Description</Th>
-          <Th>AML</Th>
-          <Th>Footprint</Th>
-          {extraCols.map((column) => (
-            <Th key={column}>{column}</Th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {lines.map((line, i) => (
-          <tr key={line.row_index} className={`border-b border-hairline/60 transition-colors hover:bg-surface-2/45 ${i % 2 === 0 ? 'bg-canvas' : 'bg-surface-1/50'}`}>
-            <Td mono>{line.refdes}</Td>
-            <Td mono highlight>{line.mpn}</Td>
-            <Td>{line.manufacturer}</Td>
-            <Td right mono>{line.quantity?.toString()}</Td>
-            <Td muted>{line.description}</Td>
-            <Td small>{line.aml_candidates?.length ? line.aml_candidates.join(', ') : undefined}</Td>
-            <Td mono small>{line.footprint}</Td>
-            {extraCols.map((column) => (
-              <Td key={column} small>{line.extras[column]}</Td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </TableShell>
-  )
 }
 
 export function AnalyzeTable({ result }: { result: AnalyzeResult }) {
@@ -101,7 +59,7 @@ export function AnalyzeTable({ result }: { result: AnalyzeResult }) {
                 {line.total_duty_pct != null ? line.total_duty_pct.toFixed(1) : undefined}
               </Td>
             )}
-            <Td small>{line.aml_candidates?.length ? line.aml_candidates.join(', ') : undefined}</Td>
+            <Td small>{line.aml_candidates.length > 0 ? line.aml_candidates.join(', ') : undefined}</Td>
             <Td small muted>{formatTopSellers(line.top_sellers) || undefined}</Td>
           </tr>
         ))}

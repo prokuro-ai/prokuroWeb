@@ -66,6 +66,7 @@
   --radius-xl: calc(var(--radius) + 4px);
 
   --color-primary-hover: #0050e6;
+  --color-brand: #0062ff;
   --color-ink: #0f1b2d;
   --color-ink-muted: #4f5d73;
   --color-ink-subtle: #7a8598;

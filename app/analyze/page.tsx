@@ -1,5 +1,5 @@
-import AnalyzerPage from '@/components/AnalyzerPage'
+import { redirect } from 'next/navigation'
 
-export default function AnalyzeRoute() {
-  return <AnalyzerPage />
+export default function AnalyzeRedirect() {
+  redirect('/dashboard?tab=boms')
 }
