@@ -87,7 +87,7 @@ export async function deleteBom(id: string): Promise<void> {
     method: 'DELETE',
     headers: await authHeaders(),
   })
-  if (res.ok) return
+  if (res.ok || res.status === 404) return
 
   const body: unknown = await res.json().catch(() => null)
   throw new Error(await readErrorMessage(res, body))

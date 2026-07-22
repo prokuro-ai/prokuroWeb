@@ -7,12 +7,11 @@ import { useAuth } from '@/components/AuthProvider'
 import { listBoms, analyzeFile, parseFile, saveBom } from '@/lib/api'
 import { signOut } from '@/lib/auth'
 import { DeleteBomButton } from '@/components/DeleteBomButton'
-import BomDetailView from '@/components/BomDetailView'
 import BomUploadDropzone from '@/components/BomUploadDropzone'
 import { buildColumnMappings, extractHeaders, previewRows } from '@/lib/columnMapping'
 import type { BomSummary, ColumnMapping, ParseResult } from '@/lib/types'
 import {
-  AlertTriangle, Bell, ChevronRight, Clock, FileText, Search,
+  AlertTriangle, Bell, ChevronRight, FileText, Search,
   ShieldAlert, UploadCloud, CheckCircle, ArrowRight,
   AlertCircle, Settings, LogOut, X,
 } from 'lucide-react'
@@ -168,9 +167,9 @@ function PortfolioRisk({ boms }: { boms: BomSummary[] }) {
 
 // ─── Pages ────────────────────────────────────────────────────────────────────
 
-function OverviewPage({ boms, loading, goToBoms, goToUpload, openBom }: {
+function OverviewPage({ boms, loading, goToBoms, goToUpload }: {
   boms: BomSummary[], loading: boolean
-  goToBoms: () => void, goToUpload: () => void, openBom: (id: string) => void
+  goToBoms: () => void, goToUpload: () => void
 }) {
   const totalLines         = boms.reduce((s, b) => s + b.lineCount, 0)
   const criticalCount      = boms.filter(b => b.overallRiskScore >= 7).length
@@ -223,7 +222,7 @@ function OverviewPage({ boms, loading, goToBoms, goToUpload, openBom }: {
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
                 <tr>
-                  {['BOM Name', 'At-Risk Parts', 'Last Updated', ''].map(h => (
+                  {['BOM Name', 'At-Risk Parts', 'Last Updated'].map(h => (
                     <th key={h} className="px-5 py-3.5 font-semibold">{h}</th>
                   ))}
                 </tr>
@@ -241,12 +240,6 @@ function OverviewPage({ boms, loading, goToBoms, goToUpload, openBom }: {
                       <span className="text-xs font-bold text-red-600">{bom.atRiskCount} parts</span>
                     </td>
                     <td className="px-5 py-4 text-slate-500">{bom.uploadedAt}</td>
-                    <td className="px-5 py-4 text-right">
-                      <button onClick={() => openBom(bom.id)}
-                        className="font-semibold flex items-center gap-1 ml-auto text-[#0062ff] hover:text-blue-700">
-                        View <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -258,9 +251,9 @@ function OverviewPage({ boms, loading, goToBoms, goToUpload, openBom }: {
   )
 }
 
-function BomsPage({ boms, loading, openBom, onDelete, onUpload }: {
+function BomsPage({ boms, loading, onDelete, onUpload }: {
   boms: BomSummary[], loading: boolean
-  openBom: (id: string) => void, onDelete: (id: string) => void, onUpload: () => void
+  onDelete: (id: string) => void, onUpload: () => void
 }) {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('All')
@@ -337,11 +330,7 @@ function BomsPage({ boms, loading, openBom, onDelete, onUpload }: {
                       <div className="text-xs text-slate-500">Uploaded</div>
                     </div>
                   </div>
-                  <div className="mt-4 flex gap-2">
-                    <button onClick={() => openBom(bom.id)}
-                      className="flex-1 py-2 text-sm font-semibold text-[#0062ff] hover:text-blue-700 border border-slate-200 rounded-lg hover:border-[#0062ff] transition-colors flex items-center justify-center gap-1">
-                      View Full Report <ArrowRight className="w-4 h-4" />
-                    </button>
+                  <div className="mt-4 flex justify-end">
                     <DeleteBomButton
                       bomId={bom.id} bomName={bom.name}
                       redirectTo={null} variant="ghost" label="Delete"
@@ -450,26 +439,19 @@ export default function DashboardContent() {
 
   const tabParam = searchParams.get('tab')
   const page: Page = tabParam === 'boms' || tabParam === 'alerts' ? tabParam : 'dashboard'
-  const selectedBomId = searchParams.get('bom')
 
-  const dashboardUrl = (tab: Page, bom?: string | null) => {
-    const params = new URLSearchParams()
-    params.set('tab', tab)
-    if (bom) params.set('bom', bom)
-    return `/dashboard?${params.toString()}`
-  }
+  const dashboardUrl = (tab: Page) => `/dashboard?tab=${tab}`
 
   const setPage = (next: Page) => {
     router.push(dashboardUrl(next))
   }
 
-  const openBom = (id: string) => {
-    router.push(dashboardUrl(page, id))
-  }
-
-  const closeBom = () => {
-    router.push(dashboardUrl(page))
-  }
+  // Drop legacy ?bom= links — detail view removed
+  useEffect(() => {
+    if (searchParams.get('bom')) {
+      router.replace(dashboardUrl(page))
+    }
+  }, [searchParams, page, router])
 
   // Load BOMs
   useEffect(() => {
@@ -502,8 +484,9 @@ export default function DashboardContent() {
   // ── Upload modal state ──────────────────────────────────────────────────────
   const [uploadOpen, setUploadOpen]       = useState(false)
   const [uploadFile, setUploadFile]       = useState<File | null>(null)
-  const [uploadStep, setUploadStep]       = useState<'upload' | 'mapping' | 'processing'>('upload')
+  const [uploadStep, setUploadStep]       = useState<'upload' | 'mapping' | 'processing' | 'success'>('upload')
   const [parseResult, setParseResult]     = useState<ParseResult | null>(null)
+  const [savedBom, setSavedBom]           = useState<BomSummary | null>(null)
   const [mapping, setMapping]             = useState<ColumnMapping[]>([])
   const [headers, setHeaders]             = useState<string[]>([])
   const [uploadPreview, setUploadPreview] = useState<string[][]>([])
@@ -517,6 +500,7 @@ export default function DashboardContent() {
     setUploadStep('upload')
     setUploadFile(null)
     setParseResult(null)
+    setSavedBom(null)
     setMapping([])
     setHeaders([])
     setUploadPreview([])
@@ -524,7 +508,11 @@ export default function DashboardContent() {
     setUploadError(null)
   }
 
-  const closeUpload = () => setUploadOpen(false)
+  const closeUpload = () => {
+    setUploadOpen(false)
+    setSavedBom(null)
+    setUploadStep('upload')
+  }
 
   const handleFileSelected = async (selected: File) => {
     setUploadFile(selected)
@@ -569,12 +557,11 @@ export default function DashboardContent() {
       stopProgressAnimation()
       setProgress(100)
       const saved = await saveBom(uploadFile, analyzeResult, { parse: parseResult })
-      const bomId = saved.id ?? analyzeResult.upload_id
       listBoms()
         .then((result) => setBoms(result.items))
         .catch(() => { /* keep existing list */ })
-      closeUpload()
-      router.push(dashboardUrl(page, bomId))
+      setSavedBom(saved)
+      setUploadStep('success')
     } catch (err) {
       stopProgressAnimation()
       setUploadError(err instanceof Error ? err.message : 'Analysis failed')
@@ -735,26 +722,15 @@ export default function DashboardContent() {
 
       {/* ── Page content ── */}
       <div className="flex-1 min-h-0 overflow-hidden flex">
-        {selectedBomId ? (
-          <BomDetailView
-            bomId={selectedBomId}
-            onBack={closeBom}
-            onDeleted={() => {
-              setBoms((prev) => prev.filter((b) => b.id !== selectedBomId))
-              closeBom()
-            }}
-          />
-        ) : page === 'dashboard' ? (
+        {page === 'dashboard' ? (
           <OverviewPage
             boms={boms} loading={loading}
             goToBoms={() => setPage('boms')}
             goToUpload={openUpload}
-            openBom={openBom}
           />
         ) : page === 'boms' ? (
           <BomsPage
             boms={boms} loading={loading}
-            openBom={openBom}
             onDelete={id => setBoms(prev => prev.filter(b => b.id !== id))}
             onUpload={openUpload}
           />
@@ -766,7 +742,11 @@ export default function DashboardContent() {
       {/* ── Upload modal ── */}
       {uploadOpen && (
         <div className="absolute inset-0 bg-[#0f1b2d]/60 backdrop-blur-[2px] z-50 flex items-center justify-center px-4"
-          onClick={e => { if (e.target === e.currentTarget) closeUpload() }}>
+          onClick={e => {
+            if (e.target !== e.currentTarget) return
+            if (uploadStep === 'processing') return
+            closeUpload()
+          }}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
 
             {/* Modal header */}
@@ -788,8 +768,12 @@ export default function DashboardContent() {
                   <h2 className="text-lg font-bold text-slate-900">Analyzing…</h2>
                   <p className="text-sm text-slate-500 mt-0.5">We&apos;re querying 12 data sources in parallel.</p>
                 </>}
+                {uploadStep === 'success' && <>
+                  <h2 className="text-lg font-bold text-slate-900">BOM uploaded</h2>
+                  <p className="text-sm text-slate-500 mt-0.5">Your file is saved and monitoring has started.</p>
+                </>}
               </div>
-              {uploadStep !== 'processing' && (
+              {uploadStep !== 'processing' && uploadStep !== 'success' && (
                 <button onClick={closeUpload}
                   className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors mt-0.5">
                   <X className="w-4 h-4" />
@@ -936,6 +920,33 @@ export default function DashboardContent() {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Step: Success */}
+            {uploadStep === 'success' && savedBom && (
+              <div className="px-6 pb-6">
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-center">
+                  <CheckCircle className="mx-auto h-10 w-10 text-emerald-500" />
+                  <p className="mt-3 text-base font-semibold text-slate-900">{savedBom.name}</p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {savedBom.lineCount.toLocaleString()} {savedBom.lineCount === 1 ? 'line' : 'lines'} now monitored
+                  </p>
+                  {savedBom.atRiskCount > 0 ? (
+                    <p className="mt-2 text-sm font-medium text-amber-700">
+                      {savedBom.atRiskCount} {savedBom.atRiskCount === 1 ? 'part' : 'parts'} need attention
+                    </p>
+                  ) : (
+                    <p className="mt-2 text-sm text-emerald-700">No at-risk parts detected</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={closeUpload}
+                  className="mt-5 w-full rounded-xl bg-[#0062ff] py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+                >
+                  Done
+                </button>
               </div>
             )}
           </div>

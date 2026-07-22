@@ -27,10 +27,26 @@ export async function proxyAuthorizedRequest(
 
   try {
     const res = await fetch(targetUrl, { ...init, headers })
+
+    // Gateway DELETE returns 204 No Content. RFC 7230 forbids a body and Content-Type
+    // on 204; forwarding "" with application/json makes Amplify return 502 to the client
+    // even though the upstream delete already succeeded.
+    if (res.status === 204 || res.status === 205) {
+      return new NextResponse(null, { status: res.status })
+    }
+
     const body = await res.text()
-    return new NextResponse(body, {
+    const contentType = res.headers.get('Content-Type')
+    const responseHeaders = new Headers()
+    if (contentType) {
+      responseHeaders.set('Content-Type', contentType)
+    } else if (body) {
+      responseHeaders.set('Content-Type', 'application/json')
+    }
+
+    return new NextResponse(body || null, {
       status: res.status,
-      headers: { 'Content-Type': res.headers.get('Content-Type') ?? 'application/json' },
+      headers: responseHeaders,
     })
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err)
@@ -61,10 +77,22 @@ export async function proxyAuthorizedMultipart(
       },
       body,
     })
+    if (res.status === 204 || res.status === 205) {
+      return new NextResponse(null, { status: res.status })
+    }
+
     const responseBody = await res.text()
-    return new NextResponse(responseBody, {
+    const responseContentType = res.headers.get('Content-Type')
+    const responseHeaders = new Headers()
+    if (responseContentType) {
+      responseHeaders.set('Content-Type', responseContentType)
+    } else if (responseBody) {
+      responseHeaders.set('Content-Type', 'application/json')
+    }
+
+    return new NextResponse(responseBody || null, {
       status: res.status,
-      headers: { 'Content-Type': res.headers.get('Content-Type') ?? 'application/json' },
+      headers: responseHeaders,
     })
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err)
