@@ -1,5 +1,6 @@
-import BomResultPage from '@/components/BomResultPage'
+import { redirect } from 'next/navigation'
 
-export default function BomDetailPage() {
-  return <BomResultPage />
+export default async function BomDetailRedirect({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  redirect(`/dashboard?tab=boms&bom=${encodeURIComponent(id)}`)
 }

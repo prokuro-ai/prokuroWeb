@@ -64,6 +64,19 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  --color-primary-hover: #0050e6;
+  --color-ink: #0f1b2d;
+  --color-ink-muted: #4f5d73;
+  --color-ink-subtle: #7a8598;
+  --color-ink-tertiary: #98a3b6;
+  --color-canvas: #ffffff;
+  --color-surface-1: #f4f6f9;
+  --color-surface-2: #e2e8f0;
+  --color-surface-3: #cbd5e1;
+  --color-hairline: #d6deea;
+
+  --tracking-eyebrow: 0.025em;
 }
 
 /* LIGHT MODE */

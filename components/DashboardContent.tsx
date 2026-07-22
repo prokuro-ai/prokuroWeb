@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Link, useLocation } from '@/lib/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Link } from '@/lib/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import { listBoms, analyzeFile, parseFile, saveBom } from '@/lib/api'
 import { signOut } from '@/lib/auth'
 import { DeleteBomButton } from '@/components/DeleteBomButton'
+import BomDetailView from '@/components/BomDetailView'
 import BomUploadDropzone from '@/components/BomUploadDropzone'
 import { buildColumnMappings, extractHeaders, previewRows } from '@/lib/columnMapping'
 import type { BomSummary, ColumnMapping, ParseResult } from '@/lib/types'
@@ -166,9 +168,9 @@ function PortfolioRisk({ boms }: { boms: BomSummary[] }) {
 
 // ─── Pages ────────────────────────────────────────────────────────────────────
 
-function OverviewPage({ boms, loading, goToBoms, goToUpload, navigate }: {
+function OverviewPage({ boms, loading, goToBoms, goToUpload, openBom }: {
   boms: BomSummary[], loading: boolean
-  goToBoms: () => void, goToUpload: () => void, navigate: (to: string) => void
+  goToBoms: () => void, goToUpload: () => void, openBom: (id: string) => void
 }) {
   const totalLines         = boms.reduce((s, b) => s + b.lineCount, 0)
   const criticalCount      = boms.filter(b => b.overallRiskScore >= 7).length
@@ -240,7 +242,7 @@ function OverviewPage({ boms, loading, goToBoms, goToUpload, navigate }: {
                     </td>
                     <td className="px-5 py-4 text-slate-500">{bom.uploadedAt}</td>
                     <td className="px-5 py-4 text-right">
-                      <button onClick={() => navigate(`/bom/${bom.id}`)}
+                      <button onClick={() => openBom(bom.id)}
                         className="font-semibold flex items-center gap-1 ml-auto text-[#0062ff] hover:text-blue-700">
                         View <ChevronRight className="w-4 h-4" />
                       </button>
@@ -256,9 +258,9 @@ function OverviewPage({ boms, loading, goToBoms, goToUpload, navigate }: {
   )
 }
 
-function BomsPage({ boms, loading, navigate, onDelete, onUpload }: {
+function BomsPage({ boms, loading, openBom, onDelete, onUpload }: {
   boms: BomSummary[], loading: boolean
-  navigate: (to: string) => void, onDelete: (id: string) => void, onUpload: () => void
+  openBom: (id: string) => void, onDelete: (id: string) => void, onUpload: () => void
 }) {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('All')
@@ -336,7 +338,7 @@ function BomsPage({ boms, loading, navigate, onDelete, onUpload }: {
                     </div>
                   </div>
                   <div className="mt-4 flex gap-2">
-                    <button onClick={() => navigate(`/bom/${bom.id}`)}
+                    <button onClick={() => openBom(bom.id)}
                       className="flex-1 py-2 text-sm font-semibold text-[#0062ff] hover:text-blue-700 border border-slate-200 rounded-lg hover:border-[#0062ff] transition-colors flex items-center justify-center gap-1">
                       View Full Report <ArrowRight className="w-4 h-4" />
                     </button>
@@ -436,15 +438,38 @@ const UPLOAD_PROCESSING_STEPS = [
 type Page = 'dashboard' | 'boms' | 'alerts'
 
 export default function DashboardContent() {
-  const [, navigate]   = useLocation()
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, loading: authLoading, refresh } = useAuth()
   const [boms, setBoms]   = useState<BomSummary[]>([])
   const [loading, setLoading] = useState(true)
-  const [page, setPage]   = useState<Page>('dashboard')
   const [bellOpen, setBellOpen]       = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const bellRef    = useRef<HTMLDivElement>(null)
   const profileRef = useRef<HTMLDivElement>(null)
+
+  const tabParam = searchParams.get('tab')
+  const page: Page = tabParam === 'boms' || tabParam === 'alerts' ? tabParam : 'dashboard'
+  const selectedBomId = searchParams.get('bom')
+
+  const dashboardUrl = (tab: Page, bom?: string | null) => {
+    const params = new URLSearchParams()
+    params.set('tab', tab)
+    if (bom) params.set('bom', bom)
+    return `/dashboard?${params.toString()}`
+  }
+
+  const setPage = (next: Page) => {
+    router.push(dashboardUrl(next))
+  }
+
+  const openBom = (id: string) => {
+    router.push(dashboardUrl(page, id))
+  }
+
+  const closeBom = () => {
+    router.push(dashboardUrl(page))
+  }
 
   // Load BOMs
   useEffect(() => {
@@ -471,7 +496,7 @@ export default function DashboardContent() {
   const handleSignOut = async () => {
     await signOut()
     await refresh()
-    navigate('/login')
+    router.push('/login')
   }
 
   // ── Upload modal state ──────────────────────────────────────────────────────
@@ -545,7 +570,11 @@ export default function DashboardContent() {
       setProgress(100)
       const saved = await saveBom(uploadFile, analyzeResult, { parse: parseResult })
       const bomId = saved.id ?? analyzeResult.upload_id
-      setTimeout(() => { closeUpload(); navigate(`/bom/${bomId}`) }, 500)
+      listBoms()
+        .then((result) => setBoms(result.items))
+        .catch(() => { /* keep existing list */ })
+      closeUpload()
+      router.push(dashboardUrl(page, bomId))
     } catch (err) {
       stopProgressAnimation()
       setUploadError(err instanceof Error ? err.message : 'Analysis failed')
@@ -669,7 +698,7 @@ export default function DashboardContent() {
                       <div className="h-full rounded-full bg-[#0062ff]" style={{ width: `${bomPct}%` }} />
                     </div>
                     <button
-                      onClick={() => { navigate('/account'); setProfileOpen(false) }}
+                      onClick={() => { router.push('/account'); setProfileOpen(false) }}
                       className="w-full text-left text-xs font-semibold flex items-center justify-between group text-[#0062ff]">
                       Upgrade to Scale
                       <ChevronRight className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" />
@@ -678,7 +707,7 @@ export default function DashboardContent() {
                   {/* Nav items */}
                   <div className="py-1.5">
                     {[
-                      { icon: Settings, label: 'Account settings', action: () => { navigate('/account'); setProfileOpen(false) } },
+                      { icon: Settings, label: 'Account Settings', action: () => { router.push('/account'); setProfileOpen(false) } },
                     ].map(({ icon: Icon, label, action }) => (
                       <button key={label} onClick={action}
                         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left group">
@@ -706,23 +735,32 @@ export default function DashboardContent() {
 
       {/* ── Page content ── */}
       <div className="flex-1 min-h-0 overflow-hidden flex">
-        {page === 'dashboard' && (
+        {selectedBomId ? (
+          <BomDetailView
+            bomId={selectedBomId}
+            onBack={closeBom}
+            onDeleted={() => {
+              setBoms((prev) => prev.filter((b) => b.id !== selectedBomId))
+              closeBom()
+            }}
+          />
+        ) : page === 'dashboard' ? (
           <OverviewPage
             boms={boms} loading={loading}
             goToBoms={() => setPage('boms')}
             goToUpload={openUpload}
-            navigate={navigate}
+            openBom={openBom}
           />
-        )}
-        {page === 'boms' && (
+        ) : page === 'boms' ? (
           <BomsPage
             boms={boms} loading={loading}
-            navigate={navigate}
+            openBom={openBom}
             onDelete={id => setBoms(prev => prev.filter(b => b.id !== id))}
             onUpload={openUpload}
           />
+        ) : (
+          <AlertsPage />
         )}
-        {page === 'alerts' && <AlertsPage />}
       </div>
 
       {/* ── Upload modal ── */}

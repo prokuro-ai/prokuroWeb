@@ -1,5 +1,5 @@
-import UploadPage from '@/components/UploadPage'
+import { redirect } from 'next/navigation'
 
-export default function NewBomPage() {
-  return <UploadPage />
+export default function BomNewRedirect() {
+  redirect('/dashboard?tab=boms')
 }

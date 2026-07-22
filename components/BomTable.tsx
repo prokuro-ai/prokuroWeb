@@ -41,7 +41,7 @@ export function ParseTable({ result }: { result: ParseResult }) {
             <Td>{line.manufacturer}</Td>
             <Td right mono>{line.quantity?.toString()}</Td>
             <Td muted>{line.description}</Td>
-            <Td small>{line.aml_candidates.length > 0 ? line.aml_candidates.join(', ') : undefined}</Td>
+            <Td small>{line.aml_candidates?.length ? line.aml_candidates.join(', ') : undefined}</Td>
             <Td mono small>{line.footprint}</Td>
             {extraCols.map((column) => (
               <Td key={column} small>{line.extras[column]}</Td>
@@ -101,7 +101,7 @@ export function AnalyzeTable({ result }: { result: AnalyzeResult }) {
                 {line.total_duty_pct != null ? line.total_duty_pct.toFixed(1) : undefined}
               </Td>
             )}
-            <Td small>{line.aml_candidates.length > 0 ? line.aml_candidates.join(', ') : undefined}</Td>
+            <Td small>{line.aml_candidates?.length ? line.aml_candidates.join(', ') : undefined}</Td>
             <Td small muted>{formatTopSellers(line.top_sellers) || undefined}</Td>
           </tr>
         ))}
