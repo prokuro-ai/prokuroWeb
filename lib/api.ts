@@ -1,4 +1,5 @@
 import { getIdToken } from './auth'
+import { uploadEndpoint } from './gateway-url'
 import type { AnalyzeResult, BomSummary, ParseResult } from './types'
 
 export interface BomRecord {
@@ -19,6 +20,9 @@ async function authHeaders(): Promise<HeadersInit> {
 }
 
 async function readErrorMessage(res: Response, body: unknown): Promise<string> {
+  if (res.status === 504) {
+    return 'Analysis timed out. Try uploading fewer files at once or a smaller BOM.'
+  }
   if (typeof body === 'object' && body && 'error' in body && typeof body.error === 'string') {
     return body.error
   }
@@ -41,12 +45,15 @@ async function readJsonBody(res: Response): Promise<unknown> {
   try {
     return await res.json()
   } catch {
+    if (res.status === 504) {
+      throw new Error('Analysis timed out. Try uploading fewer files at once or a smaller BOM.')
+    }
     throw new Error(res.ok ? 'Invalid response from server' : `HTTP ${res.status}: Could not reach backend service`)
   }
 }
 
 export async function parseFile(file: File): Promise<ParseResult> {
-  const res = await postFile('/api/parse', file)
+  const res = await postFile(uploadEndpoint('parse'), file)
   const body: unknown = await readJsonBody(res)
   if (res.ok) return body as ParseResult
 
@@ -56,7 +63,7 @@ export async function parseFile(file: File): Promise<ParseResult> {
 }
 
 export async function analyzeFile(file: File): Promise<AnalyzeResult> {
-  const res = await postFile('/api/analyze', file)
+  const res = await postFile(uploadEndpoint('analyze'), file)
   const body: unknown = await readJsonBody(res)
   if (!res.ok) throw new Error(await readErrorMessage(res, body))
   return body as AnalyzeResult

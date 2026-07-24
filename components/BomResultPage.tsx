@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import DashboardShell from '@/components/DashboardShell'
 import { useAuth } from '@/components/AuthProvider'
 import { Link } from '@/lib/navigation'
-import { getBom, refreshBom } from '@/lib/api'
+import { getBom } from '@/lib/api'
 import { formatUploadedAt } from '@/lib/format'
 import type { AnalyzeResult, AnalyzedLine, BomSummary } from '@/lib/types'
 
@@ -132,8 +132,6 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   const [result, setResult] = useState<AnalyzeResult | null>(null)
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [refreshing, setRefreshing] = useState(false)
-  const [refreshError, setRefreshError] = useState<string | null>(null)
 
   useEffect(() => {
     if (authLoading) return
@@ -167,21 +165,6 @@ export default function BomResultPage({ id }: BomResultPageProps) {
       cancelled = true
     }
   }, [authLoading, user, id, router])
-
-  const handleRunAnalysis = async () => {
-    if (!id || refreshing) return
-    setRefreshing(true)
-    setRefreshError(null)
-    try {
-      const record = await refreshBom(id)
-      setSummary(record.summary)
-      setResult(record.analyze)
-    } catch (err) {
-      setRefreshError(err instanceof Error ? err.message : 'Analysis failed')
-    } finally {
-      setRefreshing(false)
-    }
-  }
 
   if (!loaded || authLoading) return null
 
@@ -237,14 +220,6 @@ export default function BomResultPage({ id }: BomResultPageProps) {
             <div className="flex shrink-0 items-center gap-2">
               <button
                 type="button"
-                onClick={() => void handleRunAnalysis()}
-                disabled={refreshing}
-                className="rounded-md bg-[#0062ff] px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {refreshing ? 'Running…' : 'Run Analysis'}
-              </button>
-              <button
-                type="button"
                 disabled
                 title="Export coming soon"
                 className="cursor-not-allowed rounded-lg border border-slate-200 bg-white px-5 py-2 text-sm font-medium text-slate-400 opacity-60 shadow-sm"
@@ -253,10 +228,6 @@ export default function BomResultPage({ id }: BomResultPageProps) {
               </button>
             </div>
           </div>
-
-          {refreshError && (
-            <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{refreshError}</div>
-          )}
 
           <div className="mb-8 grid grid-cols-4 gap-4">
             {[

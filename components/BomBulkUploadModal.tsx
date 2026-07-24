@@ -11,8 +11,7 @@ import {
   X,
   XCircle,
 } from 'lucide-react'
-import { analyzeFile, parseFile, saveBom } from '@/lib/api'
-import { buildColumnMappings, hasMpnMapping } from '@/lib/columnMapping'
+import { analyzeFile, saveBom } from '@/lib/api'
 import { ACCEPTED, formatFileSize } from '@/components/BomUploadDropzone'
 import type { BomSummary } from '@/lib/types'
 
@@ -131,17 +130,16 @@ export default function BomBulkUploadModal({
       )
 
       try {
-        const parseResult = await parseFile(item.file)
-        const mapping = buildColumnMappings(parseResult)
-        if (!hasMpnMapping(mapping)) {
-          throw new Error('No MPN / Part Number column detected')
-        }
-        if (parseResult.mapping_confidence < 0.3) {
+        const analyzeResult = await analyzeFile(item.file)
+        if (analyzeResult.mapping_confidence < 0.3) {
           throw new Error('Could not auto-detect columns — upload this file individually to map columns')
         }
+        const hasMpn = analyzeResult.lines.some((line) => Boolean(line.mpn?.trim()))
+        if (!hasMpn) {
+          throw new Error('No MPN / Part Number column detected')
+        }
 
-        const analyzeResult = await analyzeFile(item.file)
-        const bom = await saveBom(item.file, analyzeResult, { parse: parseResult })
+        const bom = await saveBom(item.file, analyzeResult)
         saved.push(bom)
         setItems((prev) =>
           prev.map((entry) => (entry.key === item.key ? { ...entry, status: 'done', saved: bom } : entry)),
