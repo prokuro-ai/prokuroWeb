@@ -169,6 +169,12 @@ export async function completeEmailVerification(
   }
 }
 
+export async function signInWithGoogle() {
+  ensureConfigured()
+  const { signInWithRedirect } = await import('aws-amplify/auth')
+  await signInWithRedirect({ provider: 'Google' })
+}
+
 export async function signUp(input: {
   email: string
   password: string
