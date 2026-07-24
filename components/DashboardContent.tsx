@@ -4,18 +4,16 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Link } from '@/lib/navigation'
 import { useAuth } from '@/components/AuthProvider'
-import { listBoms, analyzeFile, parseFile, saveBom } from '@/lib/api'
+import { listBoms } from '@/lib/api'
 import { signOut } from '@/lib/auth'
 import { DeleteBomButton } from '@/components/DeleteBomButton'
 import BomBulkUploadModal from '@/components/BomBulkUploadModal'
-import BomUploadDropzone from '@/components/BomUploadDropzone'
-import { buildColumnMappings, extractHeaders, hasMpnMapping, previewRows } from '@/lib/columnMapping'
-import type { BomSummary, ColumnMapping, ParseResult } from '@/lib/types'
+import type { BomSummary } from '@/lib/types'
 import { formatUploadedAt } from '@/lib/format'
 import {
   AlertTriangle, Bell, ChevronRight, FileText, Search,
   ShieldAlert, UploadCloud, CheckCircle, ArrowRight,
-  AlertCircle, Settings, LogOut, X, Files,
+  Settings, LogOut,
 } from 'lucide-react'
 
 // ─── Static alert data ────────────────────────────────────────────────────────
@@ -260,43 +258,11 @@ function OverviewPage({ boms, loading, goToBoms, onViewBom }: {
   )
 }
 
-function BomsEmptyState({ onUpload, onBulkUpload }: { onUpload: () => void; onBulkUpload: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white px-8 py-16 text-center shadow-sm">
-      <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#eef4ff]">
-        <Files className="h-7 w-7 text-[#0062ff]" />
-      </div>
-      <h3 className="text-lg font-bold text-slate-900">Upload your first BOMs</h3>
-      <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">
-        Bring in one file with column mapping, or upload your whole portfolio at once — we&apos;ll auto-detect columns
-        and start monitoring risk immediately.
-      </p>
-      <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-        <button
-          type="button"
-          onClick={onUpload}
-          className="flex items-center gap-2 rounded-lg bg-[#0062ff] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
-        >
-          <UploadCloud className="h-4 w-4" /> Upload one BOM
-        </button>
-        <button
-          type="button"
-          onClick={onBulkUpload}
-          className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
-        >
-          <Files className="h-4 w-4 text-[#0062ff]" /> Upload multiple
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function BomsPage({ boms, loading, onViewBom, onDelete, onUpload, onBulkUpload }: {
+function BomsPage({ boms, loading, onViewBom, onDelete, onUpload }: {
   boms: BomSummary[], loading: boolean
   onViewBom: (id: string) => void
   onDelete: (id: string) => void
   onUpload: () => void
-  onBulkUpload: () => void
 }) {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('All')
@@ -319,22 +285,13 @@ function BomsPage({ boms, loading, onViewBom, onDelete, onUpload, onBulkUpload }
             {boms.length} BOMs · {boms.reduce((s, b) => s + b.lineCount, 0).toLocaleString()} total lines monitored
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onUpload}
-            className="flex items-center gap-2 rounded-md bg-[#0062ff] px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
-          >
-            <UploadCloud className="h-4 w-4" /> Upload BOM
-          </button>
-          <button
-            type="button"
-            onClick={onBulkUpload}
-            className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
-          >
-            <Files className="h-4 w-4 text-[#0062ff]" /> Upload multiple
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onUpload}
+          className="flex items-center gap-2 rounded-md bg-[#0062ff] px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
+        >
+          <UploadCloud className="h-4 w-4" /> Upload BOM
+        </button>
       </div>
 
       <div className="flex items-center gap-3 mb-6">
@@ -357,7 +314,9 @@ function BomsPage({ boms, loading, onViewBom, onDelete, onUpload, onBulkUpload }
       {loading ? (
         <div className="flex items-center justify-center h-48 text-slate-400 text-sm">Loading BOMs…</div>
       ) : boms.length === 0 ? (
-        <BomsEmptyState onUpload={onUpload} onBulkUpload={onBulkUpload} />
+        <div className="flex items-center justify-center h-48 text-slate-400 text-sm">
+          Add BOMs to start monitoring your portfolio.
+        </div>
       ) : (
         <>
           <div className="grid grid-cols-2 gap-4">
@@ -475,14 +434,6 @@ function AlertsPage() {
   )
 }
 
-const UPLOAD_PROCESSING_STEPS = [
-  { label: 'Column mapping applied',    threshold: 10 },
-  { label: 'MPN normalization',         threshold: 30 },
-  { label: 'Nexar resolution',          threshold: 55 },
-  { label: 'Lifecycle & stock lookup',  threshold: 75 },
-  { label: 'Risk scoring & alternates', threshold: 90 },
-]
-
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
 type Page = 'dashboard' | 'boms' | 'alerts'
@@ -543,30 +494,17 @@ export default function DashboardContent() {
     router.push('/login')
   }
 
-  // ── Upload modal state ──────────────────────────────────────────────────────
-  const [uploadOpen, setUploadOpen]       = useState(false)
-  const [bulkUploadOpen, setBulkUploadOpen] = useState(false)
-  const [uploadFile, setUploadFile]       = useState<File | null>(null)
-  const [uploadStep, setUploadStep]       = useState<'upload' | 'mapping' | 'processing' | 'success'>('upload')
-  const [parseResult, setParseResult]     = useState<ParseResult | null>(null)
-  const [savedBom, setSavedBom]           = useState<BomSummary | null>(null)
-  const [mapping, setMapping]             = useState<ColumnMapping[]>([])
-  const [headers, setHeaders]             = useState<string[]>([])
-  const [uploadPreview, setUploadPreview] = useState<string[][]>([])
-  const [progress, setProgress]           = useState(0)
-  const [uploadError, setUploadError]     = useState<string | null>(null)
-  const [parsing, setParsing]             = useState(false)
-  const progressRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [uploadOpen, setUploadOpen] = useState(false)
 
-  const openBulkUpload = () => {
-    setBulkUploadOpen(true)
+  const openUpload = () => {
+    setUploadOpen(true)
   }
 
-  const closeBulkUpload = () => {
-    setBulkUploadOpen(false)
+  const closeUpload = () => {
+    setUploadOpen(false)
   }
 
-  const handleBulkComplete = (saved: BomSummary[]) => {
+  const handleUploadComplete = (saved: BomSummary[]) => {
     if (saved.length === 0) return
     setBoms((prev) => {
       const ids = new Set(prev.map((b) => b.id))
@@ -576,84 +514,6 @@ export default function DashboardContent() {
     listBoms()
       .then((result) => setBoms(result.items))
       .catch(() => { /* keep merged list */ })
-  }
-
-  const openUpload = () => {
-    setUploadOpen(true)
-    setUploadStep('upload')
-    setUploadFile(null)
-    setParseResult(null)
-    setSavedBom(null)
-    setMapping([])
-    setHeaders([])
-    setUploadPreview([])
-    setProgress(0)
-    setUploadError(null)
-  }
-
-  const closeUpload = () => {
-    setUploadOpen(false)
-    setSavedBom(null)
-    setUploadStep('upload')
-  }
-
-  const handleFileSelected = async (selected: File) => {
-    setUploadFile(selected)
-    setUploadError(null)
-    setParsing(true)
-    try {
-      const result = await parseFile(selected)
-      setParseResult(result)
-      setMapping(buildColumnMappings(result))
-      setHeaders(extractHeaders(result))
-      setUploadPreview(previewRows(result))
-      setUploadStep('mapping')
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Failed to parse file')
-      setUploadFile(null)
-    } finally {
-      setParsing(false)
-    }
-  }
-
-  const startProgressAnimation = () => {
-    let p = 0
-    progressRef.current = setInterval(() => {
-      p += Math.random() * 8 + 2
-      if (p >= 92) p = 92
-      setProgress(p)
-    }, 280)
-  }
-
-  const stopProgressAnimation = () => {
-    if (progressRef.current) { clearInterval(progressRef.current); progressRef.current = null }
-  }
-
-  const handleConfirmMapping = async () => {
-    if (!uploadFile) return
-    if (!hasMpnMapping(mapping)) {
-      setUploadError('Map at least one column to MPN / Part Number before analyzing.')
-      return
-    }
-    setUploadStep('processing')
-    setProgress(0)
-    setUploadError(null)
-    startProgressAnimation()
-    try {
-      const analyzeResult = await analyzeFile(uploadFile)
-      stopProgressAnimation()
-      setProgress(100)
-      const saved = await saveBom(uploadFile, analyzeResult, { parse: parseResult })
-      listBoms()
-        .then((result) => setBoms(result.items))
-        .catch(() => { /* keep existing list */ })
-      setSavedBom(saved)
-      setUploadStep('success')
-    } catch (err) {
-      stopProgressAnimation()
-      setUploadError(err instanceof Error ? err.message : 'Analysis failed')
-      setUploadStep('mapping')
-    }
   }
 
   const newAlertCount = 0
@@ -817,7 +677,6 @@ export default function DashboardContent() {
             onViewBom={viewBom}
             onDelete={id => setBoms(prev => prev.filter(b => b.id !== id))}
             onUpload={openUpload}
-            onBulkUpload={openBulkUpload}
           />
         ) : (
           <AlertsPage />
@@ -825,231 +684,11 @@ export default function DashboardContent() {
       </div>
 
       <BomBulkUploadModal
-        open={bulkUploadOpen}
-        onClose={closeBulkUpload}
-        onComplete={handleBulkComplete}
+        open={uploadOpen}
+        onClose={closeUpload}
+        onComplete={handleUploadComplete}
         existingBomCount={boms.length}
       />
-
-      {/* ── Upload modal ── */}
-      {uploadOpen && (
-        <div className="absolute inset-0 bg-[#0f1b2d]/60 backdrop-blur-[2px] z-50 flex items-center justify-center px-4"
-          onClick={e => {
-            if (e.target !== e.currentTarget) return
-            if (uploadStep === 'processing') return
-            closeUpload()
-          }}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
-
-            {/* Modal header */}
-            <div className="flex items-start justify-between px-6 pt-6 pb-4">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="h-3.5 w-3.5 bg-[#0062ff] shrink-0" style={{ clipPath: 'polygon(24% 0,100% 0,100% 100%,0% 100%)' }} />
-                  <span className="text-xs font-semibold text-[#0062ff] uppercase tracking-wider">New BOM</span>
-                </div>
-                {uploadStep === 'upload' && <>
-                  <h2 className="text-lg font-bold text-slate-900">Upload your BOM</h2>
-                  <p className="text-sm text-slate-500 mt-0.5">Drop a CSV or Excel file to start monitoring risk.</p>
-                </>}
-                {uploadStep === 'mapping' && <>
-                  <h2 className="text-lg font-bold text-slate-900">Map your columns</h2>
-                  <p className="text-sm text-slate-500 mt-0.5">Confirm how your columns map to Prokuro&apos;s fields.</p>
-                </>}
-                {uploadStep === 'processing' && <>
-                  <h2 className="text-lg font-bold text-slate-900">Analyzing…</h2>
-                  <p className="text-sm text-slate-500 mt-0.5">We&apos;re querying 12 data sources in parallel.</p>
-                </>}
-                {uploadStep === 'success' && <>
-                  <h2 className="text-lg font-bold text-slate-900">BOM uploaded</h2>
-                  <p className="text-sm text-slate-500 mt-0.5">Your file is saved and monitoring has started.</p>
-                </>}
-              </div>
-              {uploadStep !== 'processing' && uploadStep !== 'success' && (
-                <button onClick={closeUpload}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors mt-0.5">
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-
-            {/* Error banner */}
-            {uploadError && (
-              <div className="mx-6 mb-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
-                {uploadError}
-              </div>
-            )}
-
-            {/* Step: Upload */}
-            {uploadStep === 'upload' && (
-              <div className="px-6 pb-6">
-                <BomUploadDropzone
-                  variant="modal"
-                  showInfoPanel={false}
-                  parsing={parsing}
-                  selectedFile={uploadFile}
-                  onFileSelected={f => setUploadFile(f)}
-                  onClearFile={() => setUploadFile(null)}
-                />
-                <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-2.5">
-                  <AlertCircle className="w-4 h-4 text-[#0062ff] shrink-0 mt-0.5" />
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    Needs at least an <strong>MPN</strong> or <strong>Part Number</strong> column. Map other columns in the next step.
-                  </p>
-                </div>
-                <button
-                  onClick={() => uploadFile && void handleFileSelected(uploadFile)}
-                  disabled={!uploadFile || parsing}
-                  className={`mt-4 w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${
-                    uploadFile && !parsing
-                      ? 'bg-[#0062ff] text-white hover:bg-blue-700 shadow-sm'
-                      : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                  }`}>
-                  {parsing ? 'Reading file…' : <>Continue <ArrowRight className="w-4 h-4" /></>}
-                </button>
-              </div>
-            )}
-
-            {/* Step: Mapping */}
-            {uploadStep === 'mapping' && parseResult && (
-              <div className="px-6 pb-0">
-                {/* Preview table */}
-                {uploadPreview.length > 0 && (
-                  <div className="mb-4 overflow-x-auto rounded-lg border border-slate-200 max-h-36">
-                    <table className="w-full text-[11px]">
-                      <thead className="bg-slate-50 sticky top-0">
-                        <tr>
-                          {headers.map(h => (
-                            <th key={h} className="border-b border-r border-slate-200 px-3 py-2 text-left font-medium text-slate-500 last:border-r-0 whitespace-nowrap">{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {uploadPreview.map((row, ri) => (
-                          <tr key={ri}>
-                            {row.map((cell, ci) => (
-                              <td key={ci} className="border-r border-b border-slate-100 px-3 py-1.5 text-slate-600 last:border-r-0 last:border-b-0 whitespace-nowrap">{cell}</td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-                {/* Mapping rows */}
-                <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-                  {mapping.map((col, idx) => (
-                    <div key={col.canonical} className={`flex items-center gap-3 rounded-lg border px-4 py-2.5 ${col.confirmed ? 'border-slate-200 bg-white' : 'border-amber-300 bg-amber-50'}`}>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-slate-900">{col.label}</span>
-                          {!col.confirmed && (
-                            <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">Needs confirmation</span>
-                          )}
-                        </div>
-                        <div className="text-[11px] text-slate-400 mt-0.5">
-                          <code className="font-mono">{col.canonical}</code>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs text-slate-400">from</span>
-                        <select
-                          value={col.detectedFrom ?? ''}
-                          onChange={e => setMapping(m => m.map((c, i) => i === idx ? { ...c, detectedFrom: e.target.value || null, confirmed: true } : c))}
-                          className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-900 focus:border-[#0062ff] focus:outline-none">
-                          <option value="">— not mapped —</option>
-                          {headers.map(h => <option key={h} value={h}>{h}</option>)}
-                        </select>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {/* Footer */}
-                <div className="flex items-center justify-between py-4 mt-2 border-t border-slate-100">
-                  <button onClick={() => { setUploadStep('upload'); setUploadFile(null); setParseResult(null) }}
-                    className="text-sm text-slate-400 hover:text-slate-600 transition-colors">
-                    ← Back
-                  </button>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => void handleConfirmMapping()}
-                      disabled={!hasMpnMapping(mapping)}
-                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                        hasMpnMapping(mapping)
-                          ? 'bg-brand text-white hover:bg-blue-700'
-                          : 'cursor-not-allowed bg-slate-100 text-slate-400'
-                      }`}
-                    >
-                      Confirm & analyze →
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Step: Processing */}
-            {uploadStep === 'processing' && (
-              <div className="px-6 pb-6">
-                <div className="flex items-center gap-4 p-4 bg-blue-50 border border-blue-100 rounded-xl mb-4">
-                  <div className="relative w-14 h-14 shrink-0">
-                    <svg className="w-full h-full -rotate-90" viewBox="0 0 56 56">
-                      <circle cx="28" cy="28" r="22" stroke="#e2e8f0" strokeWidth="5" fill="none" />
-                      <circle cx="28" cy="28" r="22" stroke="#0062ff" strokeWidth="5" fill="none"
-                        strokeDasharray={2 * Math.PI * 22}
-                        strokeDashoffset={2 * Math.PI * 22 * (1 - progress / 100)}
-                        strokeLinecap="round" className="transition-all duration-300" />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-xs font-bold text-[#0062ff]">{Math.round(progress)}%</span>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">{uploadFile?.name ?? 'Analyzing…'}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">Resolving MPNs, checking lifecycle and stock…</p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {UPLOAD_PROCESSING_STEPS.map(s => (
-                    <div key={s.label} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border ${progress > s.threshold ? 'bg-emerald-50 border-emerald-100' : 'bg-white border-slate-100'}`}>
-                      {progress > s.threshold
-                        ? <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                        : <div className="w-4 h-4 rounded-full border-2 border-slate-200 shrink-0" />}
-                      <span className={`text-sm font-medium ${progress > s.threshold ? 'text-emerald-700' : 'text-slate-400'}`}>{s.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Step: Success */}
-            {uploadStep === 'success' && savedBom && (
-              <div className="px-6 pb-6">
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-center">
-                  <CheckCircle className="mx-auto h-10 w-10 text-emerald-500" />
-                  <p className="mt-3 text-base font-semibold text-slate-900">{savedBom.name}</p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {savedBom.lineCount.toLocaleString()} {savedBom.lineCount === 1 ? 'line' : 'lines'} now monitored
-                  </p>
-                  {savedBom.atRiskCount > 0 ? (
-                    <p className="mt-2 text-sm font-medium text-amber-700">
-                      {savedBom.atRiskCount} {savedBom.atRiskCount === 1 ? 'part' : 'parts'} need attention
-                    </p>
-                  ) : (
-                    <p className="mt-2 text-sm text-emerald-700">No at-risk parts detected</p>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={closeUpload}
-                  className="mt-5 w-full rounded-xl bg-[#0062ff] py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
-                >
-                  Done
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* ── Footer ── */}
       <footer className="shrink-0 border-t border-slate-200 bg-slate-50 px-6 py-3 flex items-center justify-between">

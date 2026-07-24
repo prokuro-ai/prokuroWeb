@@ -3,11 +3,10 @@
 import { useCallback, useRef, useState } from 'react'
 import {
   AlertCircle,
+  ArrowRight,
   CheckCircle,
   FileText,
-  Files,
   Loader2,
-  Plus,
   UploadCloud,
   X,
   XCircle,
@@ -161,9 +160,6 @@ export default function BomBulkUploadModal({
 
   if (!open) return null
 
-  const readyCount = items.filter((item) => item.status === 'ready').length
-  const doneCount = items.filter((item) => item.status === 'done').length
-  const failedCount = items.filter((item) => item.status === 'failed').length
   const progressPct = step === 'processing' && items.length > 0 ? Math.round(((activeIndex + 1) / items.length) * 100) : 100
 
   return (
@@ -174,7 +170,7 @@ export default function BomBulkUploadModal({
         handleClose()
       }}
     >
-      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+      <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
         {/* Header */}
         <div className="flex shrink-0 items-start justify-between border-b border-slate-100 px-6 py-5">
           <div>
@@ -183,29 +179,29 @@ export default function BomBulkUploadModal({
                 className="h-3.5 w-3.5 shrink-0 bg-[#0062ff]"
                 style={{ clipPath: 'polygon(24% 0,100% 0,100% 100%,0% 100%)' }}
               />
-              <span className="text-xs font-semibold uppercase tracking-wider text-[#0062ff]">Bulk upload</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#0062ff]">New BOM</span>
             </div>
             {step === 'select' && (
               <>
-                <h2 className="text-lg font-bold text-slate-900">Upload multiple BOMs</h2>
+                <h2 className="text-lg font-bold text-slate-900">Upload your BOM</h2>
                 <p className="mt-0.5 text-sm text-slate-500">
-                  Drop your whole portfolio at once. We&apos;ll auto-detect columns and analyze each file.
+                  Drop a CSV or Excel file to start monitoring risk.
                 </p>
               </>
             )}
             {step === 'processing' && (
               <>
-                <h2 className="text-lg font-bold text-slate-900">Uploading {items.length} BOMs…</h2>
+                <h2 className="text-lg font-bold text-slate-900">Analyzing…</h2>
                 <p className="mt-0.5 text-sm text-slate-500">
-                  Processing file {Math.min(activeIndex + 1, items.length)} of {items.length}
+                  We&apos;re querying 12 data sources in parallel.
                 </p>
               </>
             )}
             {step === 'complete' && (
               <>
-                <h2 className="text-lg font-bold text-slate-900">Upload complete</h2>
+                <h2 className="text-lg font-bold text-slate-900">BOM uploaded</h2>
                 <p className="mt-0.5 text-sm text-slate-500">
-                  {doneCount} uploaded successfully{failedCount > 0 ? ` · ${failedCount} failed` : ''}.
+                  Your file is saved and monitoring has started.
                 </p>
               </>
             )}
@@ -270,10 +266,10 @@ export default function BomBulkUploadModal({
                   }}
                 />
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#eef4ff]">
-                  <Files className="h-6 w-6 text-[#0062ff]" />
+                  <UploadCloud className="h-6 w-6 text-[#0062ff]" />
                 </div>
-                <p className="text-[15px] font-medium text-slate-900">Drop multiple BOM files here</p>
-                <p className="mt-1 text-sm text-slate-500">or click to browse · CSV, Excel, or TXT</p>
+                <p className="text-[15px] font-medium text-slate-900">Drop your BOM here</p>
+                <p className="mt-1 text-sm text-slate-500">or click to browse</p>
                 <div className="mt-4 flex flex-wrap justify-center gap-2">
                   {ACCEPTED.map((ext) => (
                     <span
@@ -284,22 +280,13 @@ export default function BomBulkUploadModal({
                     </span>
                   ))}
                 </div>
+                <p className="mt-3 text-[11px] text-slate-400">
+                  Any column format. Prokuro auto-detects MPN, Qty, Ref, Manufacturer.
+                </p>
               </div>
 
               {items.length > 0 && (
                 <div className="mt-5">
-                  <div className="mb-3 flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {items.length} file{items.length === 1 ? '' : 's'} queued
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => inputRef.current?.click()}
-                      className="flex items-center gap-1 text-xs font-semibold text-[#0062ff] hover:text-blue-700"
-                    >
-                      <Plus className="h-3.5 w-3.5" /> Add more
-                    </button>
-                  </div>
                   <ul className="max-h-52 space-y-2 overflow-y-auto pr-1">
                     {items.map((item) => (
                       <li
@@ -329,8 +316,8 @@ export default function BomBulkUploadModal({
               <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#0062ff]" />
                 <p className="text-xs leading-relaxed text-slate-600">
-                  Each file needs an <strong>MPN</strong> or <strong>Part Number</strong> column. Unusual formats can
-                  be uploaded one at a time to confirm column mapping.
+                  Needs at least an <strong>MPN</strong> or <strong>Part Number</strong> column. Map other columns in
+                  the next step.
                 </p>
               </div>
             </>
@@ -340,11 +327,7 @@ export default function BomBulkUploadModal({
             <div className="space-y-4">
               {step === 'processing' && (
                 <div>
-                  <div className="mb-2 flex items-center justify-between text-xs font-medium text-slate-500">
-                    <span>Overall progress</span>
-                    <span>{progressPct}%</span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div className="mb-2 h-2 overflow-hidden rounded-full bg-slate-100">
                     <div
                       className="h-full rounded-full bg-[#0062ff] transition-all duration-500"
                       style={{ width: `${progressPct}%` }}
@@ -386,7 +369,7 @@ export default function BomBulkUploadModal({
                           <p className="text-xs text-red-600">{item.error}</p>
                         )}
                         {item.status === 'processing' && (
-                          <p className="text-xs text-[#0062ff]">Analyzing and saving…</p>
+                          <p className="text-xs text-[#0062ff]">Resolving MPNs, checking lifecycle and stock…</p>
                         )}
                         {item.status === 'ready' && step === 'processing' && (
                           <p className="text-xs text-slate-400">Waiting…</p>
@@ -403,26 +386,18 @@ export default function BomBulkUploadModal({
         {/* Footer */}
         <div className="shrink-0 border-t border-slate-100 px-6 py-4">
           {step === 'select' && (
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs text-slate-400">
-                {existingBomCount > 0
-                  ? `${existingBomCount} of ${MAX_FILES} BOM slots used`
-                  : `Up to ${MAX_FILES} BOMs on Growth plan`}
-              </p>
-              <button
-                type="button"
-                onClick={() => void processAll()}
-                disabled={items.length === 0}
-                className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all ${
-                  items.length > 0
-                    ? 'bg-[#0062ff] text-white shadow-sm hover:bg-blue-700'
-                    : 'cursor-not-allowed bg-slate-100 text-slate-400'
-                }`}
-              >
-                <UploadCloud className="h-4 w-4" />
-                Analyze & upload {items.length > 0 ? `${items.length} BOM${items.length === 1 ? '' : 's'}` : ''}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => void processAll()}
+              disabled={items.length === 0}
+              className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all ${
+                items.length > 0
+                  ? 'bg-[#0062ff] text-white shadow-sm hover:bg-blue-700'
+                  : 'cursor-not-allowed bg-slate-100 text-slate-400'
+              }`}
+            >
+              Continue <ArrowRight className="h-4 w-4" />
+            </button>
           )}
           {step === 'complete' && (
             <button

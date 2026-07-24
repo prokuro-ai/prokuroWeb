@@ -2049,3 +2049,18 @@ body.modal-open {
     grid-template-columns: 1fr;
   }
 }
+
+.auth-mockup-scope {
+  font-family: var(--font-inter), 'Inter', sans-serif;
+  letter-spacing: normal;
+  text-rendering: auto;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+.auth-mockup-scope :is(h1, h2, h3, h4, h5, h6, p, a, ul, ol, li, span, div, form, button, input, label, svg) {
+  all: revert-layer;
+}
+
+.auth-mockup-scope input::placeholder {
+  all: revert-layer;
+}
