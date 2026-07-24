@@ -69,6 +69,12 @@ export async function signIn(email: string, password: string): Promise<AuthFlowS
   return 'signedIn'
 }
 
+export async function signInWithGoogle() {
+  ensureConfigured()
+  const { signInWithRedirect } = await import('aws-amplify/auth')
+  await signInWithRedirect({ provider: 'Google' })
+}
+
 export async function signUp(input: {
   email: string
   password: string

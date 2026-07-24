@@ -24,7 +24,13 @@ Set these in `.env.local`:
 
 ```bash
 GATEWAY_URL=http://localhost:3000
+NEXT_PUBLIC_COGNITO_USER_POOL_ID=<user-pool-id>
+NEXT_PUBLIC_COGNITO_CLIENT_ID=<app-client-id>
+NEXT_PUBLIC_COGNITO_REGION=us-west-2
+NEXT_PUBLIC_COGNITO_DOMAIN=<prefix>.auth.us-west-2.amazoncognito.com
 ```
+
+`NEXT_PUBLIC_COGNITO_DOMAIN` enables Google redirect sign-in. The OAuth callback route is `/auth/callback`.
 
 API proxy routes (all via gateway):
 
