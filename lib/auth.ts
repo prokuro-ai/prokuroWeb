@@ -1,10 +1,13 @@
 import {
+  AuthError,
   getCurrentUser,
   fetchUserAttributes,
   signIn as amplifySignIn,
   signOut as amplifySignOut,
   signUp as amplifySignUp,
   confirmSignUp,
+  confirmSignIn,
+  resendSignUpCode,
   updateUserAttributes,
   autoSignIn,
 } from 'aws-amplify/auth'
@@ -20,6 +23,15 @@ export interface AuthUser {
 }
 
 export type AuthFlowStatus = 'signedIn' | 'confirmSignUp'
+export type EmailVerificationFlow = 'signUp' | 'signIn'
+
+function authErrorName(err: unknown): string | undefined {
+  if (err instanceof AuthError) return err.name
+  if (err && typeof err === 'object' && 'name' in err && typeof err.name === 'string') {
+    return err.name
+  }
+  return undefined
+}
 
 function ensureConfigured() {
   configureAmplify()
@@ -67,6 +79,94 @@ export async function signIn(email: string, password: string): Promise<AuthFlowS
   const username = normalizeEmail(email)
   await completeSignIn(username, password)
   return 'signedIn'
+}
+
+export async function startEmailVerification(email: string): Promise<EmailVerificationFlow> {
+  ensureConfigured()
+  const username = normalizeEmail(email)
+
+  try {
+    await amplifySignUp({
+      username,
+      options: {
+        userAttributes: {
+          email: username,
+          given_name: '-',
+          family_name: '-',
+        },
+        autoSignIn: {
+          authFlowType: 'USER_AUTH',
+        },
+      },
+    })
+    return 'signUp'
+  } catch (err) {
+    if (authErrorName(err) !== 'UsernameExistsException') {
+      throw err
+    }
+
+    try {
+      await amplifySignIn({
+        username,
+        options: {
+          authFlowType: 'USER_AUTH',
+          preferredChallenge: 'EMAIL_OTP',
+        },
+      })
+      return 'signIn'
+    } catch (signInErr) {
+      if (authErrorName(signInErr) === 'UserNotConfirmedException') {
+        await resendSignUpCode({ username })
+        return 'signUp'
+      }
+      throw signInErr
+    }
+  }
+}
+
+export async function startEmailLogin(email: string): Promise<EmailVerificationFlow> {
+  ensureConfigured()
+  const username = normalizeEmail(email)
+
+  try {
+    await amplifySignIn({
+      username,
+      options: {
+        authFlowType: 'USER_AUTH',
+        preferredChallenge: 'EMAIL_OTP',
+      },
+    })
+    return 'signIn'
+  } catch (err) {
+    if (authErrorName(err) === 'UserNotConfirmedException') {
+      await resendSignUpCode({ username })
+      return 'signUp'
+    }
+    throw err
+  }
+}
+
+export async function completeEmailVerification(
+  email: string,
+  code: string,
+  flow: EmailVerificationFlow,
+) {
+  ensureConfigured()
+  const username = normalizeEmail(email)
+  const confirmationCode = code.trim()
+
+  if (flow === 'signUp') {
+    const { nextStep } = await confirmSignUp({ username, confirmationCode })
+    if (nextStep.signUpStep === 'COMPLETE_AUTO_SIGN_IN') {
+      await autoSignIn()
+    }
+  } else {
+    await confirmSignIn({ challengeResponse: confirmationCode })
+  }
+
+  if (!(await getAuthUser())) {
+    throw new Error('Verification succeeded but sign-in could not be completed.')
+  }
 }
 
 export async function signUp(input: {

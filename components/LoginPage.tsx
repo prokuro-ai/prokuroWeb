@@ -3,8 +3,14 @@
 import { useState } from 'react'
 import { Link, useLocation } from '@/lib/navigation'
 import { useAuth } from '@/components/AuthProvider'
-import { normalizeEmail, signIn, confirmAccount } from '@/lib/auth'
-import { isEmailConfirmationRequired, mapAuthError } from '@/lib/auth-errors'
+import {
+  normalizeEmail,
+  startEmailLogin,
+  completeEmailVerification,
+  type EmailVerificationFlow,
+} from '@/lib/auth'
+import { mapAuthError } from '@/lib/auth-errors'
+import { AuthFormField } from '@/components/auth/AuthFormField'
 import { AuthError } from 'aws-amplify/auth'
 
 function GoogleIcon() {
@@ -18,23 +24,19 @@ function GoogleIcon() {
   )
 }
 
-const INPUT_CLASS =
-  'w-full px-3 py-2.5 rounded-md border border-[#d6deea] bg-white text-[15px] text-[#0f1b2d] placeholder:text-[#98a3b6] focus:outline-none focus:ring-2 focus:ring-[#0062ff]/20 focus:border-[#0062ff] transition-all'
-
 type View = 'form' | 'confirm'
-type FormStep = 'intro' | 'password'
 
 export default function LoginPage() {
   const [, navigate] = useLocation()
   const { refresh } = useAuth()
 
   const [view, setView] = useState<View>('form')
-  const [formStep, setFormStep] = useState<FormStep>('intro')
+  const [confirmFlow, setConfirmFlow] = useState<EmailVerificationFlow>('signIn')
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const [codeError, setCodeError] = useState<string | null>(null)
 
   const finishAuth = async () => {
     await refresh()
@@ -43,31 +45,26 @@ export default function LoginPage() {
 
   const resetForm = () => {
     setView('form')
-    setFormStep('intro')
+    setConfirmFlow('signIn')
     setCode('')
-    setError(null)
+    setEmailError(null)
+    setCodeError(null)
   }
 
-  const handleIntroSubmit = (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email.trim()) return
-    setError(null)
-    setFormStep('password')
-  }
-
-  const handleLoginSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    if (!email.trim()) {
+      setEmailError('This field is required.')
+      return
+    }
     setLoading(true)
-    setError(null)
+    setEmailError(null)
     try {
-      await signIn(email, password)
-      await finishAuth()
+      const flow = await startEmailLogin(email)
+      setConfirmFlow(flow)
+      setView('confirm')
     } catch (err) {
-      if (isEmailConfirmationRequired(err)) {
-        setView('confirm')
-        return
-      }
-      setError(mapAuthError(err, 'signIn'))
+      setEmailError(mapAuthError(err, 'signIn'))
     } finally {
       setLoading(false)
     }
@@ -75,16 +72,20 @@ export default function LoginPage() {
 
   const handleConfirmSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!code.trim()) {
+      setCodeError('This field is required.')
+      return
+    }
     setLoading(true)
-    setError(null)
+    setCodeError(null)
     try {
-      await confirmAccount(email, code, password || undefined)
+      await completeEmailVerification(email, code, confirmFlow)
       await finishAuth()
     } catch (err) {
       if (err instanceof AuthError) {
-        setError(mapAuthError(err, 'signUp'))
+        setCodeError(mapAuthError(err, confirmFlow === 'signUp' ? 'signUp' : 'signIn'))
       } else {
-        setError(err instanceof Error ? err.message : 'Invalid verification code. Please try again.')
+        setCodeError(err instanceof Error ? err.message : 'Invalid verification code. Please try again.')
       }
     } finally {
       setLoading(false)
@@ -115,19 +116,19 @@ export default function LoginPage() {
             <p className="text-[15px] text-[#7a8598] mb-2">We sent a verification code to</p>
             <p className="font-semibold text-[#0f1b2d] mb-6">{normalizeEmail(email)}</p>
 
-            <form onSubmit={(e) => void handleConfirmSubmit(e)} className="space-y-3 text-left">
-              {error && (
-                <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-700">{error}</p>
-              )}
-              <input
-                type="text"
+            <form onSubmit={(e) => void handleConfirmSubmit(e)} noValidate className="space-y-3 text-left">
+              <AuthFormField
+                id="login-verification-code"
+                label="Verification code"
+                value={code}
+                onChange={(value) => {
+                  setCode(value)
+                  if (codeError) setCodeError(null)
+                }}
+                placeholder="Verification code"
                 inputMode="numeric"
                 autoComplete="one-time-code"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="Verification code"
-                required
-                className={INPUT_CLASS}
+                error={codeError}
               />
               <button
                 type="submit"
@@ -152,59 +153,34 @@ export default function LoginPage() {
               <p className="text-[14px] text-[#7a8598]">BOM intelligence for hardware teams.</p>
             </div>
 
-            {formStep === 'intro' && (
-              <>
-                <button
-                  type="button"
-                  className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-md border border-[#d6deea] bg-white hover:bg-slate-50 text-[15px] font-medium text-[#0f1b2d] transition-colors shadow-sm mb-5 cursor-pointer"
-                >
-                  <GoogleIcon />
-                  Continue with Google
-                </button>
-
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="flex-1 h-px bg-[#e8edf3]" />
-                  <span className="text-[13px] text-[#98a3b6] font-medium">or</span>
-                  <div className="flex-1 h-px bg-[#e8edf3]" />
-                </div>
-              </>
-            )}
-
-            <form
-              onSubmit={(e) => {
-                if (formStep === 'intro') {
-                  handleIntroSubmit(e)
-                  return
-                }
-                void handleLoginSubmit(e)
-              }}
-              className="space-y-3"
+            <button
+              type="button"
+              className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-md border border-[#d6deea] bg-white hover:bg-slate-50 text-[15px] font-medium text-[#0f1b2d] transition-colors shadow-sm mb-5 cursor-pointer"
             >
-              {error && (
-                <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-700">{error}</p>
-              )}
+              <GoogleIcon />
+              Continue with Google
+            </button>
 
-              <input
+            <div className="flex items-center gap-3 mb-5">
+              <div className="flex-1 h-px bg-[#e8edf3]" />
+              <span className="text-[13px] text-[#98a3b6] font-medium">or</span>
+              <div className="flex-1 h-px bg-[#e8edf3]" />
+            </div>
+
+            <form onSubmit={(e) => void handleEmailSubmit(e)} noValidate className="space-y-3">
+              <AuthFormField
+                id="login-email"
+                label="Email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(value) => {
+                  setEmail(value)
+                  if (emailError) setEmailError(null)
+                }}
                 placeholder="Email"
-                required
-                readOnly={formStep === 'password'}
-                className={INPUT_CLASS}
+                autoComplete="email"
+                error={emailError}
               />
-
-              {formStep === 'password' && (
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Password"
-                  required
-                  autoFocus
-                  className={INPUT_CLASS}
-                />
-              )}
 
               <button
                 type="submit"
@@ -213,28 +189,16 @@ export default function LoginPage() {
               >
                 Continue with email
               </button>
-
-              {formStep === 'password' && (
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="w-full text-center text-[13px] font-medium text-[#7a8598] hover:text-[#0f1b2d]"
-                >
-                  Back
-                </button>
-              )}
             </form>
 
-            {formStep === 'intro' && (
-              <div className="mt-6 pt-6 border-t border-[#f0f3f7] text-center">
-                <p className="text-[14px] text-[#7a8598]">
-                  Don&apos;t have an account?{' '}
-                  <Link href="/signup" className="cursor-pointer font-semibold text-[#0062ff] hover:underline">
-                    Sign up
-                  </Link>
-                </p>
-              </div>
-            )}
+            <div className="mt-6 pt-6 border-t border-[#f0f3f7] text-center">
+              <p className="text-[14px] text-[#7a8598]">
+                Don&apos;t have an account?{' '}
+                <Link href="/signup" className="cursor-pointer font-semibold text-[#0062ff] hover:underline">
+                  Sign up
+                </Link>
+              </p>
+            </div>
           </>
         )}
       </div>
