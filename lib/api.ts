@@ -90,16 +90,6 @@ export async function getBom(id: string): Promise<BomRecord> {
   return body as BomRecord
 }
 
-export async function refreshBom(id: string): Promise<BomRecord> {
-  const res = await fetch(`/api/boms/${encodeURIComponent(id)}/refresh`, {
-    method: 'POST',
-    headers: await authHeaders(),
-  })
-  const body: unknown = await readJsonBody(res)
-  if (!res.ok) throw new Error(await readErrorMessage(res, body))
-  return body as BomRecord
-}
-
 export async function deleteBom(id: string): Promise<void> {
   const res = await fetch(`/api/boms/${encodeURIComponent(id)}`, {
     method: 'DELETE',
