@@ -1,19 +1,18 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Link } from '@/lib/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import { listBoms } from '@/lib/api'
-import { signOut } from '@/lib/auth'
 import { DeleteBomButton } from '@/components/DeleteBomButton'
 import BomBulkUploadModal from '@/components/BomBulkUploadModal'
+import DashboardShell from '@/components/DashboardShell'
 import type { BomSummary } from '@/lib/types'
 import { formatUploadedAt } from '@/lib/format'
 import {
   AlertTriangle, Bell, ChevronRight, FileText, Search,
   ShieldAlert, UploadCloud, CheckCircle, ArrowRight,
-  Settings, LogOut,
 } from 'lucide-react'
 
 // ─── Static alert data ────────────────────────────────────────────────────────
@@ -441,13 +440,9 @@ type Page = 'dashboard' | 'boms' | 'alerts'
 export default function DashboardContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { user, loading: authLoading, refresh } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [boms, setBoms]   = useState<BomSummary[]>([])
   const [loading, setLoading] = useState(true)
-  const [bellOpen, setBellOpen]       = useState(false)
-  const [profileOpen, setProfileOpen] = useState(false)
-  const bellRef    = useRef<HTMLDivElement>(null)
-  const profileRef = useRef<HTMLDivElement>(null)
 
   const tabParam = searchParams.get('tab')
   const page: Page = tabParam === 'boms' || tabParam === 'alerts' ? tabParam : 'dashboard'
@@ -478,22 +473,6 @@ export default function DashboardContent() {
     return () => { cancelled = true }
   }, [authLoading, user, router])
 
-  // Click-outside for dropdowns
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (bellRef.current    && !bellRef.current.contains(e.target as Node))    setBellOpen(false)
-      if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false)
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
-
-  const handleSignOut = async () => {
-    await signOut()
-    await refresh()
-    router.push('/login')
-  }
-
   const [uploadOpen, setUploadOpen] = useState(false)
 
   const openUpload = () => {
@@ -517,154 +496,13 @@ export default function DashboardContent() {
   }
 
   const newAlertCount = 0
-  const initials = user
-    ? (user.firstName?.[0] ?? '') + (user.lastName?.[0] ?? '')
-    : 'U'
-
-  const nav = [
-    { id: 'dashboard', label: 'Dashboard' },
-    { id: 'boms',      label: 'BOMs'      },
-  ] as const
 
   return (
-    <div className="relative flex flex-col h-screen bg-slate-50 font-sans text-slate-900">
-
-      {/* ── Top navbar ── */}
-      <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0">
-
-        {/* Logo + nav tabs */}
-        <div className="flex items-center gap-8 h-full">
-          <div className="flex items-center gap-2">
-            <span className="h-4 w-4 bg-[#0062ff] shrink-0" style={{ clipPath: 'polygon(24% 0, 100% 0, 100% 100%, 0% 100%)' }} />
-            <span className="text-[17px] font-semibold tracking-tight text-[#0f1b2d]">
-              Prokuro<span className="text-[#0062ff]">.ai</span>
-            </span>
-          </div>
-          <nav className="flex items-center h-full">
-            {nav.map(({ id, label }) => (
-              <button key={id} onClick={() => setPage(id as Page)}
-                className={`relative h-full px-4 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors ${
-                  page === id
-                    ? 'text-[#0f1b2d] border-[#0062ff]'
-                    : 'text-slate-500 border-transparent hover:text-slate-800 hover:border-slate-300'
-                }`}>
-                {label}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {/* Right: search, bell, avatar */}
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input type="text" placeholder="Search parts, BOMs…"
-              className="pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#0062ff] w-56" />
-          </div>
-
-          {/* Bell */}
-          <div className="relative" ref={bellRef}>
-            <button onClick={() => setBellOpen(o => !o)}
-              className={`relative p-1.5 rounded-md transition-colors ${bellOpen ? 'text-[#0062ff] bg-blue-50' : 'text-slate-400 hover:text-slate-600'}`}>
-              <Bell className="w-5 h-5" />
-              {newAlertCount > 0 && (
-                <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full border border-white" />
-              )}
-            </button>
-            {bellOpen && (
-              <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-lg z-50 flex flex-col overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-                  <span className="text-sm font-bold text-slate-900">Alerts</span>
-                  <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{newAlertCount} New</span>
-                </div>
-                <div className="px-4 py-8 text-center">
-                  <p className="text-sm font-medium text-slate-900">Alerts coming soon</p>
-                  <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                    Lifecycle, stock, and tariff alerts will appear here once monitoring is enabled.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Profile */}
-          <div className="relative" ref={profileRef}>
-            <button onClick={() => setProfileOpen(o => !o)}
-              className={`flex items-center gap-2 p-1 rounded-md transition-colors ${profileOpen ? 'bg-slate-100' : 'hover:bg-slate-50'}`}>
-              <div className="w-8 h-8 rounded-full bg-[#0062ff] flex items-center justify-center text-white shrink-0 text-xs font-bold">
-                {initials.toUpperCase()}
-              </div>
-              <svg className={`w-4 h-4 text-slate-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            {profileOpen && (() => {
-              const bomPct = Math.min((boms.length / 20) * 100, 100)
-              return (
-                <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden">
-                  {/* Identity */}
-                  <div className="px-4 pt-4 pb-3.5 border-b border-slate-100 flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-full bg-[#0062ff] flex items-center justify-center text-white text-sm font-bold shrink-0">
-                      {initials.toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-[#0f1b2d] truncate">
-                          {user ? `${user.firstName} ${user.lastName}`.trim() || user.email : 'Account'}
-                        </p>
-                        <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-[#0062ff]">Growth</span>
-                      </div>
-                      <p className="text-xs text-slate-500 truncate">{user?.email ?? ''}</p>
-                      {user?.company?.trim() && <p className="text-xs text-slate-400 mt-0.5">{user.company}</p>}
-                    </div>
-                  </div>
-                  {/* Plan usage */}
-                  <div className="px-4 py-3.5 border-b border-slate-100">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-medium text-slate-600">Active BOMs</span>
-                      <span className="text-xs text-slate-400">{boms.length} / 20</span>
-                    </div>
-                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-3">
-                      <div className="h-full rounded-full bg-[#0062ff]" style={{ width: `${bomPct}%` }} />
-                    </div>
-                    <button
-                      onClick={() => { router.push('/account'); setProfileOpen(false) }}
-                      className="w-full text-left text-xs font-semibold flex items-center justify-between group text-[#0062ff]">
-                      Upgrade to Scale
-                      <ChevronRight className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" />
-                    </button>
-                  </div>
-                  {/* Nav items */}
-                  <div className="py-1.5">
-                    {[
-                      { icon: Settings, label: 'Account Settings', action: () => { router.push('/account'); setProfileOpen(false) } },
-                    ].map(({ icon: Icon, label, action }) => (
-                      <button key={label} onClick={action}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left group">
-                        <div className="w-7 h-7 rounded-md bg-slate-100 group-hover:bg-slate-200 flex items-center justify-center shrink-0 transition-colors">
-                          <Icon className="w-3.5 h-3.5 text-slate-500" />
-                        </div>
-                        <span className="flex-1 text-sm font-medium text-[#0f1b2d]">{label}</span>
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-400 shrink-0" />
-                      </button>
-                    ))}
-                  </div>
-                  {/* Sign out */}
-                  <div className="border-t border-slate-100 p-2">
-                    <button onClick={handleSignOut}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors text-left">
-                      <LogOut className="w-4 h-4 shrink-0" /> Sign out
-                    </button>
-                  </div>
-                </div>
-              )
-            })()}
-          </div>
-        </div>
-      </header>
-
-      {/* ── Page content ── */}
-      <div className="flex-1 min-h-0 overflow-hidden flex">
+    <DashboardShell
+      activeTab={page === 'boms' ? 'boms' : 'dashboard'}
+      bomCount={boms.length}
+    >
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         {page === 'dashboard' ? (
           <OverviewPage
             boms={boms} loading={loading}
@@ -705,6 +543,6 @@ export default function DashboardContent() {
             className="text-xs text-slate-400 hover:text-slate-700 transition-colors">LinkedIn</a>
         </div>
       </footer>
-    </div>
+    </DashboardShell>
   )
 }
