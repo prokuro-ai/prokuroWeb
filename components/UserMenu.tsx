@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import UserAvatar from '@/components/UserAvatar'
 import { displayNameForUser, initialsForUser, signOut } from '@/lib/auth'
+import { BOOK_DEMO_LABEL, SCHEDULE_DEMO_PATH } from '@/lib/sales'
 
 export default function UserMenu() {
   const [, navigate] = useLocation()
@@ -120,22 +121,9 @@ export function AuthHeaderActions() {
 }
 
 export function MarketingAuthActions() {
-  const { user, loading } = useAuth()
-  const [, navigate] = useLocation()
-
-  if (loading) return null
-
   return (
-    <>
-      <Link href="/login" className="nav-text-link">
-        Login
-      </Link>
-      <button
-        className="btn btn--primary btn--nav"
-        onClick={() => navigate(user ? '/dashboard' : '/login')}
-      >
-        Try Prokuro
-      </button>
-    </>
+    <Link className="btn btn--primary btn--nav" href={SCHEDULE_DEMO_PATH}>
+      {BOOK_DEMO_LABEL}
+    </Link>
   )
 }

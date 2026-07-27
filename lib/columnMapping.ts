@@ -17,6 +17,16 @@ function detectedHeaderForCanonical(
   return match?.[0] ?? null
 }
 
+export function toColumnMappingRecord(mapping: ColumnMapping[]): Record<string, string> {
+  const result: Record<string, string> = {}
+  for (const col of mapping) {
+    if (col.detectedFrom) {
+      result[col.detectedFrom] = col.canonical
+    }
+  }
+  return result
+}
+
 export function buildColumnMappings(parseResult: ParseResult): ColumnMapping[] {
   const mapping = parseResult.column_mapping
 

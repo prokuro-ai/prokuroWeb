@@ -29,9 +29,18 @@ async function readErrorMessage(res: Response, body: unknown): Promise<string> {
   return `HTTP ${res.status}`
 }
 
-async function postFile(endpoint: string, file: File): Promise<Response> {
+async function postFile(
+  endpoint: string,
+  file: File,
+  extra?: Record<string, string>,
+): Promise<Response> {
   const form = new FormData()
   form.append('file', file)
+  if (extra) {
+    for (const [key, value] of Object.entries(extra)) {
+      form.append(key, value)
+    }
+  }
   return fetch(endpoint, { method: 'POST', body: form })
 }
 
@@ -52,8 +61,14 @@ async function readJsonBody(res: Response): Promise<unknown> {
   }
 }
 
-export async function parseFile(file: File): Promise<ParseResult> {
-  const res = await postFile(uploadEndpoint('parse'), file)
+export async function parseFile(
+  file: File,
+  options?: { columnMapping?: Record<string, string> },
+): Promise<ParseResult> {
+  const extra = options?.columnMapping
+    ? { column_mapping: JSON.stringify(options.columnMapping) }
+    : undefined
+  const res = await postFile(uploadEndpoint('parse'), file, extra)
   const body: unknown = await readJsonBody(res)
   if (res.ok) return body as ParseResult
 
@@ -62,8 +77,14 @@ export async function parseFile(file: File): Promise<ParseResult> {
   throw new Error(await readErrorMessage(res, body))
 }
 
-export async function analyzeFile(file: File): Promise<AnalyzeResult> {
-  const res = await postFile(uploadEndpoint('analyze'), file)
+export async function analyzeFile(
+  file: File,
+  options?: { columnMapping?: Record<string, string> },
+): Promise<AnalyzeResult> {
+  const extra = options?.columnMapping
+    ? { column_mapping: JSON.stringify(options.columnMapping) }
+    : undefined
+  const res = await postFile(uploadEndpoint('analyze'), file, extra)
   const body: unknown = await readJsonBody(res)
   if (!res.ok) throw new Error(await readErrorMessage(res, body))
   return body as AnalyzeResult

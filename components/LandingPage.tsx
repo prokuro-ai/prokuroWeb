@@ -1,11 +1,6 @@
 'use client'
 
-
-
-import { Link, useLocation } from '@/lib/navigation'
-
 import { useEffect, useRef, useState } from 'react'
-import { useAuth } from '@/components/AuthProvider'
 import { motion, useReducedMotion } from 'framer-motion'
 import {
   AlertTriangle,
@@ -24,6 +19,32 @@ import {
 } from 'lucide-react'
 import { MarketingAuthActions } from '@/components/UserMenu'
 import ProkuroBrandLink from '@/components/ProkuroBrandLink'
+import { BOOK_DEMO_LABEL, SCHEDULE_DEMO_PATH } from '@/lib/sales'
+
+const NAV_LINKS = [
+  { href: '#product', label: 'Product' },
+  { href: '#how-it-works', label: 'How It Works' },
+  { href: '/schedule', label: 'Book a demo' },
+  { href: '#company', label: 'Company' },
+] as const
+
+function NavLinks({
+  className,
+  onNavigate,
+}: {
+  className?: string
+  onNavigate?: () => void
+}) {
+  return (
+    <nav className={className} aria-label="Primary">
+      {NAV_LINKS.map((link) => (
+        <a key={link.href} href={link.href} onClick={onNavigate}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  )
+}
 
 function UploadBomIcon({ size = 28 }: { size?: number }) {
   return (
@@ -82,127 +103,31 @@ function RiskPlanIcon({ size = 28 }: { size?: number }) {
 }
 
 const PROBLEM_STATS = [
+  { value: '7+', label: 'Systems per BOM on average — ERP, PLM, spreadsheets, email, distributor portals', source: 'Industry estimate' },
   { value: '15–25%', label: 'Higher total BOM cost from poor sourcing data and part mismatches', source: 'AGS Devices' },
   { value: '$4T', label: 'Lost globally in a single high-volatility year to supply chain disruption', source: 'McKinsey & Company' },
-  { value: '56%', label: 'Can trace materials to Tier-3/4 — despite 93% claiming full confidence', source: 'Tradeverifyd' },
-  { value: '3.7 yrs', label: 'Average interval between month-long+ supply chain interruptions', source: 'Tradeverifyd' },
+  { value: '3–5 days', label: 'Typical cross-functional scramble when a single part goes NRND', source: 'Procurement teams' },
 ]
 
-const PRICING_TIERS = [
-  {
-    name: 'Free',
-    tagline: 'Risk Snapshot',
-    price: '$0',
-    period: '',
-    description: 'A one-time scan to see what a real risk pass finds in your BOM.',
-    cta: 'Get Started',
-    href: '/signup',
-    highlight: false,
-    features: [
-      '100 lines, one BOM',
-      'One-time scan',
-      '1 seat',
-      'Top 5 lines: risk scores + explanations',
-      'Teaser alternates (1 per line)',
-      'Tariff exposure: summary % only',
-    ],
-  },
-  {
-    name: 'Starter',
-    tagline: null,
-    price: '$99',
-    period: '/mo',
-    description: 'For a single team keeping one BOM honest, monthly.',
-    cta: 'Get Started',
-    href: '/signup',
-    highlight: false,
-    features: [
-      '500 monitored lines',
-      'Up to 5 active BOMs',
-      'Monthly refresh',
-      '2 seats',
-      'Full risk scores + explanations',
-      'Full vetted alternates',
-      'Per-line tariff/geo exposure',
-      'Draft-action agent — 5/mo',
-      'PDF / share-link reports',
-    ],
-  },
-  {
-    name: 'Growth',
-    tagline: 'Recommended',
-    price: '$449',
-    period: '/mo',
-    description: 'For procurement teams that need weekly signal across more lines.',
-    cta: 'Get Started',
-    href: '/signup',
-    highlight: true,
-    features: [
-      '2,500 monitored lines',
-      'Up to 20 active BOMs',
-      'Weekly refresh',
-      '5 seats',
-      'Full risk scores + explanations',
-      'Full vetted alternates',
-      'Draft-action agent — 50/mo',
-      'Dashboard alerts',
-      'PDF / share-link reports',
-    ],
-  },
-  {
-    name: 'Scale',
-    tagline: null,
-    price: '$1,299',
-    period: '/mo',
-    description: 'For teams running daily deltas across the full BOM portfolio.',
-    cta: 'Get Started',
-    href: '/signup',
-    highlight: false,
-    features: [
-      '10,000 monitored lines',
-      'Unlimited active BOMs',
-      'Daily refresh',
-      '15 seats',
-      'Per-line tariff exposure + rollups',
-      'Unlimited draft-action agent',
-      'Dashboard alerts + portfolio view',
-      'PDF / share-link reports',
-    ],
-  },
-  {
-    name: 'Enterprise',
-    tagline: null,
-    price: 'Custom',
-    period: 'pricing',
-    description: 'Custom lines, SSO/SAML, PLM integrations, and a contractual alerts SLA.',
-    cta: 'Contact Us',
-    href: '#contact',
-    highlight: false,
-    features: [
-      'Custom monitored lines',
-      'Unlimited active BOMs',
-      'Daily refresh + alerts SLA',
-      'Unlimited seats, SSO/SAML',
-      'Per-line exposure + custom HTS review',
-      'Unlimited draft-action agent',
-      'White-label reports',
-      'PLM integrations, SOC 2 pkg, DPA',
-    ],
-  },
+const PILOT_BENEFITS = [
+  'Guided onboarding with your procurement team on a real BOM',
+  'Decision-ready risk analysis — not another dashboard to babysit',
+  'Alternates cross-checked against lifecycle, stock, tariff exposure, and your AML',
+  'Direct input into how the analyst fits your sourcing workflow',
 ]
 
 const PROBLEM_POINTS = [
   {
-    title: 'Component obsolescence hits blind',
-    body: 'Parts reach end-of-life years before the product does. Missing the notice forces reactive redesigns and halts active lines.',
+    title: 'Fragmented data, no source of truth',
+    body: 'A single product spans OEMs, CMs, distributors, and suppliers — each with their own ERP, PLM, spreadsheets, and part numbers. Procurement teams stitch it together by hand.',
   },
   {
-    title: 'Tier blindness, single-source risk',
-    body: 'Visibility usually stops at Tier-1. A sub-tier single-source shutdown triggers instant allocation freezes deep in your supply chain.',
+    title: 'Unstructured engineering artifacts',
+    body: 'BOMs, datasheets, ECOs, supplier quotes, and compliance certificates live in PDFs and email threads. Humans spend hours reading documents that software should parse.',
   },
   {
-    title: 'Sourcing panic invites counterfeits',
-    body: 'An unoptimized BOM sends procurement scrambling into unverified secondary markets the moment shortages hit — and quality drops with it.',
+    title: 'Decisions require cross-functional coordination',
+    body: 'When a part goes NRND, procurement, engineering, and quality each run their own checks. The alternate isn\'t the hard part — eliminating the 3-day Slack thread is.',
   },
 ]
 
@@ -210,6 +135,7 @@ const LOGOS = [
   { src: '/images/logos/Google_2015_logo.svg.png', alt: 'Google' },
   { src: '/images/logos/Amazon_logo.svg.png', alt: 'Amazon' },
   { src: '/images/logos/fico-logo-coreblue-large.png', alt: 'FICO' },
+  { src: '/images/logos/Brex_Inc._Corporate_Logo.png', alt: 'Brex' },
   { src: '/images/logos/Southwest_Airlines_logo_2014.svg.png', alt: 'Southwest Airlines' },
   { src: '/images/logos/ServiceNow-Logo.png', alt: 'ServiceNow' },
   { src: '/images/logos/Cisco_logo_blue_2016.svg.png', alt: 'Cisco' },
@@ -234,31 +160,21 @@ function FeatureCard({ className, children }: { className?: string; children: Re
   return <div className={`rounded-xl ${className ?? ''}`}>{children}</div>
 }
 
-function PricingCta({ tier, onContact }: { tier: (typeof PRICING_TIERS)[number]; onContact?: (event: React.MouseEvent) => void }) {
-  const className = `btn ${tier.highlight ? 'btn--primary' : 'btn--ghost'} pricing-card__cta`
-
-  if (tier.href.startsWith('/')) {
-    return (
-      <Link className={className} href={tier.href}>
-        {tier.cta}
-        <ArrowRight size={14} aria-hidden="true" />
-      </Link>
-    )
-  }
-
-  return (
-    <a className={className} href={tier.href} onClick={onContact}>
-      {tier.cta}
-      <ArrowRight size={14} aria-hidden="true" />
-    </a>
-  )
-}
-
 export default function LandingPage() {
-  const [, navigate] = useLocation()
-  const { user } = useAuth()
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isNavOpen, setIsNavOpen] = useState(false)
   const navRef = useRef<HTMLElement>(null)
+
+  const closeNav = () => setIsNavOpen(false)
+
+  const toggleNav = () => {
+    setIsNavOpen((open) => {
+      const next = !open
+      if (next) {
+        navRef.current?.classList.remove('top-nav--hidden')
+      }
+      return next
+    })
+  }
 
   useEffect(() => {
     let lastY = window.scrollY
@@ -266,6 +182,11 @@ export default function LandingPage() {
       const currentY = window.scrollY
       const nav = navRef.current
       if (!nav) return
+      if (isNavOpen) {
+        nav.classList.remove('top-nav--hidden')
+        lastY = currentY
+        return
+      }
       if (currentY <= 0) {
         nav.classList.remove('top-nav--hidden')
       } else if (currentY > lastY) {
@@ -277,40 +198,65 @@ export default function LandingPage() {
     }
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
+  }, [isNavOpen])
+
+  useEffect(() => {
+    document.body.classList.toggle('nav-open', isNavOpen)
+    return () => document.body.classList.remove('nav-open')
+  }, [isNavOpen])
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 750px)')
+    const onChange = (event: MediaQueryListEvent) => {
+      if (event.matches) setIsNavOpen(false)
+    }
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
   }, [])
 
   useEffect(() => {
-    document.body.classList.toggle('modal-open', isModalOpen)
-    return () => document.body.classList.remove('modal-open')
-  }, [isModalOpen])
-
-  useEffect(() => {
     const onEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setIsModalOpen(false)
+      if (event.key === 'Escape') setIsNavOpen(false)
     }
     document.addEventListener('keydown', onEscape)
     return () => document.removeEventListener('keydown', onEscape)
   }, [])
 
-  const openWaitlistModal = (event: React.MouseEvent) => {
-    event.preventDefault()
-    setIsModalOpen(true)
-  }
-
   return (
     <div className="marketing-page">
       <header className="top-nav" id="top" ref={navRef}>
         <div className="container top-nav__inner">
+          <button
+            className={`nav-toggle${isNavOpen ? ' nav-toggle--open' : ''}`}
+            type="button"
+            aria-label={isNavOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isNavOpen}
+            aria-controls="mobile-nav"
+            onClick={toggleNav}
+          >
+            <span className="nav-toggle__bars" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
+          </button>
           <ProkuroBrandLink variant="marketing" />
-          <nav className="nav-links" aria-label="Primary">
-            <a href="#product">Product</a>
-            <a href="#how-it-works">How It Works</a>
-            <a href="#pricing">Pricing</a>
-            <a href="#company">Company</a>
-          </nav>
+          <NavLinks className="nav-links nav-links--desktop" onNavigate={closeNav} />
           <div className="nav-actions">
             <MarketingAuthActions />
           </div>
+        </div>
+        <div
+          className={`nav-backdrop${isNavOpen ? ' nav-backdrop--open' : ''}`}
+          aria-hidden={!isNavOpen}
+          onClick={closeNav}
+        />
+        <div
+          className={`nav-panel${isNavOpen ? ' nav-panel--open' : ''}`}
+          id="mobile-nav"
+          aria-hidden={!isNavOpen}
+        >
+          <NavLinks className="nav-panel__links" onNavigate={closeNav} />
         </div>
       </header>
 
@@ -325,17 +271,17 @@ export default function LandingPage() {
           <div className="container">
             <div className="hero__centered">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }}>
-                <p className="eyebrow">The agentic platform for BOM management</p>
+                <p className="eyebrow">Your AI procurement analyst for BOM risk</p>
                 <h1>Which parts in your BOM are about to become a problem — and what to order instead.</h1>
                 <p className="hero__subheadline">
-                  Prokuro turns your bill of materials into a plan of action: every part scored for lifecycle, availability, and tariff risk — and a vetted alternate ready for each one that needs it.
+                  Prokuro reads your BOM, cross-references lifecycle, availability, and tariff exposure — then hands you a decision, not a dashboard. Every at-risk line gets a recommended alternate, confidence score, and what to do this week.
                 </p>
                 <div className="hero__cta">
-                  <button className="btn btn--primary" onClick={() => navigate(user ? '/dashboard' : '/login')}>
-                    Explore the product
-                  </button>
-                  <a className="btn btn--ghost" href="#waitlist" onClick={openWaitlistModal}>
-                    See Demo
+                  <a className="btn btn--primary" href={SCHEDULE_DEMO_PATH}>
+                    Book a demo
+                  </a>
+                  <a className="btn btn--ghost" href="#how-it-works">
+                    How it works
                   </a>
                 </div>
               </motion.div>
@@ -345,7 +291,7 @@ export default function LandingPage() {
 
         <section className="built-by" aria-label="Built by">
           <div className="container">
-            <p className="built-by__lead">Built by engineers who solved similar problems at:</p>
+            <p className="built-by__lead">Built by engineers who worked at:</p>
             <div className="built-by__logos">
               {LOGOS.map((logo) => (
                 <img
@@ -365,14 +311,14 @@ export default function LandingPage() {
         <section id="product" className="section problem-section">
           <div className="container">
             <Reveal>
-              <p className="eyebrow">The problem with BOM risk today</p>
+              <p className="eyebrow">Why procurement still runs on spreadsheets</p>
             </Reveal>
             <Reveal>
-              <h2>Every hardware team has felt this. Now it&apos;s a number.</h2>
+              <h2>The supply chain is fragmented. Decisions shouldn&apos;t be.</h2>
             </Reveal>
             <Reveal delay={0.05}>
               <p className="section-lead">
-                Obsolescence, single-source dependency, allocation, and geopolitical volatility rarely strike alone — they compound. A missed EOL notice becomes a redesign; a stalled shipment becomes an allocation freeze; a shortage pushes buyers into the gray market. Without live data, teams don&apos;t see the chain reaction until it&apos;s already on the production floor.
+                Teams pay for component databases but still manage BOM risk in email and spreadsheets — not because the data is bad, but because those tools don&apos;t fit how people actually make decisions. Prokuro is software that participates in those decisions: grounded in real component data, explained in plain language, and ready for your team to act on.
               </p>
             </Reveal>
           </div>
@@ -414,17 +360,17 @@ export default function LandingPage() {
                   {
                     Icon: UploadBomIcon,
                     title: 'Upload your BOM',
-                    copy: 'CSV or Excel, any column format. Prokuro AI-detects and maps columns on the first upload, then remembers your mapping for every future upload — no re-mapping ever again.',
+                    copy: 'CSV or Excel, any column format — messy headers, distributor SKUs, multi-sheet workbooks. Prokuro normalizes part identities, maps columns on first upload, and remembers your mapping forever.',
                   },
                   {
                     Icon: SourcingNetworkIcon,
-                    title: 'Our sourcing agent works the network',
-                    copy: 'An autonomous agent matches each MPN against our live network of component data — lifecycle status, stock depth at Digi-Key, Mouser, Arrow and Avnet, factory lead time, lead-time trend, counterfeit-risk flags for gray-market sourcing, risk score, and ranked parametric alternates — no manual lookups.',
+                    title: 'Your analyst works the data layer',
+                    copy: 'Each line is resolved against lifecycle status, distributor stock, factory lead time, tariff exposure, and your own AML alternates. Component identities are normalized so R10K0402 and RES-10K resolve to the same part.',
                   },
                   {
                     Icon: RiskPlanIcon,
-                    title: 'Your risk agent hands you a plan',
-                    copy: 'See an executive summary, per-line risk table sortable by risk score, lifecycle, lead time, and decision cards for each at-risk line with the proven alternate and what to do this week.',
+                    title: 'Get a decision, not a data dump',
+                    copy: 'Decision cards for every at-risk line: why it\'s risky, the recommended alternate, confidence score, availability, and what to do this week. Export the report or share it with engineering and quality.',
                   },
                 ].map(({ Icon, title, copy }, i) => (
                   <div className="step-flow-item" key={title}>
@@ -450,11 +396,11 @@ export default function LandingPage() {
                 className="eyebrow"
                 style={{ color: '#0062ff', fontSize: 16, fontWeight: 700, letterSpacing: 0.4, textTransform: 'uppercase' }}
               >
-                What you get
+                What your analyst delivers
               </p>
-              <h2>Complete visibility into every line item.</h2>
+              <h2>Decisions grounded in data — explained in plain language.</h2>
               <p style={{ color: '#4f5d73', fontSize: 18, lineHeight: 1.6, marginTop: 12 }}>
-                Move beyond static spreadsheets. Prokuro connects your BOM to a live network of component data, so every line stays current.
+                Not another component database. Prokuro combines public component data, your BOM context, and reasoning across procurement constraints — so every recommendation is sourced, scored, and actionable.
               </p>
             </div>
 
@@ -467,11 +413,11 @@ export default function LandingPage() {
                         <Activity className="h-6 w-6 text-[#0062ff]" />
                       </div>
                       <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600, lineHeight: 1.3, color: '#0f1b2d' }}>
-                        Lifecycle status per line
+                        Lifecycle status with plain-language reasoning
                       </h3>
                     </div>
                     <p className="text-[#4f5d73] leading-relaxed" style={{ margin: '0 0 20px' }}>
-                      Every part in the network is categorized as Active, NRND, EOL, or Discontinued. Predicted time-to-EOL based on inventory depletion signals — not just manufacturer announcements.
+                      Every part categorized as Active, NRND, EOL, or Discontinued — with an explanation of why it matters for your production timeline, not just a status badge.
                     </p>
                     <div className="flex gap-2 flex-wrap">
                       <span className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold bg-green-50 text-green-700 border-green-200">
@@ -495,11 +441,11 @@ export default function LandingPage() {
                         <Layers className="h-6 w-6 text-white" />
                       </div>
                       <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600, lineHeight: 1.3, color: '#fff' }}>
-                        Stock depth at 4 distributors
+                        Stock and lead time at major distributors
                       </h3>
                     </div>
                     <p style={{ color: '#cfe0ff', fontSize: 17, lineHeight: 1.6, margin: '0 0 28px' }}>
-                      Real-time stock at Digi-Key, Mouser, Arrow, and Avnet per line. Flag when aggregate stock falls below your production run threshold.
+                      Real-time stock and factory lead time per line. Flagged when aggregate inventory falls below your production run — before you&apos;re waiting 26 weeks for a regulator.
                     </p>
                     <div
                       className="flex items-center justify-between mb-6"
@@ -528,11 +474,11 @@ export default function LandingPage() {
                         <FileSpreadsheet className="h-6 w-6 text-[#0062ff]" />
                       </div>
                       <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600, lineHeight: 1.3, color: '#0f1b2d' }}>
-                        AML and multi-sheet support
+                        Your AML, parsed and cross-checked
                       </h3>
                     </div>
                     <p className="text-[#4f5d73] leading-relaxed">
-                      Alternates in comma-separated cells, separate AML sheets, or multi-sheet workbooks — Prokuro parses and links them automatically.
+                      Alternates in comma-separated cells, separate AML sheets, or multi-sheet workbooks — parsed, linked to primaries, and validated against current lifecycle and availability.
                     </p>
                   </div>
                 </FeatureCard>
@@ -550,11 +496,11 @@ export default function LandingPage() {
                         <span style={{ color: '#fff', fontSize: 24, fontWeight: 700 }}>8.4</span>
                       </div>
                       <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600, lineHeight: 1.3, color: '#fff' }}>
-                        Your risk agent shows its work
+                        Risk scores your analyst explains
                       </h3>
                     </div>
                     <p style={{ color: '#cfe0ff', fontSize: 17, lineHeight: 1.6, margin: '0 0 28px' }}>
-                      1–10 risk score per line, weighted by lifecycle stage, approved alternates, stock depth, and demand concentration. The agent explains every score in plain language — not a black box.
+                      1–10 risk score per line with plain-language reasoning — lifecycle stage, stock depth, approved alternates, and tariff exposure. Every score shows its work.
                     </p>
                     <div className="flex flex-col gap-3">
                       <div
@@ -582,11 +528,11 @@ export default function LandingPage() {
                         <Clock className="h-6 w-6 text-[#0062ff]" />
                       </div>
                       <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600, lineHeight: 1.3, color: '#0f1b2d' }}>
-                        Lead time + trend direction
+                        Lead time trends
                       </h3>
                     </div>
                     <p className="text-[#4f5d73] leading-relaxed" style={{ margin: '0 0 20px' }}>
-                      Current factory lead time and whether it&apos;s getting shorter or longer over 30/60/90 days. Know before you&apos;re waiting 26 weeks for a regulator.
+                      Factory lead time and whether it&apos;s trending up or down — so you know a 12-week lead isn&apos;t about to become 26 weeks before your build date.
                     </p>
                     <div className="flex items-center gap-3 text-sm font-medium">
                       <span className="text-red-600">26 weeks</span>
@@ -609,7 +555,7 @@ export default function LandingPage() {
                       </h3>
                     </div>
                     <p className="text-[#4f5d73] leading-relaxed">
-                      Country of origin, Section 301 tariff rate, Entity List status, and China-assembly exposure — per line, with estimated added cost at your production volume.
+                      Country of origin, Section 301 tariff rate, and estimated added cost at your production volume — per line, rolled up into one BOM-level number.
                     </p>
                   </div>
                 </FeatureCard>
@@ -624,9 +570,9 @@ export default function LandingPage() {
               <Reveal>
                 <div className="split-panel__copy">
                   <p className="eyebrow">Tariff &amp; geopolitical risk</p>
-                  <h2>Know your trade exposure before it shows up in a cost overrun.</h2>
+                  <h2>Trade exposure rolled into every decision — not a separate spreadsheet.</h2>
                   <p>
-                    Every line checked against the network comes back with country of origin, applicable Section 301 tariff rate, US Entity List status, and a flag for China-assembly exposure — even for parts fabbed elsewhere. Prokuro rolls it up into one number: the estimated tariff cost impact across your BOM at current volume.
+                    Every line checked comes back with country of origin, applicable Section 301 tariff rate, and estimated cost impact at your production volume. Prokuro rolls it up into one number your procurement team can act on — before it shows up in a cost overrun.
                   </p>
                   <ul className="split-panel__stats">
                     <li>
@@ -667,9 +613,9 @@ export default function LandingPage() {
 
         <section className="section section--surface">
           <div className="container">
-            <h2>Who it&apos;s for</h2>
+            <h2>Built for hardware teams paying the coordination tax on every sourcing decision.</h2>
             <p className="section-lead">
-              BOM risk isn&apos;t a once-a-year event — it&apos;s obsolescence notices, single-source dependencies, and allocation freezes converging into a missed build, week after week. Prokuro is built for the teams who feel that pressure directly.
+              Every sourcing decision crosses procurement, engineering, and quality — but the data lives in BOMs, emails, datasheets, and supplier quotes nobody shares. Prokuro starts with your BOM and eliminates the days of coordination that follow.
             </p>
             <div className="two-col">
               <article className="card">
@@ -677,9 +623,9 @@ export default function LandingPage() {
                 <ul className="list">
                   <li>Procurement and supply chain managers at hardware OEMs (10–500 employees)</li>
                   <li>Products with 3–10 year lifespans: networking, industrial, medical-adjacent</li>
-                  <li>Teams outsourcing manufacturing to contract manufacturers</li>
-                  <li>Companies that got caught in the 2021–2022 chip shortage</li>
-                  <li>Procurement teams still running BOM risk on spreadsheets</li>
+                  <li>Teams where a single NRND notice triggers a multi-day cross-functional scramble</li>
+                  <li>Companies with approved alternates, preferred suppliers, and audit history trapped in spreadsheets</li>
+                  <li>Procurement leads who own outcomes but depend on engineering and quality to approve every swap</li>
                 </ul>
               </article>
               <article className="card">
@@ -687,8 +633,8 @@ export default function LandingPage() {
                 <ul className="list">
                   <li>You&apos;re building consumer hardware with 1-year product cycles</li>
                   <li>You have a 20-person supply chain team and internal ML capabilities</li>
-                  <li>You&apos;re pre-product and don&apos;t have a real BOM yet</li>
-                  <li>You need a procurement platform, ERP, or compliance tool — Prokuro is an agentic platform, not a transaction system</li>
+                  <li>You don&apos;t have a production BOM yet — Prokuro starts where your sourcing data already lives</li>
+                  <li>You need a procurement platform, ERP, or compliance tool — Prokuro is an intelligence layer, not a transaction system</li>
                 </ul>
               </article>
             </div>
@@ -699,65 +645,68 @@ export default function LandingPage() {
           <div className="container">
             <div className="quote-card">
               <p className="quote">
-                &ldquo;This part has 14 weeks until EOL. MPN-XYZ-456 is a validated parametric alternate — same footprint, same specs. It&apos;s in stock at Digi-Key at $2.10/unit. Here&apos;s what you need to do this week.&rdquo;
+                &ldquo;Alternate #4 is technically compatible, already in your AML, stocked at Digi-Key, avoids the new tariff, and requires no firmware changes. Here&apos;s what you need to do this week.&rdquo;
               </p>
               <p>
-                That&apos;s what our agents deliver, not a dashboard you have to interpret yourself. Everything in the product exists to make that sentence possible, accurate, and trusted.
+                That&apos;s what a personalized procurement analyst delivers — not a list of 12 parametric matches you still have to validate yourself. The value isn&apos;t the alternate. It&apos;s eliminating the cross-functional coordination that usually takes days.
               </p>
             </div>
           </div>
         </section>
 
-        <section id="pricing" className="section section--surface">
+        <section id="contact" className="section section--surface">
           <div className="container">
-            <div className="pricing-head">
-              <p className="eyebrow">Pricing</p>
-              <h2>Priced on lines monitored, not seats.</h2>
-              <p className="section-lead">
-                The meter is your risk surface: how many BOM lines Prokuro is watching, and how often. Score explanations and full alternate data are on every paid plan — trust isn&apos;t something we gate.
-              </p>
-            </div>
-            <div className="pricing-grid">
-              {PRICING_TIERS.map((tier) => (
-                <article key={tier.name} className={`pricing-card${tier.highlight ? ' pricing-card--highlight' : ''}`}>
-                  <span className="pricing-card__tag" aria-hidden={tier.tagline ? undefined : true}>
-                    {tier.tagline ?? '\u00A0'}
-                  </span>
-                  <h3 className="pricing-card__name">{tier.name}</h3>
-                  <div className="pricing-card__price">
-                    <span className="pricing-card__amount">{tier.price}</span>
-                    {tier.period && <span className="pricing-card__period">{tier.period}</span>}
-                  </div>
-                  <p className="pricing-card__desc">{tier.description}</p>
-                  <PricingCta tier={tier} onContact={(event) => event.preventDefault()} />
-                  <ul className="pricing-card__features">
-                    {tier.features.map((feature) => (
-                      <li key={feature}>
-                        <Check size={14} aria-hidden="true" />
-                        <span>{feature}</span>
+            <div className="split-panel">
+              <Reveal>
+                <div className="split-panel__copy">
+                  <p className="eyebrow">Design partners</p>
+                  <h2>We onboard procurement teams selectively.</h2>
+                  <p>
+                    Prokuro is not self-serve yet. We work with hardware procurement teams through guided pilots — upload a real BOM, get a decision-ready risk report, and help shape the analyst around how your team actually sources.
+                  </p>
+                  <ul className="split-panel__stats">
+                    {PILOT_BENEFITS.map((benefit) => (
+                      <li key={benefit}>
+                        <Check size={18} aria-hidden="true" />
+                        <span>{benefit}</span>
                       </li>
                     ))}
                   </ul>
-                </article>
-              ))}
+                  <a className="btn btn--primary" href={SCHEDULE_DEMO_PATH} style={{ marginTop: 'var(--space-lg)' }}>
+                    Book a demo
+                    <ArrowRight size={14} aria-hidden="true" />
+                  </a>
+                </div>
+              </Reveal>
+              <Reveal delay={0.15}>
+                <div className="early-access-card">
+                  <p className="early-access-card__eyebrow">What you&apos;ll get</p>
+                  <h3 className="early-access-card__title">A decision report, not another tool to babysit.</h3>
+                  <p className="early-access-card__body">
+                    Upload a BOM and get decision cards for every at-risk line — lifecycle reasoning, recommended alternates, tariff impact, and what to do this week. Export and share with engineering and quality.
+                  </p>
+                  <div className="early-access-card__metric">
+                    <span>Typical first scan</span>
+                    <strong>Under 5 min</strong>
+                  </div>
+                  <div className="early-access-card__metric early-access-card__metric--muted">
+                    <span>Built for</span>
+                    <strong>Procurement &amp; supply chain</strong>
+                  </div>
+                </div>
+              </Reveal>
             </div>
-            <p className="pricing-footnote">
-              Overage beyond your plan&apos;s monitored lines is billed per +100 lines, not hard-capped — you&apos;ll never lose monitoring at renewal. Annual billing available on Starter, Growth, and Scale.
-            </p>
           </div>
         </section>
 
         <section className="section cta-banner">
           <div className="container cta-banner__inner">
             <Reveal>
-              <h2>See what our agents find in your BOM.</h2>
-              <p>Book a 20-minute walkthrough with a real BOM — yours or a sample, or explore the plans above and start free.</p>
+              <h2>From BOM upload to decision — in minutes, not days.</h2>
+              <p>Talk to our team about a pilot. We&apos;ll walk through your BOM workflow and scope a first scan together.</p>
               <div className="cta-banner__actions">
-                <button className="btn btn--primary" onClick={() => navigate(user ? '/dashboard' : '/signup')}>
-                  Start free
-                </button>
-                <a className="btn btn--ghost" href="#waitlist" onClick={openWaitlistModal}>
-                  Book a Demo
+                <a className="btn btn--primary" href={SCHEDULE_DEMO_PATH}>
+                  Book a demo
                 </a>
               </div>
             </Reveal>
@@ -773,7 +722,7 @@ export default function LandingPage() {
                 <span className="brand__dot" aria-hidden="true" />
                 <span>Prokuro.ai</span>
               </a>
-              <p className="footer__meta">Agentic BOM management for hardware supply chains.</p>
+              <p className="footer__meta">Your AI procurement analyst for hardware supply chains.</p>
               <p className="footer__meta">San Francisco, CA</p>
             </div>
             <div>
@@ -794,9 +743,7 @@ export default function LandingPage() {
                   <a href="#company">About</a>
                 </li>
                 <li>
-                  <a href="#waitlist" onClick={openWaitlistModal}>
-                    Book a demo
-                  </a>
+                  <a href={SCHEDULE_DEMO_PATH}>Book a demo</a>
                 </li>
               </ul>
             </div>
@@ -807,41 +754,13 @@ export default function LandingPage() {
               <a className="footer-action-link" href="https://www.linkedin.com/company/prokuro/" target="_blank" rel="noopener noreferrer">
                 LinkedIn
               </a>
-              <a className="footer-action-link" href="#waitlist" onClick={openWaitlistModal}>
-                Book a Demo
+              <a className="footer-action-link" href={SCHEDULE_DEMO_PATH}>
+                {BOOK_DEMO_LABEL}
               </a>
             </div>
           </div>
         </div>
       </footer>
-
-      <div
-        id="waitlist"
-        className={`modal ${isModalOpen ? 'is-open' : ''}`}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="waitlistModalTitle"
-        aria-hidden={!isModalOpen}
-        onClick={(event) => event.target === event.currentTarget && setIsModalOpen(false)}
-      >
-        <div className="modal__dialog">
-          <div className="modal__header">
-            <h2 id="waitlistModalTitle" className="modal__title">
-              Book a demo
-            </h2>
-            <button className="modal__close" type="button" aria-label="Close waitlist form" onClick={() => setIsModalOpen(false)}>
-              Close
-            </button>
-          </div>
-          <div className="modal__body">
-            <iframe
-              className="modal__iframe"
-              src="https://airtable.com/embed/appFYDedlwc86G1TP/pag8tSElUaqsOvywV/form"
-              title="Prokuro waitlist form"
-            />
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

@@ -24,9 +24,9 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Prokuro.ai | Agentic BOM Management',
+  title: 'Prokuro.ai | AI Procurement Analyst for BOM Risk',
   description:
-    'Prokuro turns your bill of materials into a plan of action — every part scored for lifecycle, availability, and tariff risk, with vetted alternates ready when you need them.',
+    'Prokuro is your AI procurement analyst — it tells you which parts in your BOM are about to become a problem, hands you the proven solution, and eliminates the cross-functional coordination that usually takes days.',
   icons: { icon: '/favicon.png' },
 }
 

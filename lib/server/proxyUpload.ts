@@ -19,6 +19,11 @@ export async function proxyFileUpload(req: NextRequest, upstreamPath: string): P
   const outbound = new FormData()
   outbound.append('file', file, file instanceof File ? file.name : 'upload.csv')
 
+  const columnMapping = form.get('column_mapping')
+  if (typeof columnMapping === 'string' && columnMapping.trim()) {
+    outbound.append('column_mapping', columnMapping)
+  }
+
   try {
     const res = await fetch(targetUrl, {
       method: 'POST',
