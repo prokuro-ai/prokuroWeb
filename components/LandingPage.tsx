@@ -2,24 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import {
-  AlertTriangle,
-  TrendingDown,
-  TrendingUp,
-  Globe2,
-  ShieldCheck,
-  Landmark,
-  Activity,
-  Layers,
-  FileSpreadsheet,
-  Globe,
-  Clock,
-  ArrowRight,
-  Check,
-} from 'lucide-react'
+import { Globe2, ShieldCheck, Landmark, ArrowRight, Check } from 'lucide-react'
 import { MarketingAuthActions } from '@/components/UserMenu'
 import ProkuroBrandLink from '@/components/ProkuroBrandLink'
 import { BOOK_DEMO_LABEL, SCHEDULE_DEMO_PATH } from '@/lib/sales'
+import { PRIVACY_PATH, TERMS_PATH } from '@/lib/legal'
 
 const NAV_LINKS = [
   { href: '#product', label: 'Product' },
@@ -46,61 +33,32 @@ function NavLinks({
   )
 }
 
-function UploadBomIcon({ size = 28 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 30 30" fill="none">
-      <path
-        d="M8 3.5H18.5L23 8V25.5C23 26.3284 22.3284 27 21.5 27H8C7.17157 27 6.5 26.3284 6.5 25.5V5C6.5 4.17157 7.17157 3.5 8 3.5Z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        fill="none"
-        opacity="0.9"
-      />
-      <path d="M18.5 3.5V8H23" stroke="currentColor" strokeWidth="1.6" fill="none" opacity="0.9" />
-      <path d="M10 14H19M10 18H16" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.4" />
-      <circle cx="21.5" cy="21.5" r="6.5" fill="#0062ff" />
-      <path
-        d="M21.5 24.5V18.5M18.7 21.3L21.5 18.5L24.3 21.3"
-        stroke="white"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-    </svg>
-  )
-}
-
-function SourcingNetworkIcon({ size = 28 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 30 30" fill="none">
-      <path d="M15 15L6 8M15 15L24 8M15 15L6 23M15 15L24 23" stroke="currentColor" strokeWidth="1.4" opacity="0.35" />
-      <circle cx="15" cy="15" r="4" fill="#0062ff" />
-      <circle cx="6" cy="8" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.4" opacity="0.9" />
-      <circle cx="24" cy="8" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.4" opacity="0.9" />
-      <circle cx="6" cy="23" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.4" opacity="0.9" />
-      <circle cx="24" cy="23" r="2.5" fill="#0062ff" stroke="#0062ff" strokeWidth="1.4" />
-    </svg>
-  )
-}
-
-function RiskPlanIcon({ size = 28 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 30 30" fill="none">
-      <rect x="4" y="6" width="16" height="20" rx="2.5" fill="none" stroke="currentColor" strokeWidth="1.6" opacity="0.9" />
-      <path d="M8 12H16M8 16H13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.4" />
-      <circle cx="21.5" cy="20.5" r="6.5" fill="#0062ff" />
-      <path
-        d="M18.7 20.5L20.6 22.4L24.3 18"
-        stroke="white"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-    </svg>
-  )
-}
+const HOW_IT_WORKS = [
+  {
+    title: 'Upload your BOM',
+    copy: 'CSV or Excel in any column format: messy headers, distributor SKUs, multi-sheet workbooks. Prokuro maps your columns on the first upload and remembers the mapping.',
+    specs: [
+      { label: 'Accepts', values: ['.csv, .xlsx, multi-sheet workbooks'] },
+      { label: 'Mapped', values: ['Mfg P/N → mpn', 'QTY/ASSY → quantity', 'Mfr → manufacturer'] },
+    ],
+  },
+  {
+    title: 'Your analyst works the data layer',
+    copy: 'Every line is resolved against lifecycle status, distributor stock, factory lead time, tariff exposure, and your own AML alternates before anything gets scored.',
+    specs: [
+      { label: 'Checked', values: ['Lifecycle, stock, lead time', 'Tariff, origin, your AML'] },
+      { label: 'Normalized', values: ['R10K0402 = RES-10K = 10 kΩ 0402'] },
+    ],
+  },
+  {
+    title: 'Get a decision, not a data dump',
+    copy: 'Every at-risk line comes back as a decision card: why it is risky, the recommended alternate, a confidence score, and what to do about it this week.',
+    specs: [
+      { label: 'Returns', values: ['One decision card per at-risk line', 'Alternate, confidence, next action'] },
+      { label: 'Share', values: ['Export to XLSX or PDF'] },
+    ],
+  },
+]
 
 const PROBLEM_STATS = [
   { value: '7+', label: 'Systems per BOM on average — ERP, PLM, spreadsheets, email, distributor portals', source: 'Industry estimate' },
@@ -141,6 +99,116 @@ const LOGOS = [
   { src: '/images/logos/Cisco_logo_blue_2016.svg.png', alt: 'Cisco' },
 ]
 
+type RiskTone = 'ok' | 'warn' | 'bad'
+
+type ReportRow = {
+  line: string
+  mpn: string
+  maker: string
+  lifecycle: string
+  lifecycleTone: RiskTone
+  stock: string
+  lead: string
+  leadRising?: boolean
+  tariff: string
+  risk: number
+  flagged?: boolean
+}
+
+const REPORT_ROWS: ReportRow[] = [
+  {
+    line: '0042',
+    mpn: 'TPS62840DLCR',
+    maker: 'Texas Instruments',
+    lifecycle: 'Active',
+    lifecycleTone: 'ok',
+    stock: '128,400',
+    lead: '8 wk',
+    tariff: '—',
+    risk: 1.8,
+  },
+  {
+    line: '0118',
+    mpn: 'STM32F407VGT6',
+    maker: 'STMicroelectronics',
+    lifecycle: 'NRND',
+    lifecycleTone: 'warn',
+    stock: '6,200',
+    lead: '22 wk',
+    leadRising: true,
+    tariff: '7.5%',
+    risk: 7.6,
+  },
+  {
+    line: '0203',
+    mpn: 'LM2903DR',
+    maker: 'Texas Instruments',
+    lifecycle: 'Active',
+    lifecycleTone: 'ok',
+    stock: '891,000',
+    lead: '6 wk',
+    tariff: '—',
+    risk: 1.2,
+  },
+  {
+    line: '0267',
+    mpn: 'B57861S0103F040',
+    maker: 'TDK',
+    lifecycle: 'EOL',
+    lifecycleTone: 'bad',
+    stock: '2,150',
+    lead: '26 wk',
+    leadRising: true,
+    tariff: '25%',
+    risk: 9.1,
+    flagged: true,
+  },
+  {
+    line: '0310',
+    mpn: 'GRM188R71H104KA93D',
+    maker: 'Murata',
+    lifecycle: 'Active',
+    lifecycleTone: 'ok',
+    stock: '4,120,000',
+    lead: '4 wk',
+    tariff: '7.5%',
+    risk: 3.4,
+  },
+]
+
+const DELIVERABLES = [
+  {
+    title: 'Lifecycle status',
+    body: 'Active, NRND, EOL, or discontinued on every line, with the reason it matters for your build date rather than a bare status badge.',
+  },
+  {
+    title: 'Stock and lead time',
+    body: 'Aggregate distributor inventory and factory lead time per line, flagged the moment coverage falls short of your production run.',
+  },
+  {
+    title: 'Lead time trend',
+    body: 'Whether a 12-week lead is quietly heading toward 26, so the change reaches you before it reaches your build schedule.',
+  },
+  {
+    title: 'Risk score, 1 to 10',
+    body: 'Weighted from lifecycle stage, stock depth, approved alternates, and tariff exposure. Every score shows the inputs behind it.',
+  },
+  {
+    title: 'AML parsed and checked',
+    body: 'Alternates buried in comma-separated cells, separate sheets, or multi-sheet workbooks get linked to primaries and revalidated.',
+  },
+  {
+    title: 'Tariff exposure',
+    body: 'Country of origin, Section 301 rate, and added cost at your volume per line, rolled up into one BOM-level number.',
+  },
+]
+
+function riskTone(score: number): RiskTone {
+  if (score >= 7) return 'bad'
+  if (score >= 4) return 'warn'
+  return 'ok'
+}
+
 function Reveal({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
   const shouldReduceMotion = useReducedMotion()
   return (
@@ -154,10 +222,6 @@ function Reveal({ children, delay = 0, className }: { children: React.ReactNode;
       {children}
     </motion.div>
   )
-}
-
-function FeatureCard({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={`rounded-xl ${className ?? ''}`}>{children}</div>
 }
 
 export default function LandingPage() {
@@ -277,11 +341,12 @@ export default function LandingPage() {
                   Prokuro reads your BOM, cross-references lifecycle, availability, and tariff exposure — then hands you a decision, not a dashboard. Every at-risk line gets a recommended alternate, confidence score, and what to do this week.
                 </p>
                 <div className="hero__cta">
-                  <a className="btn btn--primary" href={SCHEDULE_DEMO_PATH}>
-                    Book a demo
+                  <a className="btn btn--primary" href="/signup">
+                    Get started free
+                    <ArrowRight size={14} aria-hidden="true" />
                   </a>
-                  <a className="btn btn--ghost" href="#how-it-works">
-                    How it works
+                  <a className="btn btn--outline" href={SCHEDULE_DEMO_PATH}>
+                    Book a demo
                   </a>
                 </div>
               </motion.div>
@@ -291,19 +356,21 @@ export default function LandingPage() {
 
         <section className="built-by" aria-label="Built by">
           <div className="container">
-            <p className="built-by__lead">Built by engineers who worked at:</p>
-            <div className="built-by__logos">
-              {LOGOS.map((logo) => (
-                <img
-                  key={logo.alt}
-                  src={logo.src}
-                  alt={logo.alt}
-                  width={120}
-                  height={28}
-                  className="built-by__logo"
-                  loading="lazy"
-                />
-              ))}
+            <div className="built-by__inner">
+              <p className="built-by__lead">Built by engineers previously at</p>
+              <div className="built-by__logos">
+                {LOGOS.map((logo) => (
+                  <img
+                    key={logo.alt}
+                    src={logo.src}
+                    alt={logo.alt}
+                    width={104}
+                    height={22}
+                    className="built-by__logo"
+                    loading="lazy"
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -353,214 +420,149 @@ export default function LandingPage() {
 
         <section id="how-it-works" className="section section--surface">
           <div className="container">
-            <h2>How it works</h2>
-            <div className="steps-flow">
-              <div className="steps-flow-grid">
-                {[
-                  {
-                    Icon: UploadBomIcon,
-                    title: 'Upload your BOM',
-                    copy: 'CSV or Excel, any column format — messy headers, distributor SKUs, multi-sheet workbooks. Prokuro normalizes part identities, maps columns on first upload, and remembers your mapping forever.',
-                  },
-                  {
-                    Icon: SourcingNetworkIcon,
-                    title: 'Your analyst works the data layer',
-                    copy: 'Each line is resolved against lifecycle status, distributor stock, factory lead time, tariff exposure, and your own AML alternates. Component identities are normalized so R10K0402 and RES-10K resolve to the same part.',
-                  },
-                  {
-                    Icon: RiskPlanIcon,
-                    title: 'Get a decision, not a data dump',
-                    copy: 'Decision cards for every at-risk line: why it\'s risky, the recommended alternate, confidence score, availability, and what to do this week. Export the report or share it with engineering and quality.',
-                  },
-                ].map(({ Icon, title, copy }, i) => (
-                  <div className="step-flow-item" key={title}>
-                    <div className="step-flow-head">
-                      <div className="step-flow-icon">
-                        <Icon size={28} />
-                      </div>
-                      <span className="step-flow-num">{String(i + 1).padStart(2, '0')}</span>
-                    </div>
-                    <h3>{title}</h3>
-                    <p>{copy}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <Reveal className="hiw__head">
+              <p className="eyebrow">How it works</p>
+              <h2>From a messy spreadsheet to a decision, in one pass.</h2>
+              <p className="section-lead">
+                Three steps and no integration project. Upload the BOM you already have and get back the analysis your
+                team would otherwise spend a week assembling by hand.
+              </p>
+            </Reveal>
+
+            <ol className="hiw__steps">
+              {HOW_IT_WORKS.map((step, i) => (
+                <li className="hiw__step" key={step.title}>
+                  <Reveal delay={i * 0.08}>
+                    <span className="hiw__num">Step {String(i + 1).padStart(2, '0')}</span>
+                    <h3 className="hiw__title">{step.title}</h3>
+                    <p className="hiw__copy">{step.copy}</p>
+                    <dl className="hiw__spec">
+                      {step.specs.map((spec) => (
+                        <div className="hiw__spec-row" key={spec.label}>
+                          <dt>{spec.label}</dt>
+                          <dd>
+                            {spec.values.map((value) => (
+                              <span key={value}>{value}</span>
+                            ))}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </Reveal>
+                </li>
+              ))}
+            </ol>
           </div>
         </section>
 
-        <section className="section" style={{ background: '#f7faff' }}>
+        <section className="section section--deliver">
           <div className="container">
-            <div style={{ maxWidth: '48rem', marginBottom: '3rem' }}>
-              <p
-                className="eyebrow"
-                style={{ color: '#0062ff', fontSize: 16, fontWeight: 700, letterSpacing: 0.4, textTransform: 'uppercase' }}
-              >
-                What your analyst delivers
+            <Reveal className="deliver__head">
+              <p className="eyebrow">What your analyst delivers</p>
+              <h2>Decisions grounded in data, explained in plain language.</h2>
+              <p className="section-lead">
+                Not another component database. Prokuro combines public component data, your BOM context, and reasoning across procurement constraints, so every recommendation is sourced, scored, and actionable.
               </p>
-              <h2>Decisions grounded in data — explained in plain language.</h2>
-              <p style={{ color: '#4f5d73', fontSize: 18, lineHeight: 1.6, marginTop: 12 }}>
-                Not another component database. Prokuro combines public component data, your BOM context, and reasoning across procurement constraints — so every recommendation is sourced, scored, and actionable.
-              </p>
-            </div>
+            </Reveal>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-              <div className="flex flex-col gap-8">
-                <FeatureCard className="border border-[#d6deea] bg-white shadow-sm hover:shadow-md transition-shadow">
-                  <div className="p-8">
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-50">
-                        <Activity className="h-6 w-6 text-[#0062ff]" />
-                      </div>
-                      <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600, lineHeight: 1.3, color: '#0f1b2d' }}>
-                        Lifecycle status with plain-language reasoning
-                      </h3>
-                    </div>
-                    <p className="text-[#4f5d73] leading-relaxed" style={{ margin: '0 0 20px' }}>
-                      Every part categorized as Active, NRND, EOL, or Discontinued — with an explanation of why it matters for your production timeline, not just a status badge.
-                    </p>
-                    <div className="flex gap-2 flex-wrap">
-                      <span className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold bg-green-50 text-green-700 border-green-200">
-                        Active
-                      </span>
-                      <span className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold bg-amber-50 text-amber-700 border-amber-200">
-                        NRND
-                      </span>
-                      <span className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold bg-red-50 text-red-700 border-red-200">
-                        EOL
-                      </span>
-                    </div>
-                  </div>
-                </FeatureCard>
+            <Reveal delay={0.08}>
+              <figure className="report">
+                <div className="report__bar">
+                  <span>BOM-2417 · Rev C · 1,284 lines</span>
+                  <span className="report__stat">
+                    <span className="report__dot report__dot--bad" aria-hidden="true" />
+                    18% of spend flagged
+                  </span>
+                </div>
 
-                <FeatureCard className="border-transparent bg-gradient-to-br from-[#0062ff] to-[#004bcc] shadow-xl overflow-hidden relative">
-                  <div className="absolute top-0 right-0 -mt-16 -mr-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-                  <div className="p-8 sm:p-10 relative z-10">
-                    <div className="flex items-center gap-4 mb-7">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                        <Layers className="h-6 w-6 text-white" />
-                      </div>
-                      <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600, lineHeight: 1.3, color: '#fff' }}>
-                        Stock and lead time at major distributors
-                      </h3>
-                    </div>
-                    <p style={{ color: '#cfe0ff', fontSize: 17, lineHeight: 1.6, margin: '0 0 28px' }}>
-                      Real-time stock and factory lead time per line. Flagged when aggregate inventory falls below your production run — before you&apos;re waiting 26 weeks for a regulator.
-                    </p>
-                    <div
-                      className="flex items-center justify-between mb-6"
-                      style={{ borderTop: '1px solid rgba(255,255,255,0.15)', borderBottom: '1px solid rgba(255,255,255,0.15)', padding: '16px 0' }}
-                    >
-                      <span style={{ color: '#cfe0ff', fontSize: 14, fontWeight: 500 }}>Global stock across distributors</span>
-                      <span style={{ color: '#fff', fontSize: 28, fontWeight: 700, letterSpacing: '-0.5px' }}>14.2M</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="rounded-lg" style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.12)', padding: 16 }}>
-                        <p style={{ color: '#cfe0ff', fontSize: 12, margin: '0 0 6px' }}>Digi-Key</p>
-                        <p style={{ color: '#fff', fontSize: 15, fontWeight: 600, margin: 0 }}>In stock</p>
-                      </div>
-                      <div className="rounded-lg" style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.12)', padding: 16 }}>
-                        <p style={{ color: '#cfe0ff', fontSize: 12, margin: '0 0 6px' }}>Mouser</p>
-                        <p style={{ color: '#fcd34d', fontSize: 15, fontWeight: 600, margin: 0 }}>Low stock</p>
-                      </div>
-                    </div>
-                  </div>
-                </FeatureCard>
+                <div className="report__scroll">
+                  <table className="report__table">
+                    <caption className="sr-only">Example risk report for a 1,284-line bill of materials</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Line</th>
+                        <th scope="col">Manufacturer part</th>
+                        <th scope="col">Lifecycle</th>
+                        <th scope="col" className="report__num">Stock</th>
+                        <th scope="col" className="report__num">Lead</th>
+                        <th scope="col" className="report__num">Tariff</th>
+                        <th scope="col">Risk</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {REPORT_ROWS.map((row) => {
+                        const tone = riskTone(row.risk)
+                        return (
+                          <tr key={row.line} className={row.flagged ? 'report__row--flagged' : undefined}>
+                            <td className="report__line">{row.line}</td>
+                            <td>
+                              <span className="report__mpn">{row.mpn}</span>
+                              <span className="report__maker">{row.maker}</span>
+                            </td>
+                            <td>
+                              <span className="report__life">
+                                <span className={`report__dot report__dot--${row.lifecycleTone}`} aria-hidden="true" />
+                                {row.lifecycle}
+                              </span>
+                            </td>
+                            <td className="report__num report__mono">{row.stock}</td>
+                            <td className="report__num report__mono">
+                              {row.lead}
+                              {row.leadRising ? (
+                                <span className="report__rising" title="Trending up">
+                                  ↑
+                                </span>
+                              ) : null}
+                            </td>
+                            <td className="report__num report__mono">{row.tariff}</td>
+                            <td>
+                              <span className={`report__risk report__risk--${tone}`}>
+                                <span className="report__risk-track" aria-hidden="true">
+                                  <span className="report__risk-fill" style={{ width: `${row.risk * 10}%` }} />
+                                </span>
+                                <span className="report__risk-num">{row.risk.toFixed(1)}</span>
+                              </span>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
 
-                <FeatureCard className="border border-[#d6deea] bg-white shadow-sm hover:shadow-md transition-shadow">
-                  <div className="p-8">
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-50">
-                        <FileSpreadsheet className="h-6 w-6 text-[#0062ff]" />
-                      </div>
-                      <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600, lineHeight: 1.3, color: '#0f1b2d' }}>
-                        Your AML, parsed and cross-checked
-                      </h3>
-                    </div>
-                    <p className="text-[#4f5d73] leading-relaxed">
-                      Alternates in comma-separated cells, separate AML sheets, or multi-sheet workbooks — parsed, linked to primaries, and validated against current lifecycle and availability.
-                    </p>
-                  </div>
-                </FeatureCard>
-              </div>
+                <figcaption className="report__why">
+                  <p className="report__why-label">Line 0267 — why 9.1</p>
+                  <p className="report__why-body">
+                    TDK discontinued this thermistor in March. 2,150 units remain across Digi-Key and Mouser against
+                    your 8,000-unit run, and your AML lists no approved alternate for it.
+                  </p>
+                  <p className="report__why-body">
+                    Nearest drop-in is <b>NCP18XH103F03RB</b> from Murata: same 10 kΩ ±1% in 0603, but the B-constant
+                    differs by 40 K, so firmware calibration needs an engineering sign-off before you switch.
+                  </p>
+                  <ul className="report__actions">
+                    <li>
+                      <span>Recommended</span> Qualify the alternate before week 42
+                    </li>
+                    <li>
+                      <span>Cost impact</span> +$1,840 in tariffs at 8,000 units
+                    </li>
+                  </ul>
+                </figcaption>
+              </figure>
+            </Reveal>
 
-              <div className="flex flex-col gap-8 md:mt-24">
-                <FeatureCard className="border-transparent bg-gradient-to-bl from-[#0051d4] to-[#0f1b2d] shadow-xl overflow-hidden relative">
-                  <div className="absolute bottom-0 left-0 -mb-20 -ml-20 h-72 w-72 rounded-full bg-blue-500/20 blur-3xl" />
-                  <div className="p-8 sm:p-10 relative z-10">
-                    <div className="flex items-center gap-4 mb-7">
-                      <div
-                        className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-full border-4 border-red-500"
-                        style={{ background: 'rgba(255,255,255,0.1)' }}
-                      >
-                        <span style={{ color: '#fff', fontSize: 24, fontWeight: 700 }}>8.4</span>
-                      </div>
-                      <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600, lineHeight: 1.3, color: '#fff' }}>
-                        Risk scores your analyst explains
-                      </h3>
-                    </div>
-                    <p style={{ color: '#cfe0ff', fontSize: 17, lineHeight: 1.6, margin: '0 0 28px' }}>
-                      1–10 risk score per line with plain-language reasoning — lifecycle stage, stock depth, approved alternates, and tariff exposure. Every score shows its work.
-                    </p>
-                    <div className="flex flex-col gap-3">
-                      <div
-                        className="flex items-center gap-3 rounded-lg"
-                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', padding: 14 }}
-                      >
-                        <AlertTriangle className="h-5 w-5 shrink-0 text-red-400" />
-                        <span style={{ color: '#fff', fontSize: 14, fontWeight: 500 }}>Single source demand concentration</span>
-                      </div>
-                      <div
-                        className="flex items-center gap-3 rounded-lg"
-                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', padding: 14 }}
-                      >
-                        <TrendingDown className="h-5 w-5 shrink-0 text-amber-400" />
-                        <span style={{ color: '#fff', fontSize: 14, fontWeight: 500 }}>Inventory depleting faster than avg</span>
-                      </div>
-                    </div>
-                  </div>
-                </FeatureCard>
-
-                <FeatureCard className="border border-[#d6deea] bg-white shadow-sm hover:shadow-md transition-shadow">
-                  <div className="p-8">
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-50">
-                        <Clock className="h-6 w-6 text-[#0062ff]" />
-                      </div>
-                      <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600, lineHeight: 1.3, color: '#0f1b2d' }}>
-                        Lead time trends
-                      </h3>
-                    </div>
-                    <p className="text-[#4f5d73] leading-relaxed" style={{ margin: '0 0 20px' }}>
-                      Factory lead time and whether it&apos;s trending up or down — so you know a 12-week lead isn&apos;t about to become 26 weeks before your build date.
-                    </p>
-                    <div className="flex items-center gap-3 text-sm font-medium">
-                      <span className="text-red-600">26 weeks</span>
-                      <ArrowRight className="h-4 w-4 text-[#d6deea]" />
-                      <span className="text-amber-600 flex items-center">
-                        <TrendingUp className="h-4 w-4 mr-1" /> Trending up
-                      </span>
-                    </div>
-                  </div>
-                </FeatureCard>
-
-                <FeatureCard className="border border-[#d6deea] bg-white shadow-sm hover:shadow-md transition-shadow">
-                  <div className="p-8">
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-50">
-                        <Globe className="h-6 w-6 text-[#0062ff]" />
-                      </div>
-                      <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600, lineHeight: 1.3, color: '#0f1b2d' }}>
-                        Tariff &amp; geopolitical exposure
-                      </h3>
-                    </div>
-                    <p className="text-[#4f5d73] leading-relaxed">
-                      Country of origin, Section 301 tariff rate, and estimated added cost at your production volume — per line, rolled up into one BOM-level number.
-                    </p>
-                  </div>
-                </FeatureCard>
-              </div>
-            </div>
+            <Reveal delay={0.12}>
+              <ol className="deliver__index">
+                {DELIVERABLES.map((item, i) => (
+                  <li key={item.title} className="deliver__item">
+                    <span className="deliver__num">{String(i + 1).padStart(2, '0')}</span>
+                    <h3 className="deliver__title">{item.title}</h3>
+                    <p className="deliver__body">{item.body}</p>
+                  </li>
+                ))}
+              </ol>
+            </Reveal>
           </div>
         </section>
 
@@ -659,10 +661,10 @@ export default function LandingPage() {
             <div className="split-panel">
               <Reveal>
                 <div className="split-panel__copy">
-                  <p className="eyebrow">Design partners</p>
-                  <h2>We onboard procurement teams selectively.</h2>
+                  <p className="eyebrow">Enterprise</p>
+                  <h2>Need a guided rollout for your procurement team?</h2>
                   <p>
-                    Prokuro is not self-serve yet. We work with hardware procurement teams through guided pilots — upload a real BOM, get a decision-ready risk report, and help shape the analyst around how your team actually sources.
+                    For mid-size OEMs rolling out across a team, we run scoped pilots on a real BOM — white-glove onboarding, dedicated support, and annual contracts. Same analyst as self-serve, built for how your organization sources.
                   </p>
                   <ul className="split-panel__stats">
                     {PILOT_BENEFITS.map((benefit) => (
@@ -703,9 +705,15 @@ export default function LandingPage() {
           <div className="container cta-banner__inner">
             <Reveal>
               <h2>From BOM upload to decision — in minutes, not days.</h2>
-              <p>Talk to our team about a pilot. We&apos;ll walk through your BOM workflow and scope a first scan together.</p>
+              <p>
+                Sign up free and upload your first BOM, or book a demo for a guided pilot with your procurement team.
+              </p>
               <div className="cta-banner__actions">
-                <a className="btn btn--primary" href={SCHEDULE_DEMO_PATH}>
+                <a className="btn btn--primary" href="/signup">
+                  Get started free
+                  <ArrowRight size={14} aria-hidden="true" />
+                </a>
+                <a className="btn btn--ghost" href={SCHEDULE_DEMO_PATH}>
                   Book a demo
                 </a>
               </div>
@@ -745,12 +753,24 @@ export default function LandingPage() {
                 <li>
                   <a href={SCHEDULE_DEMO_PATH}>Book a demo</a>
                 </li>
+                <li>
+                  <a href={PRIVACY_PATH}>Privacy</a>
+                </li>
+                <li>
+                  <a href={TERMS_PATH}>Terms</a>
+                </li>
               </ul>
             </div>
           </div>
           <div className="footer__bottom">
             <p className="footer__legal">© 2026 Prokuro.ai. All rights reserved.</p>
             <div className="footer-actions">
+              <a className="footer-action-link" href={PRIVACY_PATH}>
+                Privacy
+              </a>
+              <a className="footer-action-link" href={TERMS_PATH}>
+                Terms
+              </a>
               <a className="footer-action-link" href="https://www.linkedin.com/company/prokuro/" target="_blank" rel="noopener noreferrer">
                 LinkedIn
               </a>

@@ -6,6 +6,7 @@ import { MarketingAuthActions } from '@/components/UserMenu'
 import { MARKETING_NAV_LINKS } from '@/lib/marketing-content'
 import { Link } from '@/lib/navigation'
 import { BOOK_DEMO_LABEL, SCHEDULE_DEMO_PATH } from '@/lib/sales'
+import { PRIVACY_PATH, TERMS_PATH } from '@/lib/legal'
 
 function NavLinks({
   className,
@@ -58,12 +59,24 @@ function MarketingFooter() {
               <li>
                 <Link href={SCHEDULE_DEMO_PATH}>Book a demo</Link>
               </li>
+              <li>
+                <Link href={PRIVACY_PATH}>Privacy</Link>
+              </li>
+              <li>
+                <Link href={TERMS_PATH}>Terms</Link>
+              </li>
             </ul>
           </div>
         </div>
         <div className="footer__bottom">
           <p className="footer__legal">© 2026 Prokuro.ai. All rights reserved.</p>
           <div className="footer-actions">
+            <Link className="footer-action-link" href={PRIVACY_PATH}>
+              Privacy
+            </Link>
+            <Link className="footer-action-link" href={TERMS_PATH}>
+              Terms
+            </Link>
             <a
               className="footer-action-link"
               href="https://www.linkedin.com/company/prokuro/"
