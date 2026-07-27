@@ -353,12 +353,9 @@ export default function LandingPage() {
                   Prokuro reads your BOM, cross-references lifecycle, availability, and tariff exposure — then hands you a decision, not a dashboard. Every at-risk line gets a recommended alternate, confidence score, and what to do this week.
                 </p>
                 <div className="hero__cta">
-                  <a className="btn btn--primary" href="/signup">
-                    Get started free
-                    <ArrowRight size={14} aria-hidden="true" />
-                  </a>
-                  <a className="btn btn--outline" href={SCHEDULE_DEMO_PATH}>
+                  <a className="btn btn--primary" href={SCHEDULE_DEMO_PATH}>
                     Book a demo
+                    <ArrowRight size={14} aria-hidden="true" />
                   </a>
                 </div>
               </motion.div>
@@ -746,15 +743,12 @@ export default function LandingPage() {
             <Reveal>
               <h2>From BOM upload to decision — in minutes, not days.</h2>
               <p>
-                Sign up free and upload your first BOM, or book a demo for a guided pilot with your procurement team.
+                Book a demo and we&apos;ll walk through your BOM workflow on a real file — lifecycle risk, alternates, and tariff exposure in one report.
               </p>
               <div className="cta-banner__actions">
-                <a className="btn btn--primary" href="/signup">
-                  Get started free
-                  <ArrowRight size={14} aria-hidden="true" />
-                </a>
-                <a className="btn btn--ghost" href={SCHEDULE_DEMO_PATH}>
+                <a className="btn btn--primary" href={SCHEDULE_DEMO_PATH}>
                   Book a demo
+                  <ArrowRight size={14} aria-hidden="true" />
                 </a>
               </div>
             </Reveal>

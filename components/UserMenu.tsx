@@ -1,11 +1,12 @@
 'use client'
 
 import { Link, useLocation } from '@/lib/navigation'
-import { ArrowRight } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import UserAvatar from '@/components/UserAvatar'
 import { displayNameForUser, initialsForUser, signOut } from '@/lib/auth'
+import { SELF_SERVE_ENABLED } from '@/lib/access'
+import { BOOK_DEMO_LABEL, SCHEDULE_DEMO_PATH } from '@/lib/sales'
 
 export default function UserMenu() {
   const [, navigate] = useLocation()
@@ -101,22 +102,14 @@ export function AuthHeaderActions() {
 
   if (loading) return null
 
-  if (user) {
+  if (user && SELF_SERVE_ENABLED) {
     return <UserMenu />
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <Link href="/login" className="text-[13px] font-medium text-[#4f5d73] transition-colors hover:text-[#0f1b2d]">
-        Sign in
-      </Link>
-      <Link
-        href="/signup"
-        className="rounded-md bg-[#0062ff] px-3 py-1.5 text-[13px] font-medium text-white transition-colors hover:bg-[#0050e6]"
-      >
-        Get started
-      </Link>
-    </div>
+    <Link className="btn btn--primary btn--nav" href={SCHEDULE_DEMO_PATH}>
+      {BOOK_DEMO_LABEL}
+    </Link>
   )
 }
 
@@ -125,7 +118,7 @@ export function MarketingAuthActions() {
 
   if (loading) return null
 
-  if (user) {
+  if (user && SELF_SERVE_ENABLED) {
     return (
       <div className="nav-actions nav-actions--signed-in">
         <UserMenu />
@@ -137,14 +130,8 @@ export function MarketingAuthActions() {
   }
 
   return (
-    <>
-      <Link href="/login" className="nav-text-link">
-        Login
-      </Link>
-      <Link className="btn btn--primary btn--nav" href="/signup">
-        Get started free
-        <ArrowRight size={14} aria-hidden="true" />
-      </Link>
-    </>
+    <Link className="btn btn--primary btn--nav" href={SCHEDULE_DEMO_PATH}>
+      {BOOK_DEMO_LABEL}
+    </Link>
   )
 }
