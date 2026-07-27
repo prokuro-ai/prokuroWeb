@@ -47,10 +47,15 @@ Set `GATEWAY_URL` and `NEXT_PUBLIC_GATEWAY_URL` to your deployed gateway ALB URL
 
 ### GitHub Pages (static marketing + demo booking)
 
-Pages cannot run Next API routes. Use the static export path:
+No GitHub Actions needed. Build locally, commit `docs/`, push:
 
 ```bash
-npm run build:pages
+npm run pages:branch
+git add docs/
+git commit -m "Update GitHub Pages site"
+git push origin main
 ```
 
-Full setup, tradeoffs, and **how to revert**: [`docs/GITHUB-PAGES.md`](./docs/GITHUB-PAGES.md).
+GitHub **Settings → Pages**: source **Deploy from a branch**, branch **`main`**, folder **`/docs`**.
+
+Full setup and tradeoffs: [`GITHUB-PAGES.md`](./GITHUB-PAGES.md).

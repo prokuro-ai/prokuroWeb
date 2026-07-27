@@ -8,6 +8,7 @@
     "clean": "rm -rf .next out tsconfig.tsbuildinfo .pages-stash",
     "build": "next build",
     "build:pages": "node scripts/build-pages.mjs",
+    "pages:branch": "node scripts/build-pages.mjs && node scripts/sync-pages-to-docs.mjs",
     "start": "next start --port 3010",
     "lint": "eslint app components lib hooks --ext .ts,.tsx",
     "type-check": "tsc --noEmit"
