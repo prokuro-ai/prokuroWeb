@@ -22,8 +22,10 @@ GitHub Pages serves **static files only**. It cannot run Next.js API routes, mid
    - `middleware.ts` → `.pages-stash/middleware.ts`
    - Product routes: `app/dashboard`, `login`, `signup`, `account`, `analyze`, `bom`, `auth`
 2. Runs `STATIC_EXPORT=1 next build` → writes `out/`
-3. Copies `out/index.html` → `out/404.html` (SPA-style fallback)
-4. Restores stashed files in a `finally` block
+3. Copies `out/404/index.html` → `out/404.html` (GitHub Pages custom 404)
+4. Writes `out/.nojekyll` (so `_next/` assets are served)
+5. Includes `public/CNAME` → `out/CNAME` for `prokuro.ai`
+6. Restores stashed files in a `finally` block
 
 Static site includes: `/`, `/schedule`, `/privacy`, `/terms` (and assets).
 
@@ -42,8 +44,9 @@ Static site includes: `/`, `/schedule`, `/privacy`, `/terms` (and assets).
 
 ## One-time GitHub setup
 
-1. Repo → **Settings → Pages**
+1. Repo → **Settings → Pages → Build and deployment**
    - Source: **GitHub Actions** (not “Deploy from a branch”)
+   - If you previously used branch deploy (`/docs`), switch to **GitHub Actions** or `deploy-pages` fails with `404` / “Ensure GitHub Pages has been enabled”.
 2. Repo → **Settings → Variables** (Actions)
    - `NEXT_PUBLIC_CALENDLY_URL` — your public scheduling link, e.g. `https://calendly.com/you/prokuro-demo`
    - `NEXT_PUBLIC_BASE_PATH` — leave **empty** for a custom domain at the site root; set to `/prokuroWeb` for `https://<org>.github.io/prokuroWeb/`

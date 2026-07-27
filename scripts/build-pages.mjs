@@ -66,6 +66,7 @@ function build() {
   const env = {
     ...process.env,
     STATIC_EXPORT: '1',
+    NEXT_PUBLIC_STATIC_EXPORT: '1',
   }
   const result = spawnSync('npx', ['next', 'build'], {
     cwd: root,
@@ -81,11 +82,15 @@ function build() {
 function finalizeOut() {
   const outDir = path.join(root, 'out')
   const indexHtml = path.join(outDir, 'index.html')
-  const notFound = path.join(outDir, '404.html')
+  const notFoundPage = path.join(outDir, '404', 'index.html')
+  const notFoundRoot = path.join(outDir, '404.html')
   if (!existsSync(indexHtml)) {
     throw new Error('Static export missing out/index.html')
   }
-  cpSync(indexHtml, notFound)
+  // GitHub Pages serves 404.html for unknown paths; use the real not-found page.
+  const fallback404 = existsSync(notFoundPage) ? notFoundPage : indexHtml
+  cpSync(fallback404, notFoundRoot)
+  writeFileSync(path.join(outDir, '.nojekyll'), '')
   writeFileSync(
     path.join(outDir, '.pages-build.json'),
     JSON.stringify({ staticExport: true, builtAt: new Date().toISOString() }, null, 2),

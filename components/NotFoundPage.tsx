@@ -1,8 +1,11 @@
-import { ArrowLeft, CalendarDays, LayoutDashboard } from 'lucide-react'
+import { ArrowLeft, CalendarDays, FileText, LayoutDashboard } from 'lucide-react'
 import MarketingShell from '@/components/MarketingShell'
 import { Link } from '@/lib/navigation'
+import { PRIVACY_PATH } from '@/lib/legal'
 import { BOOK_DEMO_LABEL, SCHEDULE_DEMO_PATH } from '@/lib/sales'
 import styles from './not-found.module.css'
+
+const isStaticPages = process.env.NEXT_PUBLIC_STATIC_EXPORT === '1'
 
 const QUICK_LINKS = [
   {
@@ -11,18 +14,35 @@ const QUICK_LINKS = [
     hint: 'Product overview, how it works, and pilot details.',
     icon: ArrowLeft,
   },
-  {
-    href: '/dashboard',
-    label: 'Dashboard',
-    hint: 'Your BOMs, risk scores, and decision cards.',
-    icon: LayoutDashboard,
-  },
-  {
-    href: SCHEDULE_DEMO_PATH,
-    label: BOOK_DEMO_LABEL,
-    hint: 'Thirty minutes with the team on a real BOM.',
-    icon: CalendarDays,
-  },
+  ...(isStaticPages
+    ? ([
+        {
+          href: SCHEDULE_DEMO_PATH,
+          label: BOOK_DEMO_LABEL,
+          hint: 'Thirty minutes with the team on a real BOM.',
+          icon: CalendarDays,
+        },
+        {
+          href: PRIVACY_PATH,
+          label: 'Privacy',
+          hint: 'How we handle account and BOM data.',
+          icon: FileText,
+        },
+      ] as const)
+    : ([
+        {
+          href: '/dashboard',
+          label: 'Dashboard',
+          hint: 'Your BOMs, risk scores, and decision cards.',
+          icon: LayoutDashboard,
+        },
+        {
+          href: SCHEDULE_DEMO_PATH,
+          label: BOOK_DEMO_LABEL,
+          hint: 'Thirty minutes with the team on a real BOM.',
+          icon: CalendarDays,
+        },
+      ] as const)),
 ] as const
 
 export default function NotFoundPage() {
@@ -46,9 +66,15 @@ export default function NotFoundPage() {
               <Link className="btn btn--primary" href="/">
                 Back to home
               </Link>
-              <Link className="btn btn--ghost" href="/dashboard">
-                Go to dashboard
-              </Link>
+              {isStaticPages ? (
+                <Link className="btn btn--ghost" href={SCHEDULE_DEMO_PATH}>
+                  {BOOK_DEMO_LABEL}
+                </Link>
+              ) : (
+                <Link className="btn btn--ghost" href="/dashboard">
+                  Go to dashboard
+                </Link>
+              )}
             </div>
           </div>
 
