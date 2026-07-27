@@ -131,14 +131,26 @@ const PROBLEM_POINTS = [
   },
 ]
 
-const LOGOS = [
-  { src: '/images/logos/Google_2015_logo.svg.png', alt: 'Google' },
-  { src: '/images/logos/Amazon_logo.svg.png', alt: 'Amazon' },
-  { src: '/images/logos/fico-logo-coreblue-large.png', alt: 'FICO' },
-  { src: '/images/logos/Brex_Inc._Corporate_Logo.png', alt: 'Brex' },
-  { src: '/images/logos/Southwest_Airlines_logo_2014.svg.png', alt: 'Southwest Airlines' },
-  { src: '/images/logos/ServiceNow-Logo.png', alt: 'ServiceNow' },
-  { src: '/images/logos/Cisco_logo_blue_2016.svg.png', alt: 'Cisco' },
+type LogoEntry =
+  | { kind: 'logo'; src: string; alt: string }
+  | {
+      kind: 'acquisition'
+      primary: { src: string; alt: string }
+      acquirer: { src: string; alt: string }
+    }
+
+const LOGOS: LogoEntry[] = [
+  { kind: 'logo', src: '/images/logos/Google_2015_logo.svg.png', alt: 'Google' },
+  { kind: 'logo', src: '/images/logos/Amazon_logo.svg.png', alt: 'Amazon' },
+  { kind: 'logo', src: '/images/logos/fico-logo-coreblue-large.png', alt: 'FICO' },
+  {
+    kind: 'acquisition',
+    primary: { src: '/images/logos/Brex_Inc._Corporate_Logo.png', alt: 'Brex' },
+    acquirer: { src: '/images/logos/Capital_One_logo.png', alt: 'Capital One' },
+  },
+  { kind: 'logo', src: '/images/logos/Southwest_Airlines_logo_2014.svg.png', alt: 'Southwest Airlines' },
+  { kind: 'logo', src: '/images/logos/ServiceNow-Logo.png', alt: 'ServiceNow' },
+  { kind: 'logo', src: '/images/logos/Cisco_logo_blue_2016.svg.png', alt: 'Cisco' },
 ]
 
 function Reveal({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
@@ -291,19 +303,49 @@ export default function LandingPage() {
 
         <section className="built-by" aria-label="Built by">
           <div className="container">
-            <p className="built-by__lead">Built by engineers who worked at:</p>
-            <div className="built-by__logos">
-              {LOGOS.map((logo) => (
-                <img
-                  key={logo.alt}
-                  src={logo.src}
-                  alt={logo.alt}
-                  width={120}
-                  height={28}
-                  className="built-by__logo"
-                  loading="lazy"
-                />
-              ))}
+            <div className="built-by__inner">
+              <p className="built-by__lead">Built by engineers previously at</p>
+              <div className="built-by__logos">
+                {LOGOS.map((entry) =>
+                  entry.kind === 'acquisition' ? (
+                    <div
+                      key={`${entry.primary.alt}-${entry.acquirer.alt}`}
+                      className="built-by__logo-group"
+                      aria-label={`${entry.primary.alt}, acquired by ${entry.acquirer.alt}`}
+                    >
+                      <div className="built-by__logo-pair">
+                        <img
+                          src={entry.primary.src}
+                          alt={entry.primary.alt}
+                          width={104}
+                          height={22}
+                          className="built-by__logo"
+                          loading="lazy"
+                        />
+                        <img
+                          src={entry.acquirer.src}
+                          alt={entry.acquirer.alt}
+                          width={104}
+                          height={22}
+                          className="built-by__logo"
+                          loading="lazy"
+                        />
+                      </div>
+                      <span className="built-by__logo-caption">acquired by</span>
+                    </div>
+                  ) : (
+                    <img
+                      key={entry.alt}
+                      src={entry.src}
+                      alt={entry.alt}
+                      width={104}
+                      height={22}
+                      className="built-by__logo"
+                      loading="lazy"
+                    />
+                  ),
+                )}
+              </div>
             </div>
           </div>
         </section>
