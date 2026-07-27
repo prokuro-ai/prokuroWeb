@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { Link, useLocation } from '@/lib/navigation'
+import { ArrowRight } from 'lucide-react'
+import { PRIVACY_PATH, TERMS_PATH } from '@/lib/legal'
 import GoogleSignInButton from '@/components/GoogleSignInButton'
 import { useAuth } from '@/components/AuthProvider'
 import { normalizeEmail, startEmailVerification, completeEmailVerification, type EmailVerificationFlow } from '@/lib/auth'
@@ -10,8 +12,8 @@ import { AuthFormField } from '@/components/auth/AuthFormField'
 import { AuthError } from 'aws-amplify/auth'
 
 const COPY = {
-  heading: 'Start your free trial',
-  subheading: 'Upload your first BOM in 60 seconds. No credit required.',
+  heading: 'Get started free',
+  subheading: 'Create your account and upload your first BOM. No credit card required.',
   switchPrompt: 'Already have an account?',
   switchCta: 'Log in',
   switchHref: '/login',
@@ -123,18 +125,18 @@ export default function AuthPage() {
           </div>
 
           <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight mb-5 tracking-tight">
-            Reduce BOM risk<br />before it ships.
+            Your AI procurement<br />analyst for BOM risk.
           </h1>
           <p className="text-[16px] text-slate-400 mb-12 max-w-sm leading-relaxed">
-            Real-time lifecycle, tariff, and supply chain intelligence for electronics teams.
+            See which parts are at risk, get recommended alternates, and know what to do this week — not another dashboard to babysit.
           </p>
 
           <ul className="space-y-4">
             {[
-              'Instant EOL & NRND detection across all parts',
-              'Tariff exposure by HTS code and country of origin',
-              'Alternate part suggestions from validated AML',
-              'Lead time alerts before they become delays',
+              'Upload CSV or Excel BOMs — messy columns OK',
+              'Lifecycle, stock, and lead time per line',
+              'Tariff exposure by country of origin and HTS',
+              'Risk scores with plain-language reasoning',
             ].map((item, i) => (
               <li key={i} className="flex items-start gap-3">
                 <span className="mt-[7px] h-1.5 w-1.5 rounded-full bg-[#0062ff] shrink-0" />
@@ -238,17 +240,20 @@ export default function AuthPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-2.5 bg-[#0062ff] hover:bg-[#0050e6] text-white font-semibold rounded-md text-[15px] transition-colors cursor-pointer disabled:opacity-60"
+                  className="w-full py-2.5 bg-[#0062ff] hover:bg-[#0050e6] text-white font-semibold rounded-md text-[15px] transition-colors cursor-pointer disabled:opacity-60 inline-flex items-center justify-center gap-2"
                 >
-                  Continue with email
+                  Get started free
+                  <ArrowRight size={14} aria-hidden="true" />
                 </button>
               </form>
 
               <p className="mt-5 text-center text-[12px] text-[#98a3b6]">
                 By continuing, you agree to our{' '}
-                <a href="#" className="text-[#0062ff] hover:underline">Terms of Service</a>
+                <Link href={TERMS_PATH} className="text-[#0062ff] hover:underline">Terms of Service</Link>
                 {' '}and{' '}
-                <a href="#" className="text-[#0062ff] hover:underline">Privacy Policy</a>.
+                <Link href={PRIVACY_PATH} className="text-[#0062ff] hover:underline">
+                  Privacy Policy
+                </Link>.
               </p>
 
               <div className="mt-7 pt-7 border-t border-[#f0f3f7] text-center">

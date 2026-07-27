@@ -1,11 +1,11 @@
 'use client'
 
 import { Link, useLocation } from '@/lib/navigation'
+import { ArrowRight } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import UserAvatar from '@/components/UserAvatar'
 import { displayNameForUser, initialsForUser, signOut } from '@/lib/auth'
-import { BOOK_DEMO_LABEL, SCHEDULE_DEMO_PATH } from '@/lib/sales'
 
 export default function UserMenu() {
   const [, navigate] = useLocation()
@@ -121,9 +121,30 @@ export function AuthHeaderActions() {
 }
 
 export function MarketingAuthActions() {
+  const { user, loading } = useAuth()
+
+  if (loading) return null
+
+  if (user) {
+    return (
+      <div className="nav-actions nav-actions--signed-in">
+        <UserMenu />
+        <Link className="btn btn--primary btn--nav" href="/dashboard">
+          Open dashboard
+        </Link>
+      </div>
+    )
+  }
+
   return (
-    <Link className="btn btn--primary btn--nav" href={SCHEDULE_DEMO_PATH}>
-      {BOOK_DEMO_LABEL}
-    </Link>
+    <>
+      <Link href="/login" className="nav-text-link">
+        Login
+      </Link>
+      <Link className="btn btn--primary btn--nav" href="/signup">
+        Get started free
+        <ArrowRight size={14} aria-hidden="true" />
+      </Link>
+    </>
   )
 }

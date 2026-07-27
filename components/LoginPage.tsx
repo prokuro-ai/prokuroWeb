@@ -140,7 +140,7 @@ export default function LoginPage() {
           <>
             <div className="mb-7">
               <h2 className="text-[24px] font-bold text-[#0f1b2d] mb-1.5 tracking-tight">Log in to Prokuro</h2>
-              <p className="text-[14px] text-[#7a8598]">BOM intelligence for hardware teams.</p>
+              <p className="text-[14px] text-[#7a8598]">Your AI procurement analyst for BOM risk.</p>
             </div>
 
             <GoogleSignInButton />
