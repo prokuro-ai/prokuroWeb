@@ -1217,6 +1217,7 @@ body.nav-open {
 }
 
 .built-by__logo {
+  display: block;
   height: 22px;
   width: auto;
   max-width: 104px;
@@ -1227,6 +1228,34 @@ body.nav-open {
 
 .built-by__logo:hover {
   opacity: 1;
+}
+
+.built-by__logo-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 22px;
+}
+
+.built-by__logo-pair {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.built-by__logo-caption {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--color-ink-muted);
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  opacity: 0.65;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 @media (min-width: 900px) {
