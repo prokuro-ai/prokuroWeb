@@ -41,4 +41,16 @@ API routes:
 
 ## Deploying
 
-For AWS deployment, set `GATEWAY_URL` and `NEXT_PUBLIC_GATEWAY_URL` to your deployed gateway ALB URL (CDK sets both on Amplify automatically).
+### AWS Amplify (SSR — full app)
+
+Set `GATEWAY_URL` and `NEXT_PUBLIC_GATEWAY_URL` to your deployed gateway ALB URL (CDK sets both on Amplify automatically). Use `npm run build` (default). Do **not** set `STATIC_EXPORT=1` on Amplify.
+
+### GitHub Pages (static marketing + demo booking)
+
+Pages cannot run Next API routes. Use the static export path:
+
+```bash
+npm run build:pages
+```
+
+Full setup, tradeoffs, and **how to revert**: [`docs/GITHUB-PAGES.md`](./docs/GITHUB-PAGES.md).

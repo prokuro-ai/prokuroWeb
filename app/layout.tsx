@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { IBM_Plex_Sans, Inter, JetBrains_Mono } from 'next/font/google'
 import { Providers } from '@/components/Providers'
+import SelfServeRedirect from '@/components/SelfServeRedirect'
 import './globals.css'
 
 const inter = Inter({
@@ -34,7 +36,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${inter.variable} ${plexSans.variable} ${jetbrainsMono.variable}`}>
       <body className={plexSans.className}>
-        <Providers>{children}</Providers>
+        <Providers>
+          <Suspense fallback={null}>
+            <SelfServeRedirect />
+          </Suspense>
+          {children}
+        </Providers>
       </body>
     </html>
   )

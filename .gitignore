@@ -1,4 +1,6 @@
 .next
+out
+.pages-stash
 node_modules
 *.log
 tsconfig.tsbuildinfo

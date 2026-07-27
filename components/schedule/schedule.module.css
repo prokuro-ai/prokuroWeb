@@ -49,6 +49,21 @@
   overflow: hidden;
 }
 
+.embed {
+  width: 100%;
+  border: 0;
+  overflow: hidden;
+}
+
+.embedMissing {
+  margin: 0;
+  padding: var(--space-xl);
+  text-align: center;
+  color: var(--color-ink-muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
 /* Widget layout --------------------------------------------------------- */
 
 .widget {

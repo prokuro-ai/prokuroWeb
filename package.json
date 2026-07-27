@@ -5,8 +5,9 @@
   "description": "Unified Next.js frontend for Prokuro",
   "scripts": {
     "dev": "next dev --port 3010",
-    "clean": "rm -rf .next out tsconfig.tsbuildinfo",
+    "clean": "rm -rf .next out tsconfig.tsbuildinfo .pages-stash",
     "build": "next build",
+    "build:pages": "node scripts/build-pages.mjs",
     "start": "next start --port 3010",
     "lint": "eslint app components lib hooks --ext .ts,.tsx",
     "type-check": "tsc --noEmit"
