@@ -1,5 +1,16 @@
 import type { BookingConfirmation, BookingRequest } from '@/lib/calendly/types'
 
+/**
+ * Origin serving the Calendly endpoints. Empty in local dev and on SSR hosts,
+ * where Next.js handles /api/calendly/* itself. Static hosting has no server,
+ * so builds for it point this at the Cloudflare Worker in worker/index.ts.
+ */
+const API_BASE = (process.env.NEXT_PUBLIC_CALENDLY_API_BASE ?? '').replace(/\/+$/, '')
+
+function endpoint(path: string): string {
+  return `${API_BASE}${path}`
+}
+
 async function readError(response: Response, fallback: string): Promise<string> {
   const data = (await response.json().catch(() => null)) as { error?: string } | null
   return data?.error ?? fallback
@@ -12,7 +23,7 @@ export async function fetchAvailability(start: Date, end: Date): Promise<string[
     end: end.toISOString(),
   })
 
-  const response = await fetch(`/api/calendly/availability?${params.toString()}`)
+  const response = await fetch(endpoint(`/api/calendly/availability?${params.toString()}`))
   if (!response.ok) {
     throw new Error(await readError(response, 'Could not load available times'))
   }
@@ -22,7 +33,7 @@ export async function fetchAvailability(start: Date, end: Date): Promise<string[
 }
 
 export async function createBooking(input: BookingRequest): Promise<BookingConfirmation> {
-  const response = await fetch('/api/calendly/book', {
+  const response = await fetch(endpoint('/api/calendly/book'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
@@ -41,7 +52,7 @@ export async function createBooking(input: BookingRequest): Promise<BookingConfi
 }
 
 export async function cancelBooking(eventUri: string, reason?: string): Promise<void> {
-  const response = await fetch('/api/calendly/cancel', {
+  const response = await fetch(endpoint('/api/calendly/cancel'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ eventUri, reason }),

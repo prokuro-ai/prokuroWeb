@@ -1,20 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { z } from 'zod'
 import {
   calendlyRouteStatus,
   cancelScheduledEvent,
   getCalendlyConfig,
 } from '@/lib/calendly/server'
-
-const cancelSchema = z.object({
-  eventUri: z
-    .string({ required_error: 'Missing event' })
-    .min(1, 'Missing event')
-    .refine((value) => value.startsWith('https://api.calendly.com/scheduled_events/'), {
-      message: 'Invalid event',
-    }),
-  reason: z.string().trim().max(1000).optional(),
-})
+import { cancelSchema } from '@/lib/calendly/validation'
 
 export async function POST(req: NextRequest) {
   if (!getCalendlyConfig()) {

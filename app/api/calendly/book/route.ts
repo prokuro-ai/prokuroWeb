@@ -1,17 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { z } from 'zod'
 import { toE164Phone } from '@/lib/calendly/phone'
 import { calendlyRouteStatus, createInvitee, getCalendlyConfig } from '@/lib/calendly/server'
-
-const bookSchema = z.object({
-  startTime: z.string().datetime(),
-  firstName: z.string().trim().min(1).max(80),
-  lastName: z.string().trim().min(1).max(80),
-  email: z.string().trim().email().max(254),
-  timezone: z.string().trim().min(1).max(80),
-  phone: z.string().trim().max(40).optional(),
-  notes: z.string().trim().max(2000).optional(),
-})
+import { bookSchema } from '@/lib/calendly/validation'
 
 export async function POST(req: NextRequest) {
   if (!getCalendlyConfig()) {

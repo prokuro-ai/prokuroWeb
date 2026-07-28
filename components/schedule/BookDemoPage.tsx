@@ -5,24 +5,13 @@ import MarketingShell from '@/components/MarketingShell'
 import { DEMO_AGENDA } from '@/lib/schedule/meeting'
 import { SALES_EMAIL, SALES_MAILTO } from '@/lib/sales'
 import BookDemo from './BookDemo'
-import CalendlyEmbed from './CalendlyEmbed'
 import styles from './schedule.module.css'
 
 interface BookDemoPageProps {
-  /** SSR + custom Scheduling API widget */
   calendlyConfigured?: boolean
-  /** GitHub Pages / static: public Calendly scheduling URL */
-  embedUrl?: string
-  mode?: 'api' | 'embed'
 }
 
-export default function BookDemoPage({
-  calendlyConfigured = false,
-  embedUrl = '',
-  mode = 'api',
-}: BookDemoPageProps) {
-  const useEmbed = mode === 'embed'
-
+export default function BookDemoPage({ calendlyConfigured = false }: BookDemoPageProps) {
   return (
     <MarketingShell>
       <main className={styles.page}>
@@ -35,11 +24,7 @@ export default function BookDemoPage({
           </header>
 
           <div className={styles.card}>
-            {useEmbed ? (
-              <CalendlyEmbed url={embedUrl} />
-            ) : (
-              <BookDemo configured={calendlyConfigured} />
-            )}
+            <BookDemo configured={calendlyConfigured} />
           </div>
 
           <ul className={styles.agenda}>

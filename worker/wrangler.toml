@@ -1,0 +1,30 @@
+name = "prokuro-calendly"
+main = "index.ts"
+
+# 2025-04-01 or later is required for process.env to be populated from secrets,
+# which is what lets lib/calendly/server.ts run here unmodified.
+compatibility_date = "2026-07-01"
+compatibility_flags = ["nodejs_compat"]
+
+workers_dev = true
+
+[observability]
+enabled = true
+
+# Only the booking widget should reach this Worker. Anything else gets a 403.
+[vars]
+ALLOWED_ORIGINS = "https://prokuro.ai,https://www.prokuro.ai,http://localhost:3010"
+
+# Secrets (never committed) — set once per environment:
+#   npx wrangler secret put CALENDLY_API_TOKEN --config worker/wrangler.toml
+#   npx wrangler secret put CALENDLY_EVENT_TYPE_URI --config worker/wrangler.toml
+# Optional: CALENDLY_LOCATION_KIND
+
+# Bookings draw down the paid Calendly quota, so cap attempts per visitor IP.
+[[ratelimits]]
+name = "BOOKING_RATE_LIMIT"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 5
+  period = 60

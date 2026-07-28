@@ -8,15 +8,11 @@ export const metadata: Metadata = {
 }
 
 export default async function ScheduleRoute() {
-  // GitHub Pages: no server secrets — public Calendly embed only.
-  // SSR/Amplify: keep custom Scheduling API widget (see docs/GITHUB-PAGES.md to revert).
+  // Static hosting cannot read secrets or run /api/calendly/*, so the widget
+  // talks to the Cloudflare Worker instead (see docs/GITHUB-PAGES.md).
   if (isStaticExport()) {
-    return (
-      <BookDemoPage
-        mode="embed"
-        embedUrl={process.env.NEXT_PUBLIC_CALENDLY_URL?.trim() ?? ''}
-      />
-    )
+    const proxyConfigured = Boolean(process.env.NEXT_PUBLIC_CALENDLY_API_BASE?.trim())
+    return <BookDemoPage calendlyConfigured={proxyConfigured} />
   }
 
   const { isCalendlyConfigured, warmEventTypeCache } = await import('@/lib/calendly/server')
@@ -25,5 +21,5 @@ export default async function ScheduleRoute() {
     await warmEventTypeCache()
   }
 
-  return <BookDemoPage mode="api" calendlyConfigured={calendlyConfigured} />
+  return <BookDemoPage calendlyConfigured={calendlyConfigured} />
 }

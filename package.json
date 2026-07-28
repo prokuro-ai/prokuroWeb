@@ -11,7 +11,10 @@
     "pages:branch": "node scripts/build-pages.mjs && node scripts/sync-pages-to-docs.mjs",
     "start": "next start --port 3010",
     "lint": "eslint app components lib hooks --ext .ts,.tsx",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "worker:dev": "wrangler dev --config worker/wrangler.toml --port 8787",
+    "worker:deploy": "wrangler deploy --config worker/wrangler.toml",
+    "worker:tail": "wrangler tail --config worker/wrangler.toml"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -74,7 +77,8 @@
     "@types/react-dom": "^19.0.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "^15.3.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "wrangler": "^4.114.0"
   },
   "repository": {
     "type": "git",

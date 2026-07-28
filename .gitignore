@@ -1,6 +1,7 @@
 .next
 out
 .pages-stash
+.wrangler
 node_modules
 *.log
 tsconfig.tsbuildinfo
