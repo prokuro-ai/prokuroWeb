@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import BookDemoPage from '@/components/schedule/BookDemoPage'
+import { calendlyApiBase } from '@/lib/calendly/config'
 import { isStaticExport } from '@/lib/static-export'
 
 export const metadata: Metadata = {
@@ -9,10 +10,9 @@ export const metadata: Metadata = {
 
 export default async function ScheduleRoute() {
   // Static hosting cannot read secrets or run /api/calendly/*, so the widget
-  // talks to the Cloudflare Worker instead (see docs/GITHUB-PAGES.md).
+  // talks to the Cloudflare Worker instead (see GITHUB-PAGES.md).
   if (isStaticExport()) {
-    const proxyConfigured = Boolean(process.env.NEXT_PUBLIC_CALENDLY_API_BASE?.trim())
-    return <BookDemoPage calendlyConfigured={proxyConfigured} />
+    return <BookDemoPage calendlyConfigured={Boolean(calendlyApiBase())} />
   }
 
   const { isCalendlyConfigured, warmEventTypeCache } = await import('@/lib/calendly/server')

@@ -28,9 +28,18 @@ npx wrangler secret put CALENDLY_EVENT_TYPE_URI --config worker/wrangler.toml
 npm run worker:deploy
 ```
 
-Deploy prints the Worker origin, e.g. `https://prokuro-calendly.<subdomain>.workers.dev`. Put it in `.env` as `NEXT_PUBLIC_CALENDLY_API_BASE` — it is baked into the bundle at build time, so the site must be rebuilt whenever it changes.
+If the account has no `workers.dev` subdomain yet, `worker:deploy` offers to register one — answer yes. Run it from a real terminal, since that prompt is skipped in non-interactive shells.
+
+Deploy prints the Worker origin. It lives in `lib/calendly/config.ts` as `CALENDLY_WORKER_ORIGIN`, committed rather than passed as a build variable: it is public either way (it ships in the client bundle), and a missing variable used to publish a booking page that silently loaded no times. **If you deploy under a different name or account, update that constant and rebuild.**
 
 Update `ALLOWED_ORIGINS` in `worker/wrangler.toml` if the site origin ever changes; anything else gets a 403. Bookings are capped at 5/minute per IP so nobody can drain the Calendly quota.
+
+Verify the deployed Worker directly:
+
+```bash
+curl -H "Origin: https://prokuro.ai" \
+  "https://prokuro-calendly.mounir-d96.workers.dev/api/calendly/availability"
+```
 
 Useful:
 
@@ -62,7 +71,12 @@ git push origin main
 
 GitHub rebuilds the site from `docs/` on push. Home page URL: **`https://prokuro.ai/`**
 
-`NEXT_PUBLIC_CALENDLY_API_BASE` must be set (via `.env` or inline) or `/schedule` will render with no available times.
+No extra env vars are needed. To sanity-check `/schedule` after a build, confirm the exported HTML prerenders in the loading state rather than the empty one:
+
+```bash
+grep -c "Loading available times" docs/schedule/index.html   # 1 = wired up
+grep -c "No open times"          docs/schedule/index.html    # 1 = backend missing
+```
 
 Local preview:
 
@@ -94,16 +108,17 @@ The build temporarily moves aside server-only routes (`app/api`, middleware, das
 | `public/CNAME` | Custom domain → copied into `docs/CNAME` |
 | `worker/index.ts` | Calendly proxy holding the API token |
 | `worker/wrangler.toml` | Worker config: allowed origins, rate limit |
+| `lib/calendly/config.ts` | Worker origin used by static builds |
 | `lib/calendly/validation.ts` | Request rules shared by routes and Worker |
 
 ## Tradeoffs on Pages (known)
 
 - No `/api/*` for BOM (the Calendly endpoints are covered by the Worker)
 - No middleware (client `SelfServeRedirect` instead)
-- First booking request pays a Worker cold start (~50ms)
+- First booking request pays a Worker cold start (measured ~7ms startup)
 - Self-serve product routes redirect to `/schedule`
 - You must run `pages:branch` and commit `docs/` when the marketing site changes
-- Changing the Worker URL requires a site rebuild, since it is inlined at build time
+- Changing the Worker URL requires editing `lib/calendly/config.ts` and rebuilding
 
 ## Amplify remains valid
 

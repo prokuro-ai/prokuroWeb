@@ -1,11 +1,7 @@
+import { calendlyApiBase } from '@/lib/calendly/config'
 import type { BookingConfirmation, BookingRequest } from '@/lib/calendly/types'
 
-/**
- * Origin serving the Calendly endpoints. Empty in local dev and on SSR hosts,
- * where Next.js handles /api/calendly/* itself. Static hosting has no server,
- * so builds for it point this at the Cloudflare Worker in worker/index.ts.
- */
-const API_BASE = (process.env.NEXT_PUBLIC_CALENDLY_API_BASE ?? '').replace(/\/+$/, '')
+const API_BASE = calendlyApiBase()
 
 function endpoint(path: string): string {
   return `${API_BASE}${path}`

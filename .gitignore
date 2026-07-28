@@ -2,6 +2,7 @@
 out
 .pages-stash
 .wrangler
+.wrangler-dryrun
 node_modules
 *.log
 tsconfig.tsbuildinfo
