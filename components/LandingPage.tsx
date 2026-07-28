@@ -101,11 +101,6 @@ const LOGOS: LogoEntry[] = [
   { kind: 'logo', src: '/images/logos/Google_2015_logo.svg.png', alt: 'Google' },
   { kind: 'logo', src: '/images/logos/Amazon_logo.svg.png', alt: 'Amazon' },
   { kind: 'logo', src: '/images/logos/fico-logo-coreblue-large.png', alt: 'FICO' },
-  {
-    kind: 'acquisition',
-    primary: { src: '/images/logos/Brex_Inc._Corporate_Logo.png', alt: 'Brex' },
-    acquirer: { src: '/images/logos/Capital_One_logo.png', alt: 'Capital One' },
-  },
   { kind: 'logo', src: '/images/logos/Southwest_Airlines_logo_2014.svg.png', alt: 'Southwest Airlines' },
   { kind: 'logo', src: '/images/logos/ServiceNow-Logo.png', alt: 'ServiceNow' },
   { kind: 'logo', src: '/images/logos/Cisco_logo_blue_2016.svg.png', alt: 'Cisco' },
