@@ -36,7 +36,7 @@ export default function TermsPage() {
             <p className="eyebrow">Legal</p>
             <h1>Terms of Service</h1>
             <p className="legal__lead">
-              The rules for using Prokuro&apos;s BOM risk analysis service — what we provide, what you own, and how we
+              The rules for using Prokuro&apos;s BOM risk analysis service: what we provide, what you own, and how we
               work together.
             </p>
           </div>
@@ -65,7 +65,7 @@ export default function TermsPage() {
             <div className="legal__glance">
               <p className="legal__glance-title">At a glance</p>
               <ul>
-                <li>Prokuro is a BOM risk analysis tool — not a procurement platform, ERP, or order system.</li>
+                <li>Prokuro is a BOM risk analysis tool, not a procurement platform, ERP, or order system.</li>
                 <li>You keep ownership of the BOM files and data you upload.</li>
                 <li>AI-generated risk scores and alternate suggestions are recommendations for human review, not decisions.</li>
                 <li>The service is provided as-is during early access; we do not process payments yet.</li>
@@ -145,7 +145,7 @@ export default function TermsPage() {
                 </li>
                 <li>
                   <strong>License to operate the Service.</strong> You grant Prokuro a limited license to host, process,
-                  and analyze Your Content solely to provide and improve the Service for you — including parsing your
+                  and analyze Your Content solely to provide and improve the Service for you, including parsing your
                   files, enriching part data, generating reports, and saving results to your account.
                 </li>
                 <li>
@@ -255,8 +255,8 @@ export default function TermsPage() {
                 will give notice before termination for reasons within our control.
               </p>
               <p>
-                Sections that by their nature should survive termination — including ownership, disclaimers, limitation of
-                liability, indemnification, and dispute resolution — will survive.
+                Sections that by their nature should survive termination, including ownership, disclaimers, limitation of
+                liability, indemnification, and dispute resolution, will survive.
               </p>
             </section>
 
@@ -281,7 +281,7 @@ export default function TermsPage() {
                 TO THE FULLEST EXTENT PERMITTED BY LAW, PROKURO AND ITS OFFICERS, DIRECTORS, EMPLOYEES, AND SUPPLIERS
                 WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR FOR ANY
                 LOSS OF PROFITS, REVENUE, DATA, GOODWILL, OR BUSINESS INTERRUPTION, ARISING FROM OR RELATED TO YOUR USE
-                OF THE SERVICE — EVEN IF WE HAVE BEEN ADVISED OF THE POSSIBILITY.
+                OF THE SERVICE, EVEN IF WE HAVE BEEN ADVISED OF THE POSSIBILITY.
               </p>
               <p>
                 TO THE FULLEST EXTENT PERMITTED BY LAW, PROKURO&apos;S TOTAL LIABILITY FOR ANY CLAIM ARISING FROM OR

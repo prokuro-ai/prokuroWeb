@@ -57,7 +57,7 @@ function formatCalendlyError(body: unknown, status: number): string {
   const record = body as { message?: string; details?: Array<{ message?: string; parameter?: string; code?: string }> }
   const detail = record.details?.[0]
   const detailText = detail
-    ? [detail.message, detail.parameter, detail.code].filter(Boolean).join(' — ')
+    ? [detail.message, detail.parameter, detail.code].filter(Boolean).join('. ')
     : null
 
   if (record.message && detailText) return `${record.message} (${detailText})`

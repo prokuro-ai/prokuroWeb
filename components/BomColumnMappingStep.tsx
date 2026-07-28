@@ -33,7 +33,7 @@ export default function BomColumnMappingStep({
         <div className="border-b border-slate-100 px-5 py-4">
           <h2 className="text-sm font-semibold text-slate-900">Confirm column mapping</h2>
           <p className="mt-1 text-xs text-slate-500">
-            {file?.name ?? parseResult.source_filename} — Prokuro detected the columns below. Correct any
+            {file?.name ?? parseResult.source_filename}. Prokuro detected the columns below. Correct any
             mistakes before analyzing.
           </p>
         </div>
@@ -108,7 +108,7 @@ export default function BomColumnMappingStep({
                     }
                     className="rounded border border-slate-200 bg-white px-2 py-1 text-xs text-slate-900 focus:border-[#0062ff] focus:outline-none"
                   >
-                    <option value="">— not mapped —</option>
+                    <option value="">(not mapped)</option>
                     {headers.map((header) => (
                       <option key={header} value={header}>
                         {header}

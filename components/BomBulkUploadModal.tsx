@@ -213,7 +213,7 @@ export default function BomBulkUploadModal({
       try {
         const analyzeResult = await analyzeFile(item.file)
         if (analyzeResult.mapping_confidence < 0.3) {
-          throw new Error('Could not auto-detect columns — upload this file alone to map columns manually')
+          throw new Error('Could not auto-detect columns. Upload this file alone to map columns manually')
         }
         const hasMpn = analyzeResult.lines.some((line) => Boolean(line.mpn?.trim()))
         if (!hasMpn) {

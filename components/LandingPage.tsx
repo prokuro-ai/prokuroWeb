@@ -61,7 +61,7 @@ const HOW_IT_WORKS = [
 ]
 
 const PROBLEM_STATS = [
-  { value: '7+', label: 'Systems per BOM on average — ERP, PLM, spreadsheets, email, distributor portals', source: 'Industry estimate' },
+  { value: '7+', label: 'Systems per BOM on average: ERP, PLM, spreadsheets, email, distributor portals', source: 'Industry estimate' },
   { value: '15–25%', label: 'Higher total BOM cost from poor sourcing data and part mismatches', source: 'AGS Devices' },
   { value: '$4T', label: 'Lost globally in a single high-volatility year to supply chain disruption', source: 'McKinsey & Company' },
   { value: '3–5 days', label: 'Typical cross-functional scramble when a single part goes NRND', source: 'Procurement teams' },
@@ -69,7 +69,7 @@ const PROBLEM_STATS = [
 
 const PILOT_BENEFITS = [
   'Guided onboarding with your procurement team on a real BOM',
-  'Decision-ready risk analysis — not another dashboard to babysit',
+  'Decision-ready risk analysis, not another dashboard to babysit',
   'Alternates cross-checked against lifecycle, stock, tariff exposure, and your AML',
   'Direct input into how the analyst fits your sourcing workflow',
 ]
@@ -77,7 +77,7 @@ const PILOT_BENEFITS = [
 const PROBLEM_POINTS = [
   {
     title: 'Fragmented data, no source of truth',
-    body: 'A single product spans OEMs, CMs, distributors, and suppliers — each with their own ERP, PLM, spreadsheets, and part numbers. Procurement teams stitch it together by hand.',
+    body: 'A single product spans OEMs, CMs, distributors, and suppliers, each with their own ERP, PLM, spreadsheets, and part numbers. Procurement teams stitch it together by hand.',
   },
   {
     title: 'Unstructured engineering artifacts',
@@ -85,7 +85,7 @@ const PROBLEM_POINTS = [
   },
   {
     title: 'Decisions require cross-functional coordination',
-    body: 'When a part goes NRND, procurement, engineering, and quality each run their own checks. The alternate isn\'t the hard part — eliminating the 3-day Slack thread is.',
+    body: 'When a part goes NRND, procurement, engineering, and quality each run their own checks. The alternate isn\'t the hard part. Eliminating the 3-day Slack thread is.',
   },
 ]
 
@@ -136,7 +136,7 @@ const REPORT_ROWS: ReportRow[] = [
     lifecycleTone: 'ok',
     stock: '128,400',
     lead: '8 wk',
-    tariff: '—',
+    tariff: '-',
     risk: 1.8,
   },
   {
@@ -159,7 +159,7 @@ const REPORT_ROWS: ReportRow[] = [
     lifecycleTone: 'ok',
     stock: '891,000',
     lead: '6 wk',
-    tariff: '—',
+    tariff: '-',
     risk: 1.2,
   },
   {
@@ -348,9 +348,9 @@ export default function LandingPage() {
             <div className="hero__centered">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }}>
                 <p className="eyebrow">Your AI procurement analyst for BOM risk</p>
-                <h1>Which parts in your BOM are about to become a problem — and what to order instead.</h1>
+                <h1>Which parts in your BOM are about to become a problem, and what to order instead.</h1>
                 <p className="hero__subheadline">
-                  Prokuro reads your BOM, cross-references lifecycle, availability, and tariff exposure — then hands you a decision, not a dashboard. Every at-risk line gets a recommended alternate, confidence score, and what to do this week.
+                  Prokuro reads your BOM, cross-references lifecycle, availability, and tariff exposure, then hands you a decision, not a dashboard. Every at-risk line gets a recommended alternate, confidence score, and what to do this week.
                 </p>
                 <div className="hero__cta">
                   <a className="btn btn--primary" href={SCHEDULE_DEMO_PATH}>
@@ -422,7 +422,7 @@ export default function LandingPage() {
             </Reveal>
             <Reveal delay={0.05}>
               <p className="section-lead">
-                Teams pay for component databases but still manage BOM risk in email and spreadsheets — not because the data is bad, but because those tools don&apos;t fit how people actually make decisions. Prokuro is software that participates in those decisions: grounded in real component data, explained in plain language, and ready for your team to act on.
+                Teams pay for component databases but still manage BOM risk in email and spreadsheets, not because the data is bad, but because those tools don&apos;t fit how people actually make decisions. Prokuro is software that participates in those decisions: grounded in real component data, explained in plain language, and ready for your team to act on.
               </p>
             </Reveal>
           </div>
@@ -568,7 +568,7 @@ export default function LandingPage() {
                 </div>
 
                 <figcaption className="report__why">
-                  <p className="report__why-label">Line 0267 — why 9.1</p>
+                  <p className="report__why-label">Line 0267: why 9.1</p>
                   <p className="report__why-body">
                     TDK discontinued this thermistor in March. 2,150 units remain across Digi-Key and Mouser against
                     your 8,000-unit run, and your AML lists no approved alternate for it.
@@ -609,9 +609,9 @@ export default function LandingPage() {
               <Reveal>
                 <div className="split-panel__copy">
                   <p className="eyebrow">Tariff &amp; geopolitical risk</p>
-                  <h2>Trade exposure rolled into every decision — not a separate spreadsheet.</h2>
+                  <h2>Trade exposure rolled into every decision, not a separate spreadsheet.</h2>
                   <p>
-                    Every line checked comes back with country of origin, applicable Section 301 tariff rate, and estimated cost impact at your production volume. Prokuro rolls it up into one number your procurement team can act on — before it shows up in a cost overrun.
+                    Every line checked comes back with country of origin, applicable Section 301 tariff rate, and estimated cost impact at your production volume. Prokuro rolls it up into one number your procurement team can act on before it shows up in a cost overrun.
                   </p>
                   <ul className="split-panel__stats">
                     <li>
@@ -654,7 +654,7 @@ export default function LandingPage() {
           <div className="container">
             <h2>Built for hardware teams paying the coordination tax on every sourcing decision.</h2>
             <p className="section-lead">
-              Every sourcing decision crosses procurement, engineering, and quality — but the data lives in BOMs, emails, datasheets, and supplier quotes nobody shares. Prokuro starts with your BOM and eliminates the days of coordination that follow.
+              Every sourcing decision crosses procurement, engineering, and quality, but the data lives in BOMs, emails, datasheets, and supplier quotes nobody shares. Prokuro starts with your BOM and eliminates the days of coordination that follow.
             </p>
             <div className="two-col">
               <article className="card">
@@ -672,8 +672,8 @@ export default function LandingPage() {
                 <ul className="list">
                   <li>You&apos;re building consumer hardware with 1-year product cycles</li>
                   <li>You have a 20-person supply chain team and internal ML capabilities</li>
-                  <li>You don&apos;t have a production BOM yet — Prokuro starts where your sourcing data already lives</li>
-                  <li>You need a procurement platform, ERP, or compliance tool — Prokuro is an intelligence layer, not a transaction system</li>
+                  <li>You don&apos;t have a production BOM yet. Prokuro starts where your sourcing data already lives</li>
+                  <li>You need a procurement platform, ERP, or compliance tool. Prokuro is an intelligence layer, not a transaction system</li>
                 </ul>
               </article>
             </div>
@@ -687,7 +687,7 @@ export default function LandingPage() {
                 &ldquo;Alternate #4 is technically compatible, already in your AML, stocked at Digi-Key, avoids the new tariff, and requires no firmware changes. Here&apos;s what you need to do this week.&rdquo;
               </p>
               <p>
-                That&apos;s what a personalized procurement analyst delivers — not a list of 12 parametric matches you still have to validate yourself. The value isn&apos;t the alternate. It&apos;s eliminating the cross-functional coordination that usually takes days.
+                That&apos;s what a personalized procurement analyst delivers: not a list of 12 parametric matches you still have to validate yourself. The value isn&apos;t the alternate. It&apos;s eliminating the cross-functional coordination that usually takes days.
               </p>
             </div>
           </div>
@@ -701,7 +701,7 @@ export default function LandingPage() {
                   <p className="eyebrow">Enterprise</p>
                   <h2>Need a guided rollout for your procurement team?</h2>
                   <p>
-                    For mid-size OEMs rolling out across a team, we run scoped pilots on a real BOM — white-glove onboarding, dedicated support, and annual contracts. Same analyst as self-serve, built for how your organization sources.
+                    For mid-size OEMs rolling out across a team, we run scoped pilots on a real BOM: white-glove onboarding, dedicated support, and annual contracts. Same analyst as self-serve, built for how your organization sources.
                   </p>
                   <ul className="split-panel__stats">
                     {PILOT_BENEFITS.map((benefit) => (
@@ -722,7 +722,7 @@ export default function LandingPage() {
                   <p className="early-access-card__eyebrow">What you&apos;ll get</p>
                   <h3 className="early-access-card__title">A decision report, not another tool to babysit.</h3>
                   <p className="early-access-card__body">
-                    Upload a BOM and get decision cards for every at-risk line — lifecycle reasoning, recommended alternates, tariff impact, and what to do this week. Export and share with engineering and quality.
+                    Upload a BOM and get decision cards for every at-risk line: lifecycle reasoning, recommended alternates, tariff impact, and what to do this week. Export and share with engineering and quality.
                   </p>
                   <div className="early-access-card__metric">
                     <span>Typical first scan</span>
@@ -741,9 +741,9 @@ export default function LandingPage() {
         <section className="section cta-banner">
           <div className="container cta-banner__inner">
             <Reveal>
-              <h2>From BOM upload to decision — in minutes, not days.</h2>
+              <h2>From BOM upload to decision in minutes, not days.</h2>
               <p>
-                Book a demo and we&apos;ll walk through your BOM workflow on a real file — lifecycle risk, alternates, and tariff exposure in one report.
+                Book a demo and we&apos;ll walk through your BOM workflow on a real file: lifecycle risk, alternates, and tariff exposure in one report.
               </p>
               <div className="cta-banner__actions">
                 <a className="btn btn--primary" href={SCHEDULE_DEMO_PATH}>

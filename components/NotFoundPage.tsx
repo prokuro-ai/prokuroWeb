@@ -1,4 +1,3 @@
-import { ArrowLeft, CalendarDays, FileText, LayoutDashboard } from 'lucide-react'
 import MarketingShell from '@/components/MarketingShell'
 import { Link } from '@/lib/navigation'
 import { PRIVACY_PATH } from '@/lib/legal'
@@ -12,7 +11,6 @@ const QUICK_LINKS = [
     href: '/',
     label: 'Home',
     hint: 'Product overview, how it works, and pilot details.',
-    icon: ArrowLeft,
   },
   ...(isStaticPages
     ? ([
@@ -20,13 +18,11 @@ const QUICK_LINKS = [
           href: SCHEDULE_DEMO_PATH,
           label: BOOK_DEMO_LABEL,
           hint: 'Thirty minutes with the team on a real BOM.',
-          icon: CalendarDays,
         },
         {
           href: PRIVACY_PATH,
           label: 'Privacy',
           hint: 'How we handle account and BOM data.',
-          icon: FileText,
         },
       ] as const)
     : ([
@@ -34,13 +30,11 @@ const QUICK_LINKS = [
           href: '/dashboard',
           label: 'Dashboard',
           hint: 'Your BOMs, risk scores, and decision cards.',
-          icon: LayoutDashboard,
         },
         {
           href: SCHEDULE_DEMO_PATH,
           label: BOOK_DEMO_LABEL,
           hint: 'Thirty minutes with the team on a real BOM.',
-          icon: CalendarDays,
         },
       ] as const)),
 ] as const
@@ -79,12 +73,9 @@ export default function NotFoundPage() {
           </div>
 
           <ul className={styles.links} aria-label="Helpful links">
-            {QUICK_LINKS.map(({ href, label, hint, icon: Icon }) => (
+            {QUICK_LINKS.map(({ href, label, hint }) => (
               <li key={href}>
                 <Link className={styles.linkCard} href={href}>
-                  <span className={styles.linkIcon} aria-hidden="true">
-                    <Icon size={18} strokeWidth={2} />
-                  </span>
                   <p className={styles.linkLabel}>{label}</p>
                   <p className={styles.linkHint}>{hint}</p>
                 </Link>

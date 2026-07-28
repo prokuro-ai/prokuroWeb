@@ -128,12 +128,12 @@ export default function AuthPage() {
             Your AI procurement<br />analyst for BOM risk.
           </h1>
           <p className="text-[16px] text-slate-400 mb-12 max-w-sm leading-relaxed">
-            See which parts are at risk, get recommended alternates, and know what to do this week — not another dashboard to babysit.
+            See which parts are at risk, get recommended alternates, and know what to do this week. Not another dashboard to babysit.
           </p>
 
           <ul className="space-y-4">
             {[
-              'Upload CSV or Excel BOMs — messy columns OK',
+              'Upload CSV or Excel BOMs. Messy columns OK',
               'Lifecycle, stock, and lead time per line',
               'Tariff exposure by country of origin and HTS',
               'Risk scores with plain-language reasoning',

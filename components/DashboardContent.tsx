@@ -18,15 +18,15 @@ import {
 // ─── Static alert data ────────────────────────────────────────────────────────
 
 const ALERTS = [
-  { id: 1,  part: 'STM32F405RGT6',     type: 'EOL',       message: 'Hit EOL — last-time-buy window closes in 14 days. 0 units in stock across all distributors.', severity: 'high',   time: '10m ago', bom: 'Motor Controller v3'   },
-  { id: 2,  part: 'CY7C1061GE-10ZSXI', type: 'EOL',       message: 'Discontinued by Cypress. 210 units remaining at Digi-Key — covers ~1 production run.',        severity: 'high',   time: '1h ago',  bom: 'Motor Controller v3'   },
+  { id: 1,  part: 'STM32F405RGT6',     type: 'EOL',       message: 'Hit EOL. Last-time-buy window closes in 14 days. 0 units in stock across all distributors.', severity: 'high',   time: '10m ago', bom: 'Motor Controller v3'   },
+  { id: 2,  part: 'CY7C1061GE-10ZSXI', type: 'EOL',       message: 'Discontinued by Cypress. 210 units remaining at Digi-Key, covers ~1 production run.',        severity: 'high',   time: '1h ago',  bom: 'Motor Controller v3'   },
   { id: 3,  part: 'LTC3780EGN#PBF',    type: 'EOL',       message: 'Analog Devices EOL notice issued. No direct alternate identified yet.',                        severity: 'high',   time: '2h ago',  bom: 'Motor Controller v3'   },
   { id: 4,  part: 'ATMEGA328P-AU',      type: 'Lead Time', message: 'Lead time extended to 52 weeks at all distributors (+40% in 60 days). NRND status.',          severity: 'high',   time: '3h ago',  bom: 'Motor Controller v3'   },
   { id: 5,  part: 'FT232RL-REEL',       type: 'NRND',      message: 'FTDI flagged as not recommended for new designs. CH340G used by 8 companies as substitute.',   severity: 'medium', time: '4h ago',  bom: 'Motor Controller v3'   },
-  { id: 6,  part: 'PRTR5V0U2X',         type: 'Lead Time', message: 'NXP lead time at 38 weeks. Stock at 900 units — below threshold for planned production run.',  severity: 'medium', time: '6h ago',  bom: 'Motor Controller v3'   },
+  { id: 6,  part: 'PRTR5V0U2X',         type: 'Lead Time', message: 'NXP lead time at 38 weeks. Stock at 900 units, below threshold for planned production run.',  severity: 'medium', time: '6h ago',  bom: 'Motor Controller v3'   },
   { id: 7,  part: 'NRF52840-QIAA-R',   type: 'Tariff',    message: 'Section 301 tariff now applies. +$1.80/unit estimated impact at current BOM quantity.',        severity: 'medium', time: '8h ago',  bom: 'Motor Controller v3'   },
   { id: 8,  part: 'ESP32-WROOM-32E',   type: 'Tariff',    message: 'Subject to Section 301 at 25%. China-assembly exposure flag raised.',                          severity: 'medium', time: '10h ago', bom: 'Motor Controller v3'   },
-  { id: 9,  part: 'MAX3232CPE+',        type: 'Resolved',  message: 'Alternative validated by network. Risk cleared — new stock at Mouser, 4-week lead time.',      severity: 'info',   time: '3d ago',  bom: 'Motor Controller v3'   },
+  { id: 9,  part: 'MAX3232CPE+',        type: 'Resolved',  message: 'Alternative validated by network. Risk cleared. New stock at Mouser, 4-week lead time.',      severity: 'info',   time: '3d ago',  bom: 'Motor Controller v3'   },
   { id: 10, part: 'ADL5801ACPZ-R7',    type: 'Lead Time', message: 'Lead time extended to 44 weeks at Arrow and Avnet. No stock at Digi-Key or Mouser.',           severity: 'high',   time: '4h ago',  bom: 'Radar Front-End Board' },
   { id: 11, part: 'HMC637ALP5E',        type: 'EOL',       message: 'Analog Devices issued PCN. Last-time-buy recommended before Q3.',                              severity: 'high',   time: '6h ago',  bom: 'Radar Front-End Board' },
   { id: 12, part: 'MAX3232CPE+',        type: 'Resolved',  message: 'New stock available at Mouser. Lead time reduced to 4 weeks.',                                 severity: 'info',   time: '4d ago',  bom: 'Display Interface'     },
@@ -58,7 +58,7 @@ const RiskRing = ({ score }: { score: number }) => {
 const FEED_ITEMS = [
   `${ALERTS.filter(a => a.severity !== 'info').length} new alerts since your last visit on Monday.`,
   'STM32F405RGT6 last-time-buy window closes in 14 days.',
-  '38% of your parts have China-origin tariff exposure — estimated $12,400 in added cost.',
+  '38% of your parts have China-origin tariff exposure. Estimated $12,400 in added cost.',
 ]
 
 function RotatingFeed() {
@@ -97,9 +97,9 @@ function PortfolioRisk({ boms }: { boms: BomSummary[] }) {
   const total = boms.length
 
   const tiers = [
-    { id: 'critical', label: 'Critical', items: criticalBoms, color: '#ef4444', bg: '#fef2f2', border: '#fecaca', Icon: ShieldAlert,    detail: `${criticalBoms.length} BOMs need immediate action — EOL parts with last-time-buy windows closing within 45 days.` },
+    { id: 'critical', label: 'Critical', items: criticalBoms, color: '#ef4444', bg: '#fef2f2', border: '#fecaca', Icon: ShieldAlert,    detail: `${criticalBoms.length} BOMs need immediate action. EOL parts with last-time-buy windows closing within 45 days.` },
     { id: 'warning',  label: 'Warning',  items: warningBoms,  color: '#f59e0b', bg: '#fffbeb', border: '#fde68a', Icon: AlertTriangle,  detail: `${warningBoms.length} BOMs have lead time issues, discontinued components, or rising tariff exposure.`           },
-    { id: 'healthy',  label: 'Healthy',  items: healthyBoms,  color: '#10b981', bg: '#f0fdf4', border: '#a7f3d0', Icon: CheckCircle,    detail: `${healthyBoms.length} BOMs are in good standing — no critical lifecycle issues and adequate supply.`                },
+    { id: 'healthy',  label: 'Healthy',  items: healthyBoms,  color: '#10b981', bg: '#f0fdf4', border: '#a7f3d0', Icon: CheckCircle,    detail: `${healthyBoms.length} BOMs are in good standing. No critical lifecycle issues and adequate supply.`                },
   ]
 
   return (
@@ -146,7 +146,7 @@ function PortfolioRisk({ boms }: { boms: BomSummary[] }) {
           <div className="mt-3 rounded-xl border p-4" style={{ borderColor: t.border, background: t.bg }}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <t.Icon className="w-4 h-4" style={{ color: t.color }} /> {t.label} BOMs — most urgent
+                <t.Icon className="w-4 h-4" style={{ color: t.color }} /> {t.label} BOMs, most urgent
               </span>
               <span className="text-xs font-semibold" style={{ color: t.color }}>{t.items.length} total</span>
             </div>
@@ -183,9 +183,9 @@ function OverviewPage({ boms, loading, goToBoms, onViewBom }: {
       {/* Stat cards */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         {[
-          { label: 'Total BOMs',      value: loading ? '—' : String(boms.length),                    sub: 'across all projects',                                              highlight: false },
-          { label: 'Lines Monitored', value: loading ? '—' : totalLines.toLocaleString(),             sub: 'components tracked',                                               highlight: false },
-          { label: 'Needs Attention', value: loading ? '—' : String(criticalCount + warningCount),    sub: `${criticalCount} critical · ${warningCount} warning`,              highlight: (criticalCount + warningCount) > 0 },
+          { label: 'Total BOMs',      value: loading ? '-' : String(boms.length),                    sub: 'across all projects',                                              highlight: false },
+          { label: 'Lines Monitored', value: loading ? '-' : totalLines.toLocaleString(),             sub: 'components tracked',                                               highlight: false },
+          { label: 'Needs Attention', value: loading ? '-' : String(criticalCount + warningCount),    sub: `${criticalCount} critical · ${warningCount} warning`,              highlight: (criticalCount + warningCount) > 0 },
         ].map((s, i) => (
           <div key={i} className="border border-slate-200 rounded-xl p-5 bg-white shadow-sm flex flex-col">
             <span className="text-sm font-medium text-slate-500">{s.label}</span>

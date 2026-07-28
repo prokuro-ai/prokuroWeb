@@ -18,6 +18,6 @@ export function parseUploadedAt(value: string): Date | null {
 
 export function formatUploadedAt(value: string): string {
   const date = parseUploadedAt(value)
-  if (!date) return '—'
+  if (!date) return '-'
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 }

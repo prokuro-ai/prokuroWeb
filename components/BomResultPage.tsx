@@ -69,9 +69,9 @@ function BomDetailTable({ lines }: { lines: AnalyzedLine[] }) {
 
             return (
               <tr key={line.row_index ?? i} className={`hover:bg-slate-50/80 ${urgent ? 'bg-red-50/40' : ''}`}>
-                <td className="px-4 py-3 font-mono text-xs font-bold text-slate-800">{line.mpn ?? '—'}</td>
-                <td className="px-4 py-3 text-xs text-slate-600">{line.manufacturer ?? '—'}</td>
-                <td className="px-4 py-3 text-slate-600">{line.quantity ?? '—'}</td>
+                <td className="px-4 py-3 font-mono text-xs font-bold text-slate-800">{line.mpn ?? '-'}</td>
+                <td className="px-4 py-3 text-xs text-slate-600">{line.manufacturer ?? '-'}</td>
+                <td className="px-4 py-3 text-slate-600">{line.quantity ?? '-'}</td>
                 <td className="px-4 py-3">
                   <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${lifecycleBadge(line.lifecycle_status)}`}>
                     {lifecycleLabel(line.lifecycle_status)}
@@ -94,7 +94,7 @@ function BomDetailTable({ lines }: { lines: AnalyzedLine[] }) {
                   )}
                 </td>
                 <td className="px-4 py-3 text-xs text-slate-600">
-                  {line.total_duty_pct != null && line.total_duty_pct > 0 ? `${line.total_duty_pct}%` : '—'}
+                  {line.total_duty_pct != null && line.total_duty_pct > 0 ? `${line.total_duty_pct}%` : '-'}
                 </td>
                 <td className="px-4 py-3">
                   {line.aml_candidates.length > 0 ? (
@@ -109,7 +109,7 @@ function BomDetailTable({ lines }: { lines: AnalyzedLine[] }) {
                       ))}
                     </div>
                   ) : (
-                    <span className="text-xs text-slate-400">—</span>
+                    <span className="text-xs text-slate-400">-</span>
                   )}
                 </td>
               </tr>

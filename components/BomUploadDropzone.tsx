@@ -8,9 +8,9 @@ const ACCEPTED = ['.csv', '.xlsx', '.xls', '.txt']
 const ACCEPT_MIME = '.csv,.xlsx,.xls,.txt,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel'
 
 const PROKURO_FEATURES = [
-  'AI column detection — maps messy headers to canonical fields',
-  'MPN normalization — strips whitespace, detects distributor SKUs',
-  'AML parsing — finds alternates in comma-separated cells or separate sheets',
+  'AI column detection: maps messy headers to canonical fields',
+  'MPN normalization: strips whitespace, detects distributor SKUs',
+  'AML parsing: finds alternates in comma-separated cells or separate sheets',
   'Lifecycle + stock + lead-time lookup via Nexar',
 ]
 

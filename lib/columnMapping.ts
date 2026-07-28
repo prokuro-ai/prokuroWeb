@@ -52,13 +52,13 @@ function previewValueForCanonical(
   line: ParseResult['lines'][number],
   canonical: string,
 ): string {
-  if (canonical === 'mpn') return line.mpn ?? '—'
-  if (canonical === 'manufacturer') return line.manufacturer ?? '—'
-  if (canonical === 'qty') return line.quantity?.toString() ?? '—'
-  if (canonical === 'refdes') return line.refdes ?? '—'
-  if (canonical === 'description') return line.description ?? '—'
-  if (canonical === 'footprint') return line.footprint ?? '—'
-  return '—'
+  if (canonical === 'mpn') return line.mpn ?? '-'
+  if (canonical === 'manufacturer') return line.manufacturer ?? '-'
+  if (canonical === 'qty') return line.quantity?.toString() ?? '-'
+  if (canonical === 'refdes') return line.refdes ?? '-'
+  if (canonical === 'description') return line.description ?? '-'
+  if (canonical === 'footprint') return line.footprint ?? '-'
+  return '-'
 }
 
 export function previewRows(parseResult: ParseResult, maxRows = 2): string[][] {
@@ -69,7 +69,7 @@ export function previewRows(parseResult: ParseResult, maxRows = 2): string[][] {
     headers.map((header) => {
       const canonical = mapping[header]
       if (canonical) return previewValueForCanonical(line, canonical)
-      return line.extras[header] ?? '—'
+      return line.extras[header] ?? '-'
     }),
   )
 }

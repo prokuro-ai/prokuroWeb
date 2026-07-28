@@ -36,7 +36,7 @@ const MATCH: Record<string, { label: string; cls: string }> = {
 export default function StatusBadge({ status, type = 'availability' }: StatusBadgeProps) {
   const map = type === 'lifecycle' ? LIFECYCLE : type === 'match' ? MATCH : AVAILABILITY
   const key = normalizeKey(status)
-  const cfg = map[key] ?? { label: status || '—', cls: 'bg-surface-2 text-ink-subtle border-hairline' }
+  const cfg = map[key] ?? { label: status || '-', cls: 'bg-surface-2 text-ink-subtle border-hairline' }
 
   return (
     <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium leading-none ${cfg.cls}`}>

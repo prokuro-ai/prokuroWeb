@@ -327,7 +327,7 @@ export default function PrivacyPage() {
               Depending on where you live, you may have the right to access, correct, delete, export, or restrict the
               use of your personal information, to object to processing, and to withdraw consent. California residents
               have rights under the CCPA and CPRA, including the right to know, delete, and correct, and to opt out of
-              sale or sharing — we do neither.
+              sale or sharing. We do neither.
             </p>
             <ul>
               <li>
