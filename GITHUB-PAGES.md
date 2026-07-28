@@ -8,10 +8,36 @@ GitHub Pages serves **static files only**. It cannot run Next.js API routes, mid
 
 `prokuroWeb` was built for **AWS Amplify SSR** (`amplify.yml`). To also ship on GitHub Pages we added a **parallel static-export path** that does not delete the SSR app.
 
-| Mode | Command | Host | Calendly | Auth / BOM APIs |
-|------|---------|------|----------|-----------------|
-| **SSR (default)** | `npm run build` + `npm start` | Amplify / Node | Custom API (`/api/calendly/*`) | Full (when `SELF_SERVE_ENABLED`) |
-| **Static (Pages)** | `npm run pages:branch` | GitHub Pages | Public embed (`NEXT_PUBLIC_CALENDLY_URL`) | Hidden / redirected to demo |
+| Mode | Command | Host | Calendly backend | Auth / BOM APIs |
+|------|---------|------|------------------|-----------------|
+| **SSR (default)** | `npm run build` + `npm start` | Amplify / Node | Next.js routes (`/api/calendly/*`) | Full (when `SELF_SERVE_ENABLED`) |
+| **Static (Pages)** | `npm run pages:branch` | GitHub Pages | Cloudflare Worker (`worker/`) | Hidden / redirected to demo |
+
+The **same booking UI** (`components/schedule/BookDemo.tsx`) ships in both modes. Only the origin serving `/api/calendly/*` differs, controlled by `NEXT_PUBLIC_CALENDLY_API_BASE`.
+
+## Calendly on a static host
+
+`CALENDLY_API_TOKEN` grants write access to scheduled events, contacts, and webhooks, so it must never reach the browser. A static host has nowhere to keep it — hence the Worker in `worker/index.ts`, which serves the same three paths off the same `lib/calendly` code and holds the token as a Cloudflare secret.
+
+### One-time Worker setup
+
+```bash
+npx wrangler login
+npx wrangler secret put CALENDLY_API_TOKEN      --config worker/wrangler.toml
+npx wrangler secret put CALENDLY_EVENT_TYPE_URI --config worker/wrangler.toml
+npm run worker:deploy
+```
+
+Deploy prints the Worker origin, e.g. `https://prokuro-calendly.<subdomain>.workers.dev`. Put it in `.env` as `NEXT_PUBLIC_CALENDLY_API_BASE` — it is baked into the bundle at build time, so the site must be rebuilt whenever it changes.
+
+Update `ALLOWED_ORIGINS` in `worker/wrangler.toml` if the site origin ever changes; anything else gets a 403. Bookings are capped at 5/minute per IP so nobody can drain the Calendly quota.
+
+Useful:
+
+```bash
+npm run worker:dev    # local Worker on :8787
+npm run worker:tail   # live production logs
+```
 
 ## Deploy without GitHub Actions (recommended)
 
@@ -36,11 +62,7 @@ git push origin main
 
 GitHub rebuilds the site from `docs/` on push. Home page URL: **`https://prokuro.ai/`**
 
-Optional env for Calendly embed on `/schedule`:
-
-```bash
-NEXT_PUBLIC_CALENDLY_URL=https://calendly.com/you/prokuro-demo npm run pages:branch
-```
+`NEXT_PUBLIC_CALENDLY_API_BASE` must be set (via `.env` or inline) or `/schedule` will render with no available times.
 
 Local preview:
 
@@ -70,14 +92,18 @@ The build temporarily moves aside server-only routes (`app/api`, middleware, das
 | `scripts/sync-pages-to-docs.mjs` | Copy `out/` → `docs/` |
 | `next.config.ts` | Conditional `output: 'export'` |
 | `public/CNAME` | Custom domain → copied into `docs/CNAME` |
+| `worker/index.ts` | Calendly proxy holding the API token |
+| `worker/wrangler.toml` | Worker config: allowed origins, rate limit |
+| `lib/calendly/validation.ts` | Request rules shared by routes and Worker |
 
 ## Tradeoffs on Pages (known)
 
-- No `/api/*` (BOM proxy, Calendly Scheduling API)
+- No `/api/*` for BOM (the Calendly endpoints are covered by the Worker)
 - No middleware (client `SelfServeRedirect` instead)
-- Demo booking uses **Calendly’s embed**, not the custom booking UI
+- First booking request pays a Worker cold start (~50ms)
 - Self-serve product routes redirect to `/schedule`
 - You must run `pages:branch` and commit `docs/` when the marketing site changes
+- Changing the Worker URL requires a site rebuild, since it is inlined at build time
 
 ## Amplify remains valid
 
