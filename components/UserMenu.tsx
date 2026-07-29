@@ -106,6 +106,19 @@ export function AuthHeaderActions() {
     return <UserMenu />
   }
 
+  if (SELF_SERVE_ENABLED) {
+    return (
+      <div className="nav-actions">
+        <Link className="btn btn--ghost btn--nav" href="/login">
+          Log in
+        </Link>
+        <Link className="btn btn--primary btn--nav" href="/signup">
+          Sign up
+        </Link>
+      </div>
+    )
+  }
+
   return (
     <Link className="btn btn--primary btn--nav" href={SCHEDULE_DEMO_PATH}>
       {BOOK_DEMO_LABEL}
@@ -124,6 +137,19 @@ export function MarketingAuthActions() {
         <UserMenu />
         <Link className="btn btn--primary btn--nav" href="/dashboard">
           Open dashboard
+        </Link>
+      </div>
+    )
+  }
+
+  if (SELF_SERVE_ENABLED) {
+    return (
+      <div className="nav-actions">
+        <Link className="btn btn--ghost btn--nav" href="/login">
+          Log in
+        </Link>
+        <Link className="btn btn--primary btn--nav" href="/signup">
+          Sign up
         </Link>
       </div>
     )
