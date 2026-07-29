@@ -109,11 +109,11 @@ export function AuthHeaderActions() {
   if (SELF_SERVE_ENABLED) {
     return (
       <div className="nav-actions">
-        <Link className="btn btn--ghost btn--nav" href="/login">
-          Log in
+        <Link href="/login" className="nav-text-link">
+          Login
         </Link>
         <Link className="btn btn--primary btn--nav" href="/signup">
-          Sign up
+          Try Prokuro
         </Link>
       </div>
     )
@@ -145,11 +145,11 @@ export function MarketingAuthActions() {
   if (SELF_SERVE_ENABLED) {
     return (
       <div className="nav-actions">
-        <Link className="btn btn--ghost btn--nav" href="/login">
-          Log in
+        <Link href="/login" className="nav-text-link">
+          Login
         </Link>
         <Link className="btn btn--primary btn--nav" href="/signup">
-          Sign up
+          Try Prokuro
         </Link>
       </div>
     )
