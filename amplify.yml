@@ -3,7 +3,7 @@ frontend:
   phases:
     preBuild:
       commands:
-        - npm ci
+        - npm install
     build:
       commands:
         # Server-side API routes need GATEWAY_URL in .env.production (Amplify SSR)
