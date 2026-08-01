@@ -257,12 +257,7 @@ function LineRow({
           {tariffLabel(line)}
         </td>
         <td className="px-5 py-3">
-          <span className="inline-flex items-center gap-2">
-            <span className="h-1 w-12 shrink-0 bg-slate-200" aria-hidden>
-              <span className={`block h-full ${risk.bar}`} style={{ width: `${risk.fill}%` }} />
-            </span>
-            <span className={`font-mono text-[12px] font-semibold ${risk.text}`}>{risk.label}</span>
-          </span>
+          <span className={`font-mono text-[12px] font-semibold ${risk.text}`}>{risk.label}</span>
         </td>
       </tr>
       {expandable && expanded ? (

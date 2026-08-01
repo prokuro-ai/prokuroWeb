@@ -110,8 +110,36 @@ export function tariffLabel(line: AnalyzedLine): string {
 }
 
 /** Portfolio-style banding shared by the BOM list and BOM detail header. */
-export function scoreBand(score: number): { label: string; pill: string; accent: string } {
-  if (score >= 7) return { label: 'Critical', pill: 'bg-red-100 text-red-700', accent: '#ef4444' }
-  if (score >= 4) return { label: 'Warning', pill: 'bg-amber-100 text-amber-700', accent: '#f59e0b' }
-  return { label: 'Healthy', pill: 'bg-emerald-100 text-emerald-700', accent: '#10b981' }
+export function scoreBand(score: number): {
+  label: string
+  pill: string
+  accent: string
+  text: string
+  fill: number
+} {
+  if (score >= 7) {
+    return {
+      label: 'Critical',
+      pill: 'bg-[#c62026]/10 text-[#c62026]',
+      accent: '#c62026',
+      text: 'text-[#c62026]',
+      fill: Math.min(100, Math.round(score * 10)),
+    }
+  }
+  if (score >= 4) {
+    return {
+      label: 'Watch',
+      pill: 'bg-[#a25a05]/10 text-[#a25a05]',
+      accent: '#a25a05',
+      text: 'text-[#a25a05]',
+      fill: Math.min(100, Math.round(score * 10)),
+    }
+  }
+  return {
+    label: 'Clear',
+    pill: 'bg-[#167c48]/10 text-[#167c48]',
+    accent: '#167c48',
+    text: 'text-[#167c48]',
+    fill: Math.min(100, Math.round(score * 10)),
+  }
 }
