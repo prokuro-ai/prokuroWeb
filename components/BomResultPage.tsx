@@ -9,19 +9,11 @@ import { useAuth } from '@/components/AuthProvider'
 import { Link } from '@/lib/navigation'
 import { getBom } from '@/lib/api'
 import { formatUploadedAt } from '@/lib/format'
-import { hasPendingLines, isPendingLine, lineRiskLevel } from '@/lib/risk'
-import type { AnalyzeResult, BomSummary, RiskLevel } from '@/lib/types'
+import { hasPendingLines, isPendingLine, portfolioBadgeFromSummary } from '@/lib/risk'
+import type { AnalyzeResult, BomSummary } from '@/lib/types'
 
 const POLL_INTERVALS_MS = [2000, 5000, 10000, 30000]
 const POLL_CEILING_MS = 15 * 60 * 1000
-
-function riskBadge(result: AnalyzeResult) {
-  const red = result.summary.red_count ?? 0
-  const yellow = result.summary.yellow_count ?? 0
-  if (red > 0) return { label: 'Critical', cls: 'bg-[#c62026]/10 text-[#c62026]', dot: 'bg-[#c62026]' }
-  if (yellow > 0) return { label: 'Watch', cls: 'bg-[#a25a05]/10 text-[#a25a05]', dot: 'bg-[#a25a05]' }
-  return { label: 'Clear', cls: 'bg-[#167c48]/10 text-[#167c48]', dot: 'bg-[#167c48]' }
-}
 
 function MetaStat({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
@@ -113,12 +105,6 @@ export default function BomResultPage({ id }: BomResultPageProps) {
     }
   }, [authLoading, user, id, router])
 
-  const riskCounts = useMemo(() => {
-    const tally: Record<RiskLevel, number> = { red: 0, yellow: 0, green: 0 }
-    for (const line of result?.lines ?? []) tally[lineRiskLevel(line)] += 1
-    return tally
-  }, [result])
-
   if (!loaded || authLoading) return null
 
   if (!result) {
@@ -140,9 +126,11 @@ export default function BomResultPage({ id }: BomResultPageProps) {
     )
   }
 
-  const badge = riskBadge(result)
-  const flagged = riskCounts.red + riskCounts.yellow
-  const flaggedPct = result.lines.length > 0 ? Math.round((flagged / result.lines.length) * 100) : 0
+  const badge = portfolioBadgeFromSummary(result.summary)
+  const flagged = (result.summary.red_count ?? 0) + (result.summary.yellow_count ?? 0)
+  const unknownCount = result.summary.unknown_count ?? 0
+  const scorableLines = result.lines.length - unknownCount
+  const flaggedPct = scorableLines > 0 ? Math.round((flagged / scorableLines) * 100) : 0
   const eolCount = result.lines.filter((l) =>
     ['eol', 'discontinued'].includes(l.lifecycle_status.toLowerCase()),
   ).length
@@ -162,7 +150,6 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   return (
     <DashboardShell activeTab="boms">
       <div className="flex-1 overflow-y-auto bg-white">
-        {/* Page chrome — full width header, content inset below */}
         <div className="border-b border-slate-200">
           <div className="mx-auto max-w-[1120px] px-6 pt-6 pb-0">
             <div className="mb-5 flex items-start gap-3">
@@ -179,9 +166,9 @@ export default function BomResultPage({ id }: BomResultPageProps) {
                     {displayName}
                   </h1>
                   <span
-                    className={`inline-flex items-center gap-1.5 px-2 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] ${badge.cls}`}
+                    className={`inline-flex items-center gap-1.5 px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.08em] ${badge.cls} ${badge.label === 'Unknown' ? 'font-normal normal-case tracking-normal' : 'font-semibold'}`}
                   >
-                    <span className={`h-1.5 w-1.5 ${badge.dot}`} aria-hidden />
+                    {badge.dot ? <span className={`h-1.5 w-1.5 ${badge.dot}`} aria-hidden /> : null}
                     {badge.label}
                   </span>
                 </div>
@@ -203,7 +190,6 @@ export default function BomResultPage({ id }: BomResultPageProps) {
               </button>
             </div>
 
-            {/* Compact report meta bar — not a card grid */}
             <div className="flex flex-wrap items-end justify-between gap-6 border-t border-slate-200 py-5">
               <div className="grid min-w-0 flex-1 grid-cols-2 gap-x-10 gap-y-5 sm:grid-cols-4">
                 <MetaStat label="Lines" value={result.lines.length.toLocaleString()} />
@@ -224,8 +210,14 @@ export default function BomResultPage({ id }: BomResultPageProps) {
                 />
               </div>
               <div className="flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.08em] text-slate-500">
-                <span className={`h-1.5 w-1.5 ${flagged > 0 ? 'bg-[#c62026]' : 'bg-[#167c48]'}`} aria-hidden />
-                <span className="text-slate-900">{flaggedPct}% of lines flagged</span>
+                {scorableLines > 0 ? (
+                  <>
+                    <span className={`h-1.5 w-1.5 ${flagged > 0 ? 'bg-[#c62026]' : 'bg-[#167c48]'}`} aria-hidden />
+                    <span className="text-slate-900">{flaggedPct}% of scored lines flagged</span>
+                  </>
+                ) : (
+                  <span className="text-slate-900">No distributor matches to score yet</span>
+                )}
                 {tariffHits > 0 ? (
                   <>
                     <span className="text-slate-300">·</span>

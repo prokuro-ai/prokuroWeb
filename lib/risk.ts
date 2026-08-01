@@ -10,16 +10,15 @@ export function hasTariffData(lines: AnalyzedLine[]): boolean {
   )
 }
 
-/** A line whose enrichment is still being resolved by the background worker. */
+/** Still resolving against distributor data (poll until cleared). */
 export function isPendingLine(line: AnalyzedLine): boolean {
+  return lineRiskLevel(line) === 'unknown' && isPendingStatus(line)
+}
+
+function isPendingStatus(line: AnalyzedLine): boolean {
   const avail = line.availability_status?.toLowerCase() ?? ''
   const match = line.match_status?.toLowerCase() ?? ''
   return avail === 'pending' || match === 'pending'
-}
-
-/** Enrichment still running — not scored for UI until resolved. */
-export function isUnknownLine(line: AnalyzedLine): boolean {
-  return isPendingLine(line)
 }
 
 export function hasPendingLines(result: AnalyzeResult): boolean {
@@ -28,16 +27,14 @@ export function hasPendingLines(result: AnalyzeResult): boolean {
 
 type RiskPresentation = {
   label: string
-  /** Table row tint. */
   row: string
-  /** Left accent rail on the first cell. */
   rail: string
   bar: string
   text: string
   pill: string
-  /** Expanded panel surface. */
   panel: string
   fill: number
+  muted?: boolean
 }
 
 export const RISK_PRESENTATION: Record<RiskLevel, RiskPresentation> = {
@@ -71,17 +68,17 @@ export const RISK_PRESENTATION: Record<RiskLevel, RiskPresentation> = {
     panel: 'bg-[#f4f6f9]',
     fill: 18,
   },
-}
-
-export const UNKNOWN_LINE_PRESENTATION: RiskPresentation = {
-  label: 'Unknown',
-  row: '',
-  rail: '',
-  bar: '',
-  text: 'text-slate-400',
-  pill: 'bg-slate-100 text-slate-500',
-  panel: 'bg-[#f4f6f9]',
-  fill: 0,
+  unknown: {
+    label: 'Unknown',
+    row: '',
+    rail: '',
+    bar: '',
+    text: 'text-slate-500',
+    pill: 'text-slate-500',
+    panel: 'bg-[#f4f6f9]',
+    fill: 0,
+    muted: true,
+  },
 }
 
 export function lineRiskLevel(line: AnalyzedLine): RiskLevel {
@@ -89,8 +86,8 @@ export function lineRiskLevel(line: AnalyzedLine): RiskLevel {
 }
 
 export function isAtRisk(line: AnalyzedLine): boolean {
-  if (isUnknownLine(line)) return false
-  return lineRiskLevel(line) !== 'green'
+  const level = lineRiskLevel(line)
+  return level === 'red' || level === 'yellow'
 }
 
 export function lifecycleLabel(status: string): string {
@@ -126,54 +123,58 @@ export function tariffLabel(line: AnalyzedLine): string {
   return line.total_duty_pct != null && line.total_duty_pct > 0 ? `${line.total_duty_pct}%` : '-'
 }
 
-export type BomBand = 'Critical' | 'Watch' | 'Clear'
+export type BomBand = 'Critical' | 'Watch' | 'Clear' | 'Unknown'
 
-type BandStyle = {
-  label: BomBand
-  pill: string
-  accent: string
-  text: string
-  fill: number
+const PORTFOLIO_BADGE: Record<BomBand, { label: string; cls: string; dot: string | null }> = {
+  Critical: { label: 'Critical', cls: 'bg-[#c62026]/10 text-[#c62026]', dot: 'bg-[#c62026]' },
+  Watch: { label: 'Watch', cls: 'bg-[#a25a05]/10 text-[#a25a05]', dot: 'bg-[#a25a05]' },
+  Clear: { label: 'Clear', cls: 'bg-[#167c48]/10 text-[#167c48]', dot: 'bg-[#167c48]' },
+  Unknown: { label: 'Unknown', cls: 'text-slate-500', dot: null },
 }
 
-/**
- * Gateway `overallRiskScore` is (at-risk lines / total) × 10, so 0–10.
- * Thresholds below match that scale (not an arbitrary 7/4 cut copied from mock UI).
- */
-export function scoreBand(score: number): BandStyle {
-  if (score >= 5) {
-    return {
-      label: 'Critical',
-      pill: 'bg-[#c62026]/10 text-[#c62026]',
-      accent: '#c62026',
-      text: 'text-[#c62026]',
-      fill: Math.min(100, Math.round(score * 10)),
-    }
+export function parseBomBand(value: string | undefined): BomBand {
+  if (value === 'Critical' || value === 'Watch' || value === 'Clear' || value === 'Unknown') {
+    return value
   }
-  if (score > 0) {
-    return {
-      label: 'Watch',
-      pill: 'bg-[#a25a05]/10 text-[#a25a05]',
-      accent: '#a25a05',
-      text: 'text-[#a25a05]',
-      fill: Math.min(100, Math.round(score * 10)),
-    }
-  }
-  return {
-    label: 'Clear',
-    pill: 'bg-[#167c48]/10 text-[#167c48]',
-    accent: '#167c48',
-    text: 'text-[#167c48]',
-    fill: 12,
-  }
+  return 'Clear'
 }
 
-/** Single source of truth for BOM portfolio labels + filters. */
 export function bomRiskBand(bom: {
+  riskBand?: string
   overallRiskScore: number
   atRiskCount: number
+  unknownCount?: number
 }): BomBand {
-  // Any flagged parts with a zero score still belong in Watch (enrichment lag, etc.).
-  if (bom.overallRiskScore <= 0 && bom.atRiskCount > 0) return 'Watch'
-  return scoreBand(bom.overallRiskScore).label
+  if (bom.riskBand) return parseBomBand(bom.riskBand)
+  // Legacy summaries saved before risk_band existed.
+  if (bom.atRiskCount > 0) {
+    return bom.overallRiskScore >= 5 ? 'Critical' : 'Watch'
+  }
+  if ((bom.unknownCount ?? 0) > 0) return 'Unknown'
+  return 'Clear'
+}
+
+export function bomRiskBadge(bom: {
+  riskBand?: string
+  overallRiskScore: number
+  atRiskCount: number
+  unknownCount?: number
+}) {
+  return PORTFOLIO_BADGE[bomRiskBand(bom)]
+}
+
+export function portfolioBadgeFromSummary(summary: {
+  red_count?: number
+  yellow_count?: number
+  unknown_count?: number
+}) {
+  const band: BomBand =
+    (summary.red_count ?? 0) > 0
+      ? 'Critical'
+      : (summary.yellow_count ?? 0) > 0
+        ? 'Watch'
+        : (summary.unknown_count ?? 0) > 0
+          ? 'Unknown'
+          : 'Clear'
+  return PORTFOLIO_BADGE[band]
 }

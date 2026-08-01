@@ -6,6 +6,8 @@ export interface BomSummary {
   lineCount: number
   overallRiskScore: number
   atRiskCount: number
+  unknownCount?: number
+  riskBand?: string
 }
 
 export type LifecycleStatus = 'active' | 'nrnd' | 'eol' | 'discontinued' | 'unknown'
@@ -72,9 +74,10 @@ export interface AnalyzeSummary {
   red_count?: number
   yellow_count?: number
   green_count?: number
+  unknown_count?: number
 }
 
-export type RiskLevel = 'red' | 'yellow' | 'green'
+export type RiskLevel = 'red' | 'yellow' | 'green' | 'unknown'
 
 export interface AnalyzedLine {
   row_index: number
