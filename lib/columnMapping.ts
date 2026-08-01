@@ -27,6 +27,45 @@ export function toColumnMappingRecord(mapping: ColumnMapping[]): Record<string, 
   return result
 }
 
+/** User overrides on top of auto-detect; preserves unedited mappings (e.g. distributor columns). */
+export function mergeColumnMappingRecord(
+  autoMapping: ParseResult['column_mapping'],
+  userMapping: ColumnMapping[],
+): Record<string, string> {
+  const merged = { ...autoMapping }
+
+  for (const col of userMapping) {
+    for (const [header, canonical] of Object.entries(merged)) {
+      if (canonical === col.canonical) {
+        delete merged[header]
+      }
+    }
+    if (col.detectedFrom) {
+      merged[col.detectedFrom] = col.canonical
+    }
+  }
+
+  return merged
+}
+
+export function mappingValidationError(mapping: ColumnMapping[]): string | null {
+  if (!hasMpnMapping(mapping)) {
+    return 'Map at least one column to MPN / Part Number before continuing.'
+  }
+
+  const used = new Map<string, string>()
+  for (const col of mapping) {
+    if (!col.detectedFrom) continue
+    const other = used.get(col.detectedFrom)
+    if (other) {
+      return `Column "${col.detectedFrom}" is mapped to both ${other} and ${col.label}.`
+    }
+    used.set(col.detectedFrom, col.label)
+  }
+
+  return null
+}
+
 export function buildColumnMappings(parseResult: ParseResult): ColumnMapping[] {
   const mapping = parseResult.column_mapping
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   AlertCircle,
   ArrowRight,
@@ -16,9 +16,9 @@ import { analyzeFile, parseFile, saveBom } from '@/lib/api'
 import {
   buildColumnMappings,
   extractHeaders,
-  hasMpnMapping,
+  mergeColumnMappingRecord,
+  mappingValidationError,
   previewRows,
-  toColumnMappingRecord,
 } from '@/lib/columnMapping'
 import { ACCEPTED, formatFileSize } from '@/components/BomUploadDropzone'
 import type { BomSummary, ColumnMapping, ParseResult } from '@/lib/types'
@@ -27,16 +27,17 @@ const ACCEPT_MIME =
   '.csv,.xlsx,.xls,.txt,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel'
 
 const MAX_FILES = 20
+const PREVIEW_DEBOUNCE_MS = 400
 
 type QueueItem = {
   key: string
   file: File
-  status: 'ready' | 'processing' | 'done' | 'failed'
+  status: 'ready' | 'mapping' | 'processing' | 'done' | 'failed'
   error?: string
   saved?: BomSummary
 }
 
-type BulkStep = 'select' | 'mapping' | 'processing' | 'complete'
+type UploadStep = 'select' | 'mapping' | 'complete'
 
 type BomBulkUploadModalProps = {
   open: boolean
@@ -64,13 +65,17 @@ export default function BomBulkUploadModal({
   existingBomCount = 0,
 }: BomBulkUploadModalProps) {
   const inputRef = useRef<HTMLInputElement>(null)
-  const [step, setStep] = useState<BulkStep>('select')
+  const savedRef = useRef<BomSummary[]>([])
+
+  const [step, setStep] = useState<UploadStep>('select')
   const [items, setItems] = useState<QueueItem[]>([])
   const [dragOver, setDragOver] = useState(false)
   const [pickError, setPickError] = useState<string | null>(null)
-  const [activeIndex, setActiveIndex] = useState(0)
+  const [fileIndex, setFileIndex] = useState(0)
   const [parsing, setParsing] = useState(false)
   const [confirming, setConfirming] = useState(false)
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [autoParse, setAutoParse] = useState<ParseResult | null>(null)
   const [parseResult, setParseResult] = useState<ParseResult | null>(null)
   const [mapping, setMapping] = useState<ColumnMapping[]>([])
   const [headers, setHeaders] = useState<string[]>([])
@@ -80,18 +85,21 @@ export default function BomBulkUploadModal({
     setStep('select')
     setItems([])
     setPickError(null)
-    setActiveIndex(0)
+    setFileIndex(0)
     setDragOver(false)
     setParsing(false)
     setConfirming(false)
+    setPreviewLoading(false)
+    setAutoParse(null)
     setParseResult(null)
     setMapping([])
     setHeaders([])
     setPreview([])
+    savedRef.current = []
   }, [])
 
   const handleClose = () => {
-    if (step === 'processing' || parsing || confirming) return
+    if (parsing || confirming) return
     reset()
     onClose()
   }
@@ -136,112 +144,120 @@ export default function BomBulkUploadModal({
     setItems((prev) => prev.filter((item) => item.key !== key))
   }
 
-  const beginSingleFileMapping = async () => {
-    if (items.length !== 1) return
-    setParsing(true)
+  const markItem = (index: number, patch: Partial<QueueItem>) => {
+    setItems((prev) => prev.map((entry, i) => (i === index ? { ...entry, ...patch } : entry)))
+  }
+
+  const beginMappingForFile = useCallback(async (index: number, queue: QueueItem[]) => {
+    if (index >= queue.length) {
+      setStep('complete')
+      onComplete(savedRef.current)
+      return
+    }
+
+    const item = queue[index]
+    setFileIndex(index)
     setPickError(null)
+    setParsing(true)
+    markItem(index, { status: 'mapping', error: undefined })
 
     try {
-      const result = await parseFile(items[0].file)
+      const result = await parseFile(item.file)
+      setAutoParse(result)
       setParseResult(result)
       setMapping(buildColumnMappings(result))
       setHeaders(extractHeaders(result))
       setPreview(previewRows(result))
       setStep('mapping')
     } catch (err) {
-      setPickError(err instanceof Error ? err.message : 'Failed to parse file')
+      const message = err instanceof Error ? err.message : 'Failed to parse file'
+      markItem(index, { status: 'failed', error: message })
+      await beginMappingForFile(index + 1, queue)
     } finally {
       setParsing(false)
     }
-  }
+  }, [onComplete])
 
   const handleContinue = () => {
     if (items.length === 0) return
-    if (items.length === 1) {
-      void beginSingleFileMapping()
-      return
-    }
-    void processAll()
+    savedRef.current = []
+    void beginMappingForFile(0, items)
   }
 
   const handleBackFromMapping = () => {
     setStep('select')
+    setAutoParse(null)
     setParseResult(null)
     setMapping([])
     setHeaders([])
     setPreview([])
+    setFileIndex(0)
+    setItems((prev) => prev.map((item) => ({ ...item, status: 'ready', error: undefined, saved: undefined })))
+    savedRef.current = []
   }
 
   const handleConfirmMapping = async () => {
-    if (items.length !== 1 || !parseResult) return
-    if (!hasMpnMapping(mapping)) {
-      setPickError('Map at least one column to MPN / Part Number before continuing.')
+    const item = items[fileIndex]
+    if (!item || !autoParse || !parseResult) return
+
+    const validationError = mappingValidationError(mapping)
+    if (validationError) {
+      setPickError(validationError)
       return
     }
 
-    const columnMapping = toColumnMappingRecord(mapping)
+    const columnMapping = mergeColumnMappingRecord(autoParse.column_mapping, mapping)
     setConfirming(true)
     setPickError(null)
+    markItem(fileIndex, { status: 'processing', error: undefined })
 
     try {
-      const analyzeResult = await analyzeFile(items[0].file, { columnMapping })
-      const updatedParse = await parseFile(items[0].file, { columnMapping })
-      const bom = await saveBom(items[0].file, analyzeResult, { parse: updatedParse })
-      setItems([{ ...items[0], status: 'done', saved: bom }])
-      onComplete([bom])
-      setStep('complete')
+      const analyzeResult = await analyzeFile(item.file, { columnMapping })
+      const updatedParse = await parseFile(item.file, { columnMapping })
+      const bom = await saveBom(item.file, analyzeResult, { parse: updatedParse })
+      savedRef.current.push(bom)
+      markItem(fileIndex, { status: 'done', saved: bom })
+      await beginMappingForFile(fileIndex + 1, items)
     } catch (err) {
-      setPickError(err instanceof Error ? err.message : 'Analysis failed')
+      const message = err instanceof Error ? err.message : 'Analysis failed'
+      markItem(fileIndex, { status: 'failed', error: message })
+      await beginMappingForFile(fileIndex + 1, items)
     } finally {
       setConfirming(false)
     }
   }
 
-  const processAll = async () => {
-    if (items.length === 0) return
-    setStep('processing')
-    setActiveIndex(0)
-    const saved: BomSummary[] = []
+  const currentFile = items[fileIndex]?.file ?? null
+  const isLastFile = fileIndex >= items.length - 1
 
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i]
-      setActiveIndex(i)
-      setItems((prev) =>
-        prev.map((entry) => (entry.key === item.key ? { ...entry, status: 'processing', error: undefined } : entry)),
-      )
+  useEffect(() => {
+    if (step !== 'mapping' || !autoParse || !currentFile) return
 
+    const validationError = mappingValidationError(mapping)
+    if (validationError) return
+
+    const columnMapping = mergeColumnMappingRecord(autoParse.column_mapping, mapping)
+    const timer = window.setTimeout(async () => {
+      setPreviewLoading(true)
       try {
-        const analyzeResult = await analyzeFile(item.file)
-        if (analyzeResult.mapping_confidence < 0.3) {
-          throw new Error('Could not auto-detect columns. Upload this file alone to map columns manually')
-        }
-        const hasMpn = analyzeResult.lines.some((line) => Boolean(line.mpn?.trim()))
-        if (!hasMpn) {
-          throw new Error('No MPN / Part Number column detected')
-        }
-
-        const bom = await saveBom(item.file, analyzeResult)
-        saved.push(bom)
-        setItems((prev) =>
-          prev.map((entry) => (entry.key === item.key ? { ...entry, status: 'done', saved: bom } : entry)),
-        )
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Upload failed'
-        setItems((prev) =>
-          prev.map((entry) => (entry.key === item.key ? { ...entry, status: 'failed', error: message } : entry)),
-        )
+        const updated = await parseFile(currentFile, { columnMapping })
+        setParseResult(updated)
+        setHeaders(extractHeaders(updated))
+        setPreview(previewRows(updated))
+      } catch {
+        // Keep the last good preview if re-parse fails.
+      } finally {
+        setPreviewLoading(false)
       }
-    }
+    }, PREVIEW_DEBOUNCE_MS)
 
-    onComplete(saved)
-    setStep('complete')
-  }
+    return () => window.clearTimeout(timer)
+  }, [step, autoParse, currentFile, mapping])
 
   if (!open) return null
 
-  const progressPct =
-    step === 'processing' && items.length > 0 ? Math.round(((activeIndex + 1) / items.length) * 100) : 100
-  const singleFile = items.length === 1 ? items[0].file : null
+  const doneCount = items.filter((item) => item.status === 'done').length
+  const failedCount = items.filter((item) => item.status === 'failed').length
 
   return (
     <div
@@ -256,7 +272,6 @@ export default function BomBulkUploadModal({
           step === 'mapping' ? 'w-full max-w-2xl' : 'w-full max-w-lg'
         }`}
       >
-        {/* Header */}
         <div className="flex shrink-0 items-start justify-between border-b border-slate-100 px-6 py-5">
           <div>
             <div className="mb-1 flex items-center gap-2">
@@ -268,9 +283,9 @@ export default function BomBulkUploadModal({
             </div>
             {step === 'select' && (
               <>
-                <h2 className="text-lg font-bold text-slate-900">Upload your BOM</h2>
+                <h2 className="text-lg font-bold text-slate-900">Upload BOMs</h2>
                 <p className="mt-0.5 text-sm text-slate-500">
-                  Drop a CSV or Excel file to start monitoring risk.
+                  Drop one or more CSV or Excel files to start monitoring risk.
                 </p>
               </>
             )}
@@ -278,28 +293,20 @@ export default function BomBulkUploadModal({
               <>
                 <h2 className="text-lg font-bold text-slate-900">Confirm columns</h2>
                 <p className="mt-0.5 text-sm text-slate-500">
-                  Review how Prokuro mapped your file before analysis.
-                </p>
-              </>
-            )}
-            {step === 'processing' && (
-              <>
-                <h2 className="text-lg font-bold text-slate-900">Analyzing…</h2>
-                <p className="mt-0.5 text-sm text-slate-500">
-                  Checking lifecycle and stock at Digi-Key for each part.
+                  Map each file before analysis ({fileIndex + 1} of {items.length}).
                 </p>
               </>
             )}
             {step === 'complete' && (
               <>
-                <h2 className="text-lg font-bold text-slate-900">BOM uploaded</h2>
+                <h2 className="text-lg font-bold text-slate-900">Upload complete</h2>
                 <p className="mt-0.5 text-sm text-slate-500">
-                  Your file is saved and monitoring has started.
+                  {doneCount} saved{failedCount > 0 ? ` · ${failedCount} failed` : ''}.
                 </p>
               </>
             )}
           </div>
-          {step !== 'processing' && !parsing && !confirming && (
+          {!parsing && !confirming && (
             <button
               type="button"
               onClick={handleClose}
@@ -310,7 +317,6 @@ export default function BomBulkUploadModal({
           )}
         </div>
 
-        {/* Body */}
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
           {pickError && (step === 'select' || step === 'mapping') && (
             <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -361,8 +367,8 @@ export default function BomBulkUploadModal({
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#eef4ff]">
                   <UploadCloud className="h-6 w-6 text-[#0062ff]" />
                 </div>
-                <p className="text-[15px] font-medium text-slate-900">Drop your BOM here</p>
-                <p className="mt-1 text-sm text-slate-500">or click to browse</p>
+                <p className="text-[15px] font-medium text-slate-900">Drop your BOMs here</p>
+                <p className="mt-1 text-sm text-slate-500">or click to browse · one or many files</p>
                 <div className="mt-4 flex flex-wrap justify-center gap-2">
                   {ACCEPTED.map((ext) => (
                     <span
@@ -373,9 +379,6 @@ export default function BomBulkUploadModal({
                     </span>
                   ))}
                 </div>
-                <p className="mt-3 text-[11px] text-slate-400">
-                  Any column format. Prokuro auto-detects MPN, Qty, Ref, Manufacturer.
-                </p>
               </div>
 
               {items.length > 0 && (
@@ -409,90 +412,88 @@ export default function BomBulkUploadModal({
               <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#0062ff]" />
                 <p className="text-xs leading-relaxed text-slate-600">
-                  Needs at least an <strong>MPN</strong> or <strong>Part Number</strong> column.
-                  {items.length <= 1
-                    ? ' You can confirm or adjust column mapping in the next step.'
-                    : ' Unusual formats should be uploaded one at a time so you can map columns manually.'}
+                  Each file gets a column-mapping step before analysis. Needs at least an{' '}
+                  <strong>MPN</strong> or <strong>Part Number</strong> column mapped.
                 </p>
               </div>
             </>
           )}
 
           {step === 'mapping' && parseResult && (
-            <BomColumnMappingStep
-              file={singleFile}
-              parseResult={parseResult}
-              mapping={mapping}
-              headers={headers}
-              preview={preview}
-              onMappingChange={setMapping}
-              onBack={handleBackFromMapping}
-              onConfirm={() => void handleConfirmMapping()}
-              confirming={confirming}
-            />
-          )}
-
-          {(step === 'processing' || step === 'complete') && (
-            <div className="space-y-4">
-              {step === 'processing' && (
-                <div>
-                  <div className="mb-2 h-2 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="h-full rounded-full bg-[#0062ff] transition-all duration-500"
-                      style={{ width: `${progressPct}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <ul className="space-y-2">
-                {items.map((item, index) => {
-                  const isActive = step === 'processing' && index === activeIndex && item.status === 'processing'
-                  return (
+            <>
+              {items.length > 1 && (
+                <ul className="mb-4 space-y-1">
+                  {items.map((item, index) => (
                     <li
                       key={item.key}
-                      className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${
-                        item.status === 'failed'
-                          ? 'border-red-200 bg-red-50/50'
+                      className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${
+                        index === fileIndex
+                          ? 'bg-blue-50 text-[#0062ff]'
                           : item.status === 'done'
-                            ? 'border-emerald-200 bg-emerald-50/40'
-                            : isActive
-                              ? 'border-[#0062ff]/30 bg-blue-50/50'
-                              : 'border-slate-200 bg-white'
+                            ? 'text-emerald-700'
+                            : item.status === 'failed'
+                              ? 'text-red-600'
+                              : 'text-slate-400'
                       }`}
                     >
-                      <StatusIcon status={item.status} active={isActive} />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-slate-900">
-                          {item.saved?.name ?? item.file.name}
-                        </p>
-                        {item.status === 'done' && item.saved && (
-                          <p className="text-xs text-emerald-700">
-                            {item.saved.lineCount.toLocaleString()} lines ·{' '}
-                            {item.saved.atRiskCount > 0
-                              ? `${item.saved.atRiskCount} at-risk`
-                              : 'no at-risk parts'}
-                          </p>
-                        )}
-                        {item.status === 'failed' && item.error && (
-                          <p className="text-xs text-red-600">{item.error}</p>
-                        )}
-                        {item.status === 'processing' && (
-                          <p className="text-xs text-[#0062ff]">Resolving MPNs and checking Digi-Key stock…</p>
-                        )}
-                        {item.status === 'ready' && step === 'processing' && (
-                          <p className="text-xs text-slate-400">Waiting…</p>
-                        )}
-                      </div>
+                      <StatusIcon status={item.status} active={index === fileIndex} compact />
+                      <span className="truncate">{item.file.name}</span>
                     </li>
-                  )
-                })}
-              </ul>
-            </div>
+                  ))}
+                </ul>
+              )}
+              <BomColumnMappingStep
+                file={currentFile}
+                fileIndex={fileIndex}
+                fileCount={items.length}
+                parseResult={parseResult}
+                mapping={mapping}
+                headers={headers}
+                preview={preview}
+                previewLoading={previewLoading}
+                onMappingChange={setMapping}
+                onBack={handleBackFromMapping}
+                onConfirm={() => void handleConfirmMapping()}
+                confirming={confirming}
+                confirmLabel={isLastFile ? 'Confirm & finish →' : 'Confirm & next file →'}
+              />
+            </>
+          )}
+
+          {step === 'complete' && (
+            <ul className="space-y-2">
+              {items.map((item) => (
+                <li
+                  key={item.key}
+                  className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${
+                    item.status === 'failed'
+                      ? 'border-red-200 bg-red-50/50'
+                      : 'border-emerald-200 bg-emerald-50/40'
+                  }`}
+                >
+                  <StatusIcon status={item.status === 'failed' ? 'failed' : 'done'} active={false} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-900">
+                      {item.saved?.name ?? item.file.name}
+                    </p>
+                    {item.status === 'done' && item.saved && (
+                      <p className="text-xs text-emerald-700">
+                        {item.saved.lineCount.toLocaleString()} lines ·{' '}
+                        {item.saved.atRiskCount > 0
+                          ? `${item.saved.atRiskCount} at-risk`
+                          : 'no at-risk parts'}
+                      </p>
+                    )}
+                    {item.status === 'failed' && item.error && (
+                      <p className="text-xs text-red-600">{item.error}</p>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
 
-        {/* Footer */}
         <div className="shrink-0 border-t border-slate-100 px-6 py-4">
           {step === 'select' && (
             <button
@@ -532,15 +533,25 @@ export default function BomBulkUploadModal({
   )
 }
 
-function StatusIcon({ status, active }: { status: QueueItem['status']; active: boolean }) {
+function StatusIcon({
+  status,
+  active,
+  compact = false,
+}: {
+  status: QueueItem['status'] | 'done' | 'failed'
+  active: boolean
+  compact?: boolean
+}) {
+  const size = compact ? 'h-3.5 w-3.5' : 'h-5 w-5'
+
   if (status === 'done') {
-    return <CheckCircle className="h-5 w-5 shrink-0 text-emerald-500" />
+    return <CheckCircle className={`${size} shrink-0 text-emerald-500`} />
   }
   if (status === 'failed') {
-    return <XCircle className="h-5 w-5 shrink-0 text-red-500" />
+    return <XCircle className={`${size} shrink-0 text-red-500`} />
   }
-  if (status === 'processing' || active) {
-    return <Loader2 className="h-5 w-5 shrink-0 animate-spin text-[#0062ff]" />
+  if (status === 'processing' || status === 'mapping' || active) {
+    return <Loader2 className={`${size} shrink-0 animate-spin text-[#0062ff]`} />
   }
-  return <div className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-200" />
+  return <div className={`${size} shrink-0 rounded-full border-2 border-slate-200`} />
 }

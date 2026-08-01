@@ -4,26 +4,34 @@ import type { ColumnMapping, ParseResult } from '@/lib/types'
 
 type BomColumnMappingStepProps = {
   file: File | null
+  fileIndex: number
+  fileCount: number
   parseResult: ParseResult
   mapping: ColumnMapping[]
   headers: string[]
   preview: string[][]
+  previewLoading?: boolean
   onMappingChange: (mapping: ColumnMapping[]) => void
   onBack: () => void
   onConfirm: () => void
   confirming?: boolean
+  confirmLabel?: string
 }
 
 export default function BomColumnMappingStep({
   file,
+  fileIndex,
+  fileCount,
   parseResult,
   mapping,
   headers,
   preview,
+  previewLoading = false,
   onMappingChange,
   onBack,
   onConfirm,
   confirming = false,
+  confirmLabel = 'Confirm & analyze →',
 }: BomColumnMappingStepProps) {
   const hasMpn = mapping.some((col) => col.canonical === 'mpn' && col.detectedFrom)
 
@@ -33,14 +41,19 @@ export default function BomColumnMappingStep({
         <div className="border-b border-slate-100 px-5 py-4">
           <h2 className="text-sm font-semibold text-slate-900">Confirm column mapping</h2>
           <p className="mt-1 text-xs text-slate-500">
-            {file?.name ?? parseResult.source_filename}. Prokuro detected the columns below. Correct any
-            mistakes before analyzing.
+            File {fileIndex + 1} of {fileCount}: {file?.name ?? parseResult.source_filename}. Adjust any
+            incorrect mappings before analyzing.
           </p>
         </div>
 
         <div className="p-5">
           {headers.length > 0 && (
-            <div className="mb-5 overflow-x-auto rounded-lg border border-slate-200">
+            <div className="relative mb-5 overflow-x-auto rounded-lg border border-slate-200">
+              {previewLoading && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 text-xs text-slate-500">
+                  Updating preview…
+                </div>
+              )}
               <table className="w-full text-xs">
                 <thead>
                   <tr className="bg-slate-50">
@@ -146,7 +159,7 @@ export default function BomColumnMappingStep({
               disabled={!hasMpn || confirming}
               className="rounded-lg bg-[#0062ff] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {confirming ? 'Analyzing…' : 'Confirm & analyze →'}
+              {confirming ? 'Analyzing…' : confirmLabel}
             </button>
           </div>
         </div>
