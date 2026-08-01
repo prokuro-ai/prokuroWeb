@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import DashboardShell from '@/components/DashboardShell'
 import BomReportView from '@/components/BomReportView'
 import { useAuth } from '@/components/AuthProvider'
 import { Link } from '@/lib/navigation'
 import { getBom } from '@/lib/api'
-import type { AnalyzeResult, BomSummary } from '@/lib/types'
+import type { AnalyzedLine, AnalyzeResult, BomSummary } from '@/lib/types'
 
 type BomResultPageProps = {
   id: string
@@ -18,8 +18,31 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   const { user, loading: authLoading } = useAuth()
   const [summary, setSummary] = useState<BomSummary | null>(null)
   const [result, setResult] = useState<AnalyzeResult | null>(null)
+  const [version, setVersion] = useState(1)
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [conflict, setConflict] = useState(false)
+
+  const loadBom = useCallback(() => {
+    if (!id) {
+      setLoaded(true)
+      return
+    }
+    setError(null)
+    setConflict(false)
+    return getBom(id)
+      .then((record) => {
+        setSummary(record.summary)
+        setResult(record.analyze)
+        setVersion(record.summary.version ?? 1)
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Failed to load BOM')
+      })
+      .finally(() => {
+        setLoaded(true)
+      })
+  }, [id])
 
   useEffect(() => {
     if (authLoading) return
@@ -27,32 +50,12 @@ export default function BomResultPage({ id }: BomResultPageProps) {
       router.push('/login')
       return
     }
-    if (!id) {
-      setLoaded(true)
-      return
-    }
+    void loadBom()
+  }, [authLoading, user, router, loadBom])
 
-    let cancelled = false
-    setError(null)
-
-    getBom(id)
-      .then((record) => {
-        if (!cancelled) {
-          setSummary(record.summary)
-          setResult(record.analyze)
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load BOM')
-      })
-      .finally(() => {
-        if (!cancelled) setLoaded(true)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [authLoading, user, id, router])
+  function handleLinesChange(lines: AnalyzedLine[]) {
+    setResult((prev) => (prev ? { ...prev, lines, summary: { ...prev.summary, total: lines.length } } : prev))
+  }
 
   if (!loaded || authLoading) return null
 
@@ -79,7 +82,31 @@ export default function BomResultPage({ id }: BomResultPageProps) {
 
   return (
     <DashboardShell activeTab="boms">
-      <BomReportView result={result} summary={summary} backHref="/dashboard?tab=boms" />
+      {conflict && (
+        <div className="border-b border-amber-200 bg-amber-50 px-8 py-3 text-sm text-amber-900">
+          This BOM was updated elsewhere.{' '}
+          <button
+            type="button"
+            className="font-semibold underline"
+            onClick={() => {
+              setLoaded(false)
+              void loadBom()
+            }}
+          >
+            Refresh to see the latest
+          </button>
+        </div>
+      )}
+      <BomReportView
+        result={result}
+        summary={summary}
+        backHref="/dashboard?tab=boms"
+        bomId={id}
+        version={version}
+        onLinesChange={handleLinesChange}
+        onVersionChange={setVersion}
+        onConflict={() => setConflict(true)}
+      />
     </DashboardShell>
   )
 }

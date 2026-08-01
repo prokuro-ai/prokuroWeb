@@ -117,6 +117,8 @@ export function summaryFrom(
     name,
     filename,
     uploadedAt,
+    version: 1,
+    updatedAt: uploadedAt,
     lineCount: lines.length,
     overallRiskScore: riskScore(lines),
     atRiskCount: lines.filter((l) => l.risk_level === 'red' || l.risk_level === 'yellow').length,

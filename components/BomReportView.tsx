@@ -2,6 +2,7 @@ import type { AnalyzeResult, AnalyzedLine, BomSummary } from '@/lib/types'
 import { formatUploadedAt } from '@/lib/format'
 import { Link } from '@/lib/navigation'
 import { ChevronLeft } from 'lucide-react'
+import EditableBomTable from '@/components/EditableBomTable'
 
 function isLookupFailed(line: AnalyzedLine): boolean {
   const avail = line.availability_status?.toLowerCase() ?? ''
@@ -164,6 +165,12 @@ type BomReportViewProps = {
   summary?: BomSummary | null
   backHref: string
   backLabel?: string
+  /** When set with version + callbacks, the part table becomes editable. */
+  bomId?: string
+  version?: number
+  onLinesChange?: (lines: AnalyzedLine[]) => void
+  onVersionChange?: (version: number) => void
+  onConflict?: () => void
 }
 
 export default function BomReportView({
@@ -171,6 +178,11 @@ export default function BomReportView({
   summary = null,
   backHref,
   backLabel = 'Back to BOMs',
+  bomId,
+  version,
+  onLinesChange,
+  onVersionChange,
+  onConflict,
 }: BomReportViewProps) {
   const badge = riskBadge(result)
   const needsAction = (result.summary.red_count ?? 0) + (result.summary.yellow_count ?? 0)
@@ -332,7 +344,22 @@ export default function BomReportView({
               </h2>
               <span className="text-xs text-slate-400">{result.lines.length} parts</span>
             </div>
-            <BomDetailTable lines={result.lines} />
+            {bomId != null &&
+            version != null &&
+            onLinesChange &&
+            onVersionChange &&
+            onConflict ? (
+              <EditableBomTable
+                bomId={bomId}
+                version={version}
+                lines={result.lines}
+                onLinesChange={onLinesChange}
+                onVersionChange={onVersionChange}
+                onConflict={onConflict}
+              />
+            ) : (
+              <BomDetailTable lines={result.lines} />
+            )}
           </div>
         </div>
       </div>
