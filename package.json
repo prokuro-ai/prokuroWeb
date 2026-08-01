@@ -12,6 +12,8 @@
     "start": "next start --port 3010",
     "lint": "eslint app components lib hooks --ext .ts,.tsx",
     "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "worker:dev": "wrangler dev --config worker/wrangler.toml --port 8787",
     "worker:deploy": "wrangler deploy --config worker/wrangler.toml",
     "worker:tail": "wrangler tail --config worker/wrangler.toml"
@@ -72,12 +74,17 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "^15.3.0",
+    "jsdom": "^27.0.1",
     "typescript": "^5.7.0",
+    "vitest": "^3.2.7",
     "wrangler": "^4.114.0"
   },
   "repository": {

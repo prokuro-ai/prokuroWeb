@@ -15,6 +15,20 @@ export class BomConflictError extends Error {
   }
 }
 
+export class BomServerError extends Error {
+  constructor(message = 'Your change could not be saved, please try again') {
+    super(message)
+    this.name = 'BomServerError'
+  }
+}
+
+export class BomNetworkError extends Error {
+  constructor(message = "couldn't reach the server") {
+    super(message)
+    this.name = 'BomNetworkError'
+  }
+}
+
 export type BomLinePatch = {
   version: number
   mpn?: string
@@ -157,7 +171,18 @@ async function throwIfBomWriteFailed(res: Response, body: unknown): Promise<neve
         : undefined
     throw new BomConflictError(message)
   }
+  if (res.status >= 500) {
+    throw new BomServerError()
+  }
   throw new Error(await readErrorMessage(res, body))
+}
+
+async function bomWriteFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(input, init)
+  } catch {
+    throw new BomNetworkError()
+  }
 }
 
 export async function putBom(
@@ -165,7 +190,7 @@ export async function putBom(
   version: number,
   lines: AnalyzedLine[],
 ): Promise<BomRecord> {
-  const res = await fetch(`/api/boms/${encodeURIComponent(id)}`, {
+  const res = await bomWriteFetch(`/api/boms/${encodeURIComponent(id)}`, {
     method: 'PUT',
     headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
     body: JSON.stringify({ version, lines }),
@@ -180,7 +205,7 @@ export async function patchBomLine(
   lineIndex: number,
   patch: BomLinePatch,
 ): Promise<BomLineMutationResult> {
-  const res = await fetch(
+  const res = await bomWriteFetch(
     `/api/boms/${encodeURIComponent(id)}/lines/${encodeURIComponent(String(lineIndex))}`,
     {
       method: 'PATCH',
@@ -199,7 +224,7 @@ export async function deleteBomLine(
   version: number,
 ): Promise<BomLineDeleteResult> {
   const qs = new URLSearchParams({ version: String(version) })
-  const res = await fetch(
+  const res = await bomWriteFetch(
     `/api/boms/${encodeURIComponent(id)}/lines/${encodeURIComponent(String(lineIndex))}?${qs}`,
     {
       method: 'DELETE',
@@ -215,7 +240,7 @@ export async function addBomLine(
   id: string,
   input: BomLinePatch,
 ): Promise<BomLineMutationResult> {
-  const res = await fetch(`/api/boms/${encodeURIComponent(id)}/lines`, {
+  const res = await bomWriteFetch(`/api/boms/${encodeURIComponent(id)}/lines`, {
     method: 'POST',
     headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
     body: JSON.stringify(input),

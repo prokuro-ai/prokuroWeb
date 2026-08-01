@@ -2,7 +2,14 @@
 
 import { useState } from 'react'
 import type { AnalyzedLine } from '@/lib/types'
-import { BomConflictError, addBomLine, deleteBomLine, patchBomLine } from '@/lib/api'
+import {
+  BomConflictError,
+  BomNetworkError,
+  BomServerError,
+  addBomLine,
+  deleteBomLine,
+  patchBomLine,
+} from '@/lib/api'
 import { Trash2, Plus } from 'lucide-react'
 
 type EditableField = 'mpn' | 'manufacturer' | 'quantity' | 'refdes' | 'description'
@@ -47,6 +54,14 @@ function riskLevelBadge(level: string | undefined) {
   return 'bg-emerald-100 text-emerald-700 border-emerald-200'
 }
 
+function messageForSaveError(err: unknown): string {
+  if (err instanceof BomConflictError) return err.message
+  if (err instanceof BomServerError) return err.message
+  if (err instanceof BomNetworkError) return err.message
+  if (err instanceof Error) return err.message
+  return 'Your change could not be saved, please try again'
+}
+
 function EditableCell({
   value,
   field,
@@ -61,43 +76,72 @@ function EditableCell({
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(value)
   const [saveState, setSaveState] = useState<SaveState>('idle')
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   async function commit() {
-    setEditing(false)
-    if (draft === value) return
+    if (draft === value && saveState !== 'error') {
+      setEditing(false)
+      setErrorMessage(null)
+      return
+    }
     setSaveState('saving')
+    setErrorMessage(null)
     try {
       await onCommit(field, draft)
       setSaveState('saved')
+      setEditing(false)
       window.setTimeout(() => setSaveState('idle'), 1200)
-    } catch {
-      setDraft(value)
+    } catch (err) {
+      // Preserve draft — do not discard the user's typed change.
       setSaveState('error')
-      window.setTimeout(() => setSaveState('idle'), 2500)
+      setErrorMessage(messageForSaveError(err))
+      setEditing(true)
     }
   }
 
-  if (editing) {
+  if (editing || saveState === 'error') {
     return (
-      <input
-        autoFocus
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={() => void commit()}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault()
-            void commit()
-          }
-          if (e.key === 'Escape') {
-            setDraft(value)
-            setEditing(false)
-          }
-        }}
-        className={`w-full min-w-[4rem] rounded border border-slate-300 bg-white px-1.5 py-0.5 text-xs text-slate-800 outline-none ring-2 ring-slate-200 ${
-          mono ? 'font-mono font-bold' : ''
-        }`}
-      />
+      <div className="space-y-1">
+        <input
+          autoFocus={editing}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={() => {
+            if (saveState !== 'error' && saveState !== 'saving') void commit()
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              void commit()
+            }
+            if (e.key === 'Escape') {
+              setDraft(value)
+              setErrorMessage(null)
+              setSaveState('idle')
+              setEditing(false)
+            }
+          }}
+          className={`w-full min-w-[4rem] rounded border bg-white px-1.5 py-0.5 text-xs text-slate-800 outline-none ring-2 ${
+            saveState === 'error'
+              ? 'border-red-400 ring-red-100'
+              : 'border-slate-300 ring-slate-200'
+          } ${mono ? 'font-mono font-bold' : ''}`}
+        />
+        {saveState === 'saving' && <p className="text-[10px] text-slate-400">Saving…</p>}
+        {saveState === 'error' && errorMessage && (
+          <div className="space-y-1">
+            <p className="text-[10px] leading-snug text-red-600">{errorMessage}</p>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => void commit()}
+              className="text-[10px] font-semibold text-red-700 underline"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+      </div>
     )
   }
 
@@ -107,6 +151,7 @@ function EditableCell({
       onClick={() => {
         setDraft(value)
         setEditing(true)
+        setErrorMessage(null)
       }}
       className={`group flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left hover:bg-slate-100 ${
         mono ? 'font-mono text-xs font-bold text-slate-800' : 'text-xs text-slate-600'
@@ -116,7 +161,6 @@ function EditableCell({
       <span className="truncate">{value || '-'}</span>
       {saveState === 'saving' && <span className="text-[10px] text-slate-400">Saving…</span>}
       {saveState === 'saved' && <span className="text-[10px] text-emerald-600">Saved</span>}
-      {saveState === 'error' && <span className="text-[10px] text-red-600">Error</span>}
     </button>
   )
 }
@@ -152,8 +196,8 @@ export default function EditableBomTable({
     } catch (err) {
       if (err instanceof BomConflictError) {
         onConflict()
-        setRowError(err.message)
       }
+      setRowError(messageForSaveError(err))
       throw err
     }
   }
@@ -168,12 +212,8 @@ export default function EditableBomTable({
       onLinesChange(nextLines)
       onVersionChange(result.version)
     } catch (err) {
-      if (err instanceof BomConflictError) {
-        onConflict()
-        setRowError(err.message)
-      } else {
-        setRowError(err instanceof Error ? err.message : 'Failed to remove line')
-      }
+      if (err instanceof BomConflictError) onConflict()
+      setRowError(messageForSaveError(err))
     } finally {
       setBusy(false)
     }
@@ -195,12 +235,8 @@ export default function EditableBomTable({
       onLinesChange([...lines, result.line])
       onVersionChange(result.version)
     } catch (err) {
-      if (err instanceof BomConflictError) {
-        onConflict()
-        setRowError(err.message)
-      } else {
-        setRowError(err instanceof Error ? err.message : 'Failed to add line')
-      }
+      if (err instanceof BomConflictError) onConflict()
+      setRowError(messageForSaveError(err))
     } finally {
       setBusy(false)
     }
