@@ -5,8 +5,10 @@ import { ChevronDown, Search, Sparkles } from 'lucide-react'
 import type { AnalyzedLine, RiskLevel } from '@/lib/types'
 import {
   RISK_PRESENTATION,
+  UNKNOWN_LINE_PRESENTATION,
   isAtRisk,
   isPendingLine,
+  isUnknownLine,
   leadTimeWeeks,
   lifecycleDot,
   lifecycleLabel,
@@ -62,9 +64,12 @@ function stockLabel(line: AnalyzedLine): string {
   return `${line.total_avail.toLocaleString()} units`
 }
 
+function linePresentation(line: AnalyzedLine) {
+  return isUnknownLine(line) ? UNKNOWN_LINE_PRESENTATION : RISK_PRESENTATION[lineRiskLevel(line)]
+}
+
 function LineDetail({ line }: { line: AnalyzedLine }) {
-  const level = lineRiskLevel(line)
-  const risk = RISK_PRESENTATION[level]
+  const risk = linePresentation(line)
   const pending = isPendingLine(line)
   const weeks = leadTimeWeeks(line)
   const lineLabel = String(line.row_index).padStart(4, '0')
@@ -170,8 +175,7 @@ function LineRow({
   expanded: boolean
   onToggle: () => void
 }) {
-  const level = lineRiskLevel(line)
-  const risk = RISK_PRESENTATION[level]
+  const risk = linePresentation(line)
   const expandable = isAtRisk(line)
   const pending = isPendingLine(line)
   const weeks = leadTimeWeeks(line)
@@ -278,14 +282,20 @@ export default function BomPartsTable({ lines }: { lines: AnalyzedLine[] }) {
 
   const counts = useMemo(() => {
     const tally: Record<RiskLevel, number> = { red: 0, yellow: 0, green: 0 }
-    for (const line of lines) tally[lineRiskLevel(line)] += 1
+    for (const line of lines) {
+      if (isUnknownLine(line)) continue
+      tally[lineRiskLevel(line)] += 1
+    }
     return tally
   }, [lines])
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()
     return lines.filter((line) => {
-      if (filter !== 'All' && lineRiskLevel(line) !== FILTER_LEVEL[filter]) return false
+      if (filter !== 'All') {
+        if (isUnknownLine(line)) return false
+        if (lineRiskLevel(line) !== FILTER_LEVEL[filter]) return false
+      }
       if (!query) return true
       return [line.mpn, line.manufacturer, line.description, line.refdes]
         .filter(Boolean)

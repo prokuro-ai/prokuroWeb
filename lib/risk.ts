@@ -17,6 +17,11 @@ export function isPendingLine(line: AnalyzedLine): boolean {
   return avail === 'pending' || match === 'pending'
 }
 
+/** Enrichment still running — not scored for UI until resolved. */
+export function isUnknownLine(line: AnalyzedLine): boolean {
+  return isPendingLine(line)
+}
+
 export function hasPendingLines(result: AnalyzeResult): boolean {
   return result.lines.some(isPendingLine)
 }
@@ -68,11 +73,23 @@ export const RISK_PRESENTATION: Record<RiskLevel, RiskPresentation> = {
   },
 }
 
+export const UNKNOWN_LINE_PRESENTATION: RiskPresentation = {
+  label: 'Unknown',
+  row: '',
+  rail: '',
+  bar: '',
+  text: 'text-slate-400',
+  pill: 'bg-slate-100 text-slate-500',
+  panel: 'bg-[#f4f6f9]',
+  fill: 0,
+}
+
 export function lineRiskLevel(line: AnalyzedLine): RiskLevel {
   return line.risk_level ?? 'green'
 }
 
 export function isAtRisk(line: AnalyzedLine): boolean {
+  if (isUnknownLine(line)) return false
   return lineRiskLevel(line) !== 'green'
 }
 

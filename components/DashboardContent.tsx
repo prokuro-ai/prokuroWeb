@@ -11,27 +11,7 @@ import DashboardShell from '@/components/DashboardShell'
 import type { BomSummary } from '@/lib/types'
 import { formatUploadedAt } from '@/lib/format'
 import { bomRiskBand, type BomBand } from '@/lib/risk'
-import {
-  AlertTriangle, Bell, ArrowRight, FileText, Search,
-  ShieldAlert, CheckCircle,
-} from 'lucide-react'
-
-// ─── Static alert data (alerts tab placeholder) ───────────────────────────────
-
-const ALERTS = [
-  { id: 1,  part: 'STM32F405RGT6',     type: 'EOL',       message: 'Hit EOL. Last-time-buy window closes in 14 days. 0 units in stock across all distributors.', severity: 'high',   time: '10m ago', bom: 'Motor Controller v3'   },
-  { id: 2,  part: 'CY7C1061GE-10ZSXI', type: 'EOL',       message: 'Discontinued by Cypress. 210 units remaining at Digi-Key, covers ~1 production run.',        severity: 'high',   time: '1h ago',  bom: 'Motor Controller v3'   },
-  { id: 3,  part: 'LTC3780EGN#PBF',    type: 'EOL',       message: 'Analog Devices EOL notice issued. No direct alternate identified yet.',                        severity: 'high',   time: '2h ago',  bom: 'Motor Controller v3'   },
-  { id: 4,  part: 'ATMEGA328P-AU',      type: 'Lead Time', message: 'Lead time extended to 52 weeks at all distributors (+40% in 60 days). NRND status.',          severity: 'high',   time: '3h ago',  bom: 'Motor Controller v3'   },
-  { id: 5,  part: 'FT232RL-REEL',       type: 'NRND',      message: 'FTDI flagged as not recommended for new designs. CH340G used by 8 companies as substitute.',   severity: 'medium', time: '4h ago',  bom: 'Motor Controller v3'   },
-  { id: 6,  part: 'PRTR5V0U2X',         type: 'Lead Time', message: 'NXP lead time at 38 weeks. Stock at 900 units, below threshold for planned production run.',  severity: 'medium', time: '6h ago',  bom: 'Motor Controller v3'   },
-  { id: 7,  part: 'NRF52840-QIAA-R',   type: 'Tariff',    message: 'Section 301 tariff now applies. +$1.80/unit estimated impact at current BOM quantity.',        severity: 'medium', time: '8h ago',  bom: 'Motor Controller v3'   },
-  { id: 8,  part: 'ESP32-WROOM-32E',   type: 'Tariff',    message: 'Subject to Section 301 at 25%. China-assembly exposure flag raised.',                          severity: 'medium', time: '10h ago', bom: 'Motor Controller v3'   },
-  { id: 9,  part: 'MAX3232CPE+',        type: 'Resolved',  message: 'Alternative validated by network. Risk cleared. New stock at Mouser, 4-week lead time.',      severity: 'info',   time: '3d ago',  bom: 'Motor Controller v3'   },
-  { id: 10, part: 'ADL5801ACPZ-R7',    type: 'Lead Time', message: 'Lead time extended to 44 weeks at Arrow and Avnet. No stock at Digi-Key or Mouser.',           severity: 'high',   time: '4h ago',  bom: 'Radar Front-End Board' },
-  { id: 11, part: 'HMC637ALP5E',        type: 'EOL',       message: 'Analog Devices issued PCN. Last-time-buy recommended before Q3.',                              severity: 'high',   time: '6h ago',  bom: 'Radar Front-End Board' },
-  { id: 12, part: 'MAX3232CPE+',        type: 'Resolved',  message: 'New stock available at Mouser. Lead time reduced to 4 weeks.',                                 severity: 'info',   time: '4d ago',  bom: 'Display Interface'     },
-]
+import { ArrowRight, Search } from 'lucide-react'
 
 // ─── Overview (action board) ──────────────────────────────────────────────────
 
@@ -527,97 +507,9 @@ function BomsPage({ boms, loading, onViewBom, onDelete, onUpload }: {
   )
 }
 
-// ─── Alerts tab (placeholder) ─────────────────────────────────────────────────
-
-function AlertsPage() {
-  const [filter, setFilter] = useState('All')
-  const filtered = ALERTS.filter((a) =>
-    filter === 'All' || a.severity === filter.toLowerCase() || (filter === 'Resolved' && a.type === 'Resolved'),
-  )
-  return (
-    <div className="flex-1 overflow-y-auto p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900">Alerts</h2>
-          <p className="mt-0.5 text-sm text-slate-500">
-            {ALERTS.filter((a) => a.severity === 'high').length} critical ·{' '}
-            {ALERTS.filter((a) => a.severity === 'medium').length} warnings ·{' '}
-            {ALERTS.filter((a) => a.type === 'Resolved').length} resolved
-          </p>
-        </div>
-        <div className="flex rounded-lg border border-slate-200 bg-slate-100 p-0.5">
-          {['All', 'High', 'Medium', 'Resolved'].map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setFilter(f)}
-              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
-                filter === f ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="space-y-3">
-        {filtered.map((alert) => {
-          const isHigh = alert.severity === 'high'
-          const isMed = alert.severity === 'medium'
-          const isResolved = alert.type === 'Resolved'
-          const iconBg = isResolved ? 'bg-emerald-100' : isHigh ? 'bg-red-100' : isMed ? 'bg-amber-100' : 'bg-blue-100'
-          const iconColor = isResolved ? 'text-emerald-600' : isHigh ? 'text-red-600' : isMed ? 'text-amber-600' : 'text-blue-600'
-          const typeBg = isResolved
-            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-            : isHigh
-              ? 'border-red-200 bg-red-50 text-red-700'
-              : isMed
-                ? 'border-amber-200 bg-amber-50 text-amber-700'
-                : 'border-blue-200 bg-blue-50 text-blue-700'
-          const Icon = isResolved ? CheckCircle : isHigh ? ShieldAlert : isMed ? AlertTriangle : Bell
-          return (
-            <div
-              key={alert.id}
-              className="flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
-            >
-              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${iconBg}`}>
-                <Icon className={`h-4 w-4 ${iconColor}`} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="mb-1 flex flex-wrap items-center gap-2">
-                  <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs font-bold text-slate-900">
-                    {alert.part}
-                  </span>
-                  <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${typeBg}`}>
-                    {alert.type}
-                  </span>
-                  <span className="ml-auto shrink-0 text-xs text-slate-400">{alert.time}</span>
-                </div>
-                <p className="mb-2 text-sm leading-snug text-slate-700">{alert.message}</p>
-                <div className="flex items-center gap-2">
-                  <FileText className="h-3.5 w-3.5 text-slate-400" />
-                  <span className="text-xs text-slate-500">{alert.bom}</span>
-                </div>
-              </div>
-              {!isResolved && (
-                <button
-                  type="button"
-                  className="flex shrink-0 items-center gap-1 whitespace-nowrap text-sm font-semibold text-[#0062ff] hover:text-blue-700"
-                >
-                  Take Action <ArrowRight className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
-type Page = 'dashboard' | 'boms' | 'alerts'
+type Page = 'dashboard' | 'boms'
 
 export default function DashboardContent() {
   const router = useRouter()
@@ -627,7 +519,7 @@ export default function DashboardContent() {
   const [loading, setLoading] = useState(true)
 
   const tabParam = searchParams.get('tab')
-  const page: Page = tabParam === 'boms' || tabParam === 'alerts' ? tabParam : 'dashboard'
+  const page: Page = tabParam === 'boms' ? 'boms' : 'dashboard'
 
   const dashboardUrl = (tab: Page) => `/dashboard?tab=${tab}`
 
@@ -686,7 +578,7 @@ export default function DashboardContent() {
             goToBoms={() => setPage('boms')}
             onViewBom={viewBom}
           />
-        ) : page === 'boms' ? (
+        ) : (
           <BomsPage
             boms={boms}
             loading={loading}
@@ -694,8 +586,6 @@ export default function DashboardContent() {
             onDelete={(id) => setBoms((prev) => prev.filter((b) => b.id !== id))}
             onUpload={() => setUploadOpen(true)}
           />
-        ) : (
-          <AlertsPage />
         )}
       </div>
 
