@@ -1,50 +1,25 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { ChevronLeft } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { ChevronLeft, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import BomPartsTable from '@/components/BomPartsTable'
 import DashboardShell from '@/components/DashboardShell'
 import { useAuth } from '@/components/AuthProvider'
 import { Link } from '@/lib/navigation'
 import { getBom } from '@/lib/api'
 import { formatUploadedAt } from '@/lib/format'
-import type { AnalyzeResult, AnalyzedLine, BomSummary } from '@/lib/types'
+import { hasPendingLines, isPendingLine, lineRiskLevel } from '@/lib/risk'
+import type { AnalyzeResult, BomSummary, RiskLevel } from '@/lib/types'
 
 const POLL_INTERVALS_MS = [2000, 5000, 10000, 30000]
 const POLL_CEILING_MS = 15 * 60 * 1000
 
-function isPending(line: AnalyzedLine): boolean {
-  const avail = line.availability_status?.toLowerCase() ?? ''
-  const match = line.match_status?.toLowerCase() ?? ''
-  return avail === 'pending' || match === 'pending'
-}
-
-function hasPendingLines(result: AnalyzeResult): boolean {
-  return result.lines.some(isPending)
-}
-
-function lifecycleBadge(status: string) {
-  const s = status.toLowerCase()
-  if (s === 'eol' || s === 'discontinued') return 'bg-red-100 text-red-700 border border-red-200'
-  if (s === 'nrnd') return 'bg-amber-100 text-amber-700 border border-amber-200'
-  if (s === 'active') return 'bg-emerald-100 text-emerald-700 border border-emerald-200'
-  return 'bg-slate-100 text-slate-500 border border-slate-200'
-}
-
-function lifecycleLabel(status: string) {
-  const s = status.toLowerCase()
-  if (s === 'eol' || s === 'discontinued') return 'EOL'
-  if (s === 'nrnd') return 'NRND'
-  if (s === 'active') return 'Active'
-  if (s === 'unknown' || !s) return 'Unknown'
-  return status
-}
-
-function isUrgent(line: AnalyzedLine) {
-  if (isPending(line)) return false
-  const s = line.lifecycle_status.toLowerCase()
-  return s === 'eol' || s === 'nrnd' || s === 'discontinued'
-}
+const RISK_SEGMENTS: { level: RiskLevel; label: string; color: string }[] = [
+  { level: 'red', label: 'Critical', color: '#ef4444' },
+  { level: 'yellow', label: 'Watch', color: '#f59e0b' },
+  { level: 'green', label: 'Clear', color: '#10b981' },
+]
 
 function riskBadge(result: AnalyzeResult) {
   const red = result.summary.red_count ?? 0
@@ -54,84 +29,35 @@ function riskBadge(result: AnalyzeResult) {
   return { label: 'Healthy', cls: 'bg-emerald-100 text-emerald-700' }
 }
 
-function BomDetailTable({ lines }: { lines: AnalyzedLine[] }) {
+function RiskDistribution({ counts, total }: { counts: Record<RiskLevel, number>; total: number }) {
+  if (total === 0) return null
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      <table className="w-full text-left text-sm">
-        <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-          <tr>
-            {['Part Number', 'Manufacturer', 'Qty', 'Lifecycle', 'Stock', 'Lead Time', 'Tariff', 'Alternate'].map((h) => (
-              <th key={h} className="px-4 py-3 font-semibold">
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {lines.map((line, i) => {
-            const urgent = isUrgent(line)
-            const pending = isPending(line)
-            const leadWeeks = line.factory_lead_days != null ? Math.round(line.factory_lead_days / 7) : null
-            const avail = line.availability_status?.toLowerCase() ?? ''
-
-            return (
-              <tr key={line.row_index ?? i} className={`hover:bg-slate-50/80 ${urgent ? 'bg-red-50/40' : ''}`}>
-                <td className="px-4 py-3 font-mono text-xs font-bold text-slate-800">{line.mpn ?? '-'}</td>
-                <td className="px-4 py-3 text-xs text-slate-600">{line.manufacturer ?? '-'}</td>
-                <td className="px-4 py-3 text-slate-600">{line.quantity ?? '-'}</td>
-                <td className="px-4 py-3">
-                  {pending ? (
-                    <span className="animate-pulse text-xs text-slate-400">Looking up…</span>
-                  ) : (
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${lifecycleBadge(line.lifecycle_status)}`}>
-                      {lifecycleLabel(line.lifecycle_status)}
-                    </span>
-                  )}
-                </td>
-                <td className="px-4 py-3 font-medium">
-                  {pending ? (
-                    <span className="animate-pulse text-xs text-slate-400">Looking up…</span>
-                  ) : avail === 'outofstock' ? (
-                    <span className="text-xs font-bold text-red-600">Out of stock</span>
-                  ) : avail === 'nomatch' ? (
-                    <span className="text-xs text-slate-400">No match</span>
-                  ) : (
-                    <span className="text-xs text-slate-700">{line.total_avail.toLocaleString()}</span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-xs">
-                  {pending ? (
-                    <span className="animate-pulse text-slate-400">Looking up…</span>
-                  ) : leadWeeks == null ? (
-                    <span className="text-slate-400">—</span>
-                  ) : (
-                    <span className={leadWeeks > 30 ? 'font-semibold text-amber-600' : 'text-slate-600'}>{leadWeeks}w</span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-xs text-slate-600">
-                  {line.total_duty_pct != null && line.total_duty_pct > 0 ? `${line.total_duty_pct}%` : '-'}
-                </td>
-                <td className="px-4 py-3">
-                  {line.aml_candidates.length > 0 ? (
-                    <div className="space-y-1">
-                      {line.aml_candidates.map((mpn, j) => (
-                        <span
-                          key={j}
-                          className="block rounded border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 font-mono text-xs text-emerald-700"
-                        >
-                          {mpn}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className="text-xs text-slate-400">-</span>
-                  )}
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+    <div className="mb-8 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Line Risk Distribution</span>
+        <span className="text-xs text-slate-400">{total} lines scored</span>
+      </div>
+      <div className="mb-4 flex h-2.5 gap-0.5 overflow-hidden rounded-full">
+        {RISK_SEGMENTS.map((segment) =>
+          counts[segment.level] > 0 ? (
+            <span
+              key={segment.level}
+              className="h-full"
+              style={{ width: `${(counts[segment.level] / total) * 100}%`, background: segment.color }}
+              title={`${segment.label}: ${counts[segment.level]} lines`}
+            />
+          ) : null,
+        )}
+      </div>
+      <div className="flex flex-wrap gap-x-8 gap-y-2">
+        {RISK_SEGMENTS.map((segment) => (
+          <div key={segment.level} className="flex items-baseline gap-2">
+            <span className="h-2 w-2 shrink-0 translate-y-[-1px] rounded-full" style={{ background: segment.color }} />
+            <span className="text-sm font-bold tabular-nums text-slate-900">{counts[segment.level]}</span>
+            <span className="text-xs text-slate-500">{segment.label}</span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -215,6 +141,12 @@ export default function BomResultPage({ id }: BomResultPageProps) {
     }
   }, [authLoading, user, id, router])
 
+  const riskCounts = useMemo(() => {
+    const tally: Record<RiskLevel, number> = { red: 0, yellow: 0, green: 0 }
+    for (const line of result?.lines ?? []) tally[lineRiskLevel(line)] += 1
+    return tally
+  }, [result])
+
   if (!loaded || authLoading) return null
 
   if (!result) {
@@ -237,11 +169,12 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   }
 
   const badge = riskBadge(result)
-  const needsAction = (result.summary.red_count ?? 0) + (result.summary.yellow_count ?? 0)
+  const needsAction = riskCounts.red + riskCounts.yellow
   const eolCount = result.lines.filter((l) => ['eol', 'discontinued'].includes(l.lifecycle_status.toLowerCase())).length
   const nrndCount = result.lines.filter((l) => l.lifecycle_status.toLowerCase() === 'nrnd').length
   const longLead = result.lines.filter((l) => l.factory_lead_days != null && l.factory_lead_days > 210).length
   const alternates = result.lines.filter((l) => l.aml_candidates.length > 0).length
+  const pendingCount = result.lines.filter(isPendingLine).length
   const displayName = summary?.name ?? result.source_filename
   const uploadedLabel = summary?.uploadedAt ? formatUploadedAt(summary.uploadedAt) : formatUploadedAt(result.analyzed_at)
 
@@ -278,6 +211,16 @@ export default function BomResultPage({ id }: BomResultPageProps) {
             </div>
           </div>
 
+          {pendingCount > 0 ? (
+            <div className="mb-6 flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-5 py-3.5">
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[#0062ff]" aria-hidden />
+              <p className="text-sm font-medium text-slate-700">
+                Resolving {pendingCount} {pendingCount === 1 ? 'part' : 'parts'} against distributor data. This page
+                updates on its own as results arrive.
+              </p>
+            </div>
+          ) : null}
+
           <div className="mb-8 grid grid-cols-4 gap-4">
             {[
               { label: 'Total Parts', value: result.summary.total, sub: 'unique line items', cls: 'text-slate-900' },
@@ -308,12 +251,14 @@ export default function BomResultPage({ id }: BomResultPageProps) {
             ))}
           </div>
 
+          <RiskDistribution counts={riskCounts} total={result.lines.length} />
+
           <div>
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">Part-by-Part Breakdown</h2>
               <span className="text-xs text-slate-400">{result.lines.length} parts</span>
             </div>
-            <BomDetailTable lines={result.lines} />
+            <BomPartsTable lines={result.lines} />
           </div>
         </div>
       </div>

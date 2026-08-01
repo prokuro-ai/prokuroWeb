@@ -10,6 +10,7 @@ import BomBulkUploadModal from '@/components/BomBulkUploadModal'
 import DashboardShell from '@/components/DashboardShell'
 import type { BomSummary } from '@/lib/types'
 import { formatUploadedAt } from '@/lib/format'
+import { scoreBand } from '@/lib/risk'
 import {
   AlertTriangle, Bell, ChevronRight, FileText, Search,
   ShieldAlert, UploadCloud, CheckCircle, ArrowRight,
@@ -257,6 +258,116 @@ function OverviewPage({ boms, loading, goToBoms, onViewBom }: {
   )
 }
 
+const BOM_FILTERS = ['All', 'High Risk', 'Warning', 'Healthy'] as const
+type BomFilter = (typeof BOM_FILTERS)[number]
+
+function matchesBand(score: number, filter: BomFilter): boolean {
+  if (filter === 'High Risk') return score >= 7
+  if (filter === 'Warning') return score >= 4 && score < 7
+  if (filter === 'Healthy') return score < 4
+  return true
+}
+
+function BomCardSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="h-1 bg-slate-100" />
+      <div className="animate-pulse space-y-4 p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 space-y-2">
+            <div className="h-4 w-2/3 rounded bg-slate-200" />
+            <div className="h-3 w-1/2 rounded bg-slate-100" />
+          </div>
+          <div className="h-14 w-14 shrink-0 rounded-full bg-slate-100" />
+        </div>
+        <div className="grid grid-cols-3 gap-3 border-t border-slate-100 pt-4">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="space-y-2">
+              <div className="h-5 w-10 rounded bg-slate-200" />
+              <div className="h-3 w-14 rounded bg-slate-100" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function BomCard({ bom, onView, onDelete }: {
+  bom: BomSummary
+  onView: () => void
+  onDelete: () => void
+}) {
+  const band = scoreBand(bom.overallRiskScore)
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onView}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onView()
+        }
+      }}
+      className="group cursor-pointer overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0062ff]"
+    >
+      <div className="h-1 w-full" style={{ background: band.accent }} />
+      <div className="p-6">
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="mb-1 flex items-center gap-2">
+              <h3 className="truncate text-base font-bold text-slate-900">{bom.name}</h3>
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${band.pill}`}>
+                {band.label}
+              </span>
+            </div>
+            <p className="truncate font-mono text-xs text-slate-400">{bom.filename}</p>
+          </div>
+          <RiskRing score={bom.overallRiskScore} />
+        </div>
+
+        <div className="grid grid-cols-3 gap-3 border-t border-slate-100 pt-4">
+          <div>
+            <div className="text-lg font-bold tabular-nums text-slate-900">{bom.lineCount.toLocaleString()}</div>
+            <div className="text-xs text-slate-500">Lines</div>
+          </div>
+          <div>
+            <div className={`text-lg font-bold tabular-nums ${bom.atRiskCount > 0 ? 'text-red-600' : 'text-slate-400'}`}>
+              {bom.atRiskCount}
+            </div>
+            <div className="text-xs text-slate-500">At risk</div>
+          </div>
+          <div>
+            <div className="truncate text-sm font-medium text-slate-700">{formatUploadedAt(bom.uploadedAt)}</div>
+            <div className="text-xs text-slate-500">Uploaded</div>
+          </div>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
+          <span className="flex items-center gap-1 text-sm font-semibold text-[#0062ff] transition-colors group-hover:text-blue-700">
+            View full report
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </span>
+          <span
+            role="presentation"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+          >
+            <DeleteBomButton
+              bomId={bom.id} bomName={bom.name}
+              redirectTo={null} variant="ghost" label="Delete"
+              className="px-3 py-1.5 text-xs"
+              onDeleted={onDelete}
+            />
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function BomsPage({ boms, loading, onViewBom, onDelete, onUpload }: {
   boms: BomSummary[], loading: boolean
   onViewBom: (id: string) => void
@@ -264,109 +375,108 @@ function BomsPage({ boms, loading, onViewBom, onDelete, onUpload }: {
   onUpload: () => void
 }) {
   const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState('All')
+  const [filter, setFilter] = useState<BomFilter>('All')
 
-  const filtered = boms.filter(b => {
-    const q = search.toLowerCase()
-    const matchQ = b.name.toLowerCase().includes(q) || b.filename.toLowerCase().includes(q)
-    if (filter === 'High Risk') return matchQ && b.overallRiskScore >= 7
-    if (filter === 'Warning')   return matchQ && b.overallRiskScore >= 4 && b.overallRiskScore < 7
-    if (filter === 'Healthy')   return matchQ && b.overallRiskScore < 4
-    return matchQ
-  })
+  const query = search.trim().toLowerCase()
+  const searched = boms.filter(
+    b => b.name.toLowerCase().includes(query) || b.filename.toLowerCase().includes(query),
+  )
+  const filtered = searched.filter(b => matchesBand(b.overallRiskScore, filter))
+
+  const totalLines = boms.reduce((s, b) => s + b.lineCount, 0)
+  const totalAtRisk = boms.reduce((s, b) => s + b.atRiskCount, 0)
+
+  const stats = [
+    { label: 'BOMs monitored', value: boms.length.toLocaleString(), sub: 'across all projects', cls: 'text-slate-900' },
+    { label: 'Lines tracked', value: totalLines.toLocaleString(), sub: 'components under watch', cls: 'text-slate-900' },
+    {
+      label: 'At-risk parts',
+      value: totalAtRisk.toLocaleString(),
+      sub: 'EOL, NRND, or supply constrained',
+      cls: totalAtRisk > 0 ? 'text-red-600' : 'text-slate-900',
+    },
+  ]
 
   return (
-    <div className="flex-1 px-8 pt-5 pb-8 overflow-y-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="flex-1 overflow-y-auto bg-slate-50 px-8 pb-8 pt-6">
+      <div className="mb-6 flex items-start justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Bills of Materials</h2>
-          <p className="text-sm text-slate-500 mt-0.5">
-            {boms.length} BOMs · {boms.reduce((s, b) => s + b.lineCount, 0).toLocaleString()} total lines monitored
+          <p className="mt-0.5 text-sm text-slate-500">
+            Every uploaded BOM, scored on lifecycle, supply, and trade exposure.
           </p>
         </div>
         <button
           type="button"
           onClick={onUpload}
-          className="flex items-center gap-2 rounded-md bg-[#0062ff] px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
+          className="flex shrink-0 items-center gap-2 rounded-md bg-[#0062ff] px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
         >
           <UploadCloud className="h-4 w-4" /> Upload BOM
         </button>
       </div>
 
-      <div className="flex items-center gap-3 mb-6">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+      <div className="mb-6 grid grid-cols-3 gap-4">
+        {stats.map(stat => (
+          <div key={stat.label} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-1 text-xs font-medium text-slate-500">{stat.label}</div>
+            <div className={`text-3xl font-bold tracking-tight ${stat.cls}`}>{loading ? '—' : stat.value}</div>
+            <div className="mt-1 text-xs text-slate-400">{stat.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mb-6 flex flex-wrap items-center gap-3">
+        <div className="relative min-w-0 flex-1 sm:max-w-sm">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search BOMs or filenames…"
-            className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0062ff] focus:border-[#0062ff]" />
+            aria-label="Search BOMs"
+            className="w-full rounded-md border border-slate-200 bg-white py-2 pl-9 pr-4 text-sm focus:border-[#0062ff] focus:outline-none focus:ring-2 focus:ring-[#0062ff]/20" />
         </div>
-        <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-          {['All', 'High Risk', 'Warning', 'Healthy'].map(f => (
+        <div className="flex rounded-lg border border-slate-200 bg-slate-100 p-0.5">
+          {BOM_FILTERS.map(f => (
             <button key={f} onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${filter === f ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}>
-              {f}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${filter === f ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
+              {f}{' '}
+              <span className="tabular-nums text-slate-400">
+                {searched.filter(b => matchesBand(b.overallRiskScore, f)).length}
+              </span>
             </button>
           ))}
         </div>
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center h-48 text-slate-400 text-sm">Loading BOMs…</div>
+        <div className="grid grid-cols-2 gap-4">
+          {[0, 1, 2, 3].map(i => <BomCardSkeleton key={i} />)}
+        </div>
       ) : boms.length === 0 ? (
-        <div className="flex items-center justify-center h-48 text-slate-400 text-sm">
-          Add BOMs to start monitoring your portfolio.
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white py-16 text-center">
+          <UploadCloud className="mb-3 h-8 w-8 text-slate-300" />
+          <p className="text-base font-medium text-slate-700">No BOMs yet</p>
+          <p className="mt-1 max-w-sm text-sm text-slate-400">
+            Upload a CSV or Excel BOM in any column layout. Prokuro maps the columns and scores every line.
+          </p>
+          <button onClick={onUpload}
+            className="mt-5 flex items-center gap-2 rounded-md bg-[#0062ff] px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700">
+            <UploadCloud className="h-4 w-4" /> Upload your first BOM
+          </button>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white text-sm text-slate-400">
+          No BOMs match this view.
         </div>
       ) : (
-        <>
-          <div className="grid grid-cols-2 gap-4">
-            {filtered.map(bom => {
-              const isHigh = bom.overallRiskScore >= 7; const isMed = bom.overallRiskScore >= 4
-              const border = isHigh ? 'border-red-200' : isMed ? 'border-amber-200' : 'border-emerald-200'
-              return (
-                <div key={bom.id} className={`bg-white border ${border} rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow`}>
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="font-bold text-slate-900 text-base">{bom.name}</h3>
-                      <p className="text-xs text-slate-400 font-mono mt-0.5">{bom.filename}</p>
-                    </div>
-                    <RiskRing score={bom.overallRiskScore} />
-                  </div>
-                  <div className="grid grid-cols-3 gap-3 text-center border-t border-slate-100 pt-4">
-                    <div>
-                      <div className="text-lg font-bold text-slate-900">{bom.lineCount}</div>
-                      <div className="text-xs text-slate-500">Lines</div>
-                    </div>
-                    <div>
-                      <div className={`text-lg font-bold ${bom.atRiskCount > 0 ? 'text-red-600' : 'text-slate-400'}`}>{bom.atRiskCount}</div>
-                      <div className="text-xs text-slate-500">At Risk</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-slate-400 mt-1">{formatUploadedAt(bom.uploadedAt)}</div>
-                      <div className="text-xs text-slate-500">Uploaded</div>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex gap-2">
-                    <button onClick={() => onViewBom(bom.id)}
-                      className="flex-1 py-2 text-sm font-semibold text-[#0062ff] hover:text-blue-700 border border-slate-200 rounded-lg hover:border-[#0062ff] transition-colors flex items-center justify-center gap-1">
-                      View Full Report <ArrowRight className="w-4 h-4" />
-                    </button>
-                    <DeleteBomButton
-                      bomId={bom.id} bomName={bom.name}
-                      redirectTo={null} variant="ghost" label="Delete"
-                      className="px-3 py-2 text-xs"
-                      onDeleted={() => onDelete(bom.id)}
-                    />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-          {filtered.length === 0 && (
-            <div className="flex items-center justify-center h-40 text-slate-400 text-sm">
-              No BOMs match your search.
-            </div>
-          )}
-        </>
+        <div className="grid grid-cols-2 gap-4">
+          {filtered.map(bom => (
+            <BomCard
+              key={bom.id}
+              bom={bom}
+              onView={() => onViewBom(bom.id)}
+              onDelete={() => onDelete(bom.id)}
+            />
+          ))}
+        </div>
       )}
     </div>
   )

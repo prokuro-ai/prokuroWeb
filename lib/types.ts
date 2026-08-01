@@ -92,7 +92,9 @@ export interface AnalyzedLine {
   /** Optional — gateway may omit when no seller offers are present. */
   top_sellers?: SellerOffer[]
   risk_level?: RiskLevel
+  category?: string | null
   hts_code?: string | null
+  country_of_origin?: string | null
   tariff_confidence?: string | null
   base_duty_pct?: number | null
   section_301_pct?: number | null
@@ -101,6 +103,8 @@ export interface AnalyzedLine {
   rate_basis?: string | null
   is_stale?: boolean | null
   tariff_disclaimer?: string | null
+  entity_list_match?: boolean | null
+  entity_list_notes?: string | null
 }
 
 export interface AnalyzeResult {
