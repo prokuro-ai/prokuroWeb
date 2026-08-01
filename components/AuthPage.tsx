@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation } from '@/lib/navigation'
 import { ArrowRight } from 'lucide-react'
 import { PRIVACY_PATH, TERMS_PATH } from '@/lib/legal'
@@ -23,8 +23,14 @@ type View = 'form' | 'confirm'
 
 export default function AuthPage() {
   const [, navigate] = useLocation()
-  const { refresh } = useAuth()
+  const { user, refresh, loading: authLoading } = useAuth()
   const copy = COPY
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate('/dashboard')
+    }
+  }, [authLoading, user, navigate])
 
   const [view, setView] = useState<View>('form')
   const [confirmFlow, setConfirmFlow] = useState<EmailVerificationFlow>('signUp')

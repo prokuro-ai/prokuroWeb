@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation } from '@/lib/navigation'
 import GoogleSignInButton from '@/components/GoogleSignInButton'
 import { useAuth } from '@/components/AuthProvider'
@@ -18,7 +18,13 @@ type View = 'form' | 'confirm'
 
 export default function LoginPage() {
   const [, navigate] = useLocation()
-  const { refresh } = useAuth()
+  const { user, refresh, loading: authLoading } = useAuth()
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate('/dashboard')
+    }
+  }, [authLoading, user, navigate])
 
   const [view, setView] = useState<View>('form')
   const [confirmFlow, setConfirmFlow] = useState<EmailVerificationFlow>('signIn')
