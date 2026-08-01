@@ -213,8 +213,7 @@ export default function BomBulkUploadModal({
 
     try {
       const analyzeResult = await analyzeFile(item.file, { columnMapping })
-      const updatedParse = await parseFile(item.file, { columnMapping })
-      const bom = await saveBom(item.file, analyzeResult, { parse: updatedParse })
+      const bom = await saveBom(item.file, analyzeResult)
       savedRef.current.push(bom)
       markItem(fileIndex, { status: 'done', saved: bom })
       await beginMappingForFile(fileIndex + 1, items)

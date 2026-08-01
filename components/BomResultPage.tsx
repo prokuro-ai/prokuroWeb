@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import DashboardShell from '@/components/DashboardShell'
@@ -10,10 +10,17 @@ import { getBom } from '@/lib/api'
 import { formatUploadedAt } from '@/lib/format'
 import type { AnalyzeResult, AnalyzedLine, BomSummary } from '@/lib/types'
 
-function isLookupFailed(line: AnalyzedLine): boolean {
+const POLL_INTERVALS_MS = [2000, 5000, 10000, 30000]
+const POLL_CEILING_MS = 15 * 60 * 1000
+
+function isPending(line: AnalyzedLine): boolean {
   const avail = line.availability_status?.toLowerCase() ?? ''
   const match = line.match_status?.toLowerCase() ?? ''
   return avail === 'pending' || match === 'pending'
+}
+
+function hasPendingLines(result: AnalyzeResult): boolean {
+  return result.lines.some(isPending)
 }
 
 function lifecycleBadge(status: string) {
@@ -34,7 +41,7 @@ function lifecycleLabel(status: string) {
 }
 
 function isUrgent(line: AnalyzedLine) {
-  if (isLookupFailed(line)) return false
+  if (isPending(line)) return false
   const s = line.lifecycle_status.toLowerCase()
   return s === 'eol' || s === 'nrnd' || s === 'discontinued'
 }
@@ -63,7 +70,7 @@ function BomDetailTable({ lines }: { lines: AnalyzedLine[] }) {
         <tbody className="divide-y divide-slate-100">
           {lines.map((line, i) => {
             const urgent = isUrgent(line)
-            const lookupFailed = isLookupFailed(line)
+            const pending = isPending(line)
             const leadWeeks = line.factory_lead_days != null ? Math.round(line.factory_lead_days / 7) : null
             const avail = line.availability_status?.toLowerCase() ?? ''
 
@@ -73,22 +80,30 @@ function BomDetailTable({ lines }: { lines: AnalyzedLine[] }) {
                 <td className="px-4 py-3 text-xs text-slate-600">{line.manufacturer ?? '-'}</td>
                 <td className="px-4 py-3 text-slate-600">{line.quantity ?? '-'}</td>
                 <td className="px-4 py-3">
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${lifecycleBadge(line.lifecycle_status)}`}>
-                    {lifecycleLabel(line.lifecycle_status)}
-                  </span>
+                  {pending ? (
+                    <span className="animate-pulse text-xs text-slate-400">Looking up…</span>
+                  ) : (
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${lifecycleBadge(line.lifecycle_status)}`}>
+                      {lifecycleLabel(line.lifecycle_status)}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3 font-medium">
-                  {lookupFailed ? (
-                    <span className="text-xs text-slate-400">Unknown</span>
+                  {pending ? (
+                    <span className="animate-pulse text-xs text-slate-400">Looking up…</span>
                   ) : avail === 'outofstock' ? (
                     <span className="text-xs font-bold text-red-600">Out of stock</span>
+                  ) : avail === 'nomatch' ? (
+                    <span className="text-xs text-slate-400">No match</span>
                   ) : (
                     <span className="text-xs text-slate-700">{line.total_avail.toLocaleString()}</span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-xs">
-                  {lookupFailed || leadWeeks == null ? (
-                    <span className="text-slate-400">Unknown</span>
+                  {pending ? (
+                    <span className="animate-pulse text-slate-400">Looking up…</span>
+                  ) : leadWeeks == null ? (
+                    <span className="text-slate-400">—</span>
                   ) : (
                     <span className={leadWeeks > 30 ? 'font-semibold text-amber-600' : 'text-slate-600'}>{leadWeeks}w</span>
                   )}
@@ -133,6 +148,9 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const pollStartedAt = useRef<number | null>(null)
+  const pollAttempt = useRef(0)
+
   useEffect(() => {
     if (authLoading) return
     if (!user) {
@@ -145,14 +163,44 @@ export default function BomResultPage({ id }: BomResultPageProps) {
     }
 
     let cancelled = false
+    let timer: ReturnType<typeof setTimeout> | undefined
     setError(null)
+    pollStartedAt.current = null
+    pollAttempt.current = 0
+
+    const applyRecord = (record: { summary: BomSummary; analyze: AnalyzeResult }) => {
+      setSummary(record.summary)
+      setResult(record.analyze)
+      return record.analyze
+    }
+
+    const schedulePoll = (analyze: AnalyzeResult) => {
+      if (!hasPendingLines(analyze)) return
+      const started = pollStartedAt.current ?? Date.now()
+      pollStartedAt.current = started
+      if (Date.now() - started >= POLL_CEILING_MS) return
+
+      const delay =
+        POLL_INTERVALS_MS[Math.min(pollAttempt.current, POLL_INTERVALS_MS.length - 1)] ?? 30000
+      pollAttempt.current += 1
+
+      timer = setTimeout(() => {
+        if (cancelled) return
+        getBom(id)
+          .then((record) => {
+            if (cancelled) return
+            schedulePoll(applyRecord(record))
+          })
+          .catch(() => {
+            /* keep last good result; stop polling on hard errors */
+          })
+      }, delay)
+    }
 
     getBom(id)
       .then((record) => {
-        if (!cancelled) {
-          setSummary(record.summary)
-          setResult(record.analyze)
-        }
+        if (cancelled) return
+        schedulePoll(applyRecord(record))
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load BOM')
@@ -163,6 +211,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
 
     return () => {
       cancelled = true
+      if (timer) clearTimeout(timer)
     }
   }, [authLoading, user, id, router])
 

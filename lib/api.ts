@@ -20,9 +20,6 @@ async function authHeaders(): Promise<HeadersInit> {
 }
 
 async function readErrorMessage(res: Response, body: unknown): Promise<string> {
-  if (res.status === 504) {
-    return 'Analysis timed out. Try uploading fewer files at once or a smaller BOM.'
-  }
   if (typeof body === 'object' && body && 'error' in body && typeof body.error === 'string') {
     return body.error
   }
@@ -54,9 +51,6 @@ async function readJsonBody(res: Response): Promise<unknown> {
   try {
     return await res.json()
   } catch {
-    if (res.status === 504) {
-      throw new Error('Analysis timed out. Try uploading fewer files at once or a smaller BOM.')
-    }
     throw new Error(res.ok ? 'Invalid response from server' : `HTTP ${res.status}: Could not reach backend service`)
   }
 }

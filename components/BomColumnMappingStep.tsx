@@ -150,9 +150,6 @@ export default function BomColumnMappingStep({
             ← Back
           </button>
           <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-500">
-              {Math.round(parseResult.mapping_confidence * 100)}% mapping confidence
-            </span>
             <button
               type="button"
               onClick={onConfirm}
