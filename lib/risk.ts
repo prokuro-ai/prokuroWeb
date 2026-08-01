@@ -109,15 +109,22 @@ export function tariffLabel(line: AnalyzedLine): string {
   return line.total_duty_pct != null && line.total_duty_pct > 0 ? `${line.total_duty_pct}%` : '-'
 }
 
-/** Portfolio-style banding shared by the BOM list and BOM detail header. */
-export function scoreBand(score: number): {
-  label: string
+export type BomBand = 'Critical' | 'Watch' | 'Clear'
+
+type BandStyle = {
+  label: BomBand
   pill: string
   accent: string
   text: string
   fill: number
-} {
-  if (score >= 7) {
+}
+
+/**
+ * Gateway `overallRiskScore` is (at-risk lines / total) × 10, so 0–10.
+ * Thresholds below match that scale (not an arbitrary 7/4 cut copied from mock UI).
+ */
+export function scoreBand(score: number): BandStyle {
+  if (score >= 5) {
     return {
       label: 'Critical',
       pill: 'bg-[#c62026]/10 text-[#c62026]',
@@ -126,7 +133,7 @@ export function scoreBand(score: number): {
       fill: Math.min(100, Math.round(score * 10)),
     }
   }
-  if (score >= 4) {
+  if (score > 0) {
     return {
       label: 'Watch',
       pill: 'bg-[#a25a05]/10 text-[#a25a05]',
@@ -140,6 +147,16 @@ export function scoreBand(score: number): {
     pill: 'bg-[#167c48]/10 text-[#167c48]',
     accent: '#167c48',
     text: 'text-[#167c48]',
-    fill: Math.min(100, Math.round(score * 10)),
+    fill: 12,
   }
+}
+
+/** Single source of truth for BOM portfolio labels + filters. */
+export function bomRiskBand(bom: {
+  overallRiskScore: number
+  atRiskCount: number
+}): BomBand {
+  // Any flagged parts with a zero score still belong in Watch (enrichment lag, etc.).
+  if (bom.overallRiskScore <= 0 && bom.atRiskCount > 0) return 'Watch'
+  return scoreBand(bom.overallRiskScore).label
 }

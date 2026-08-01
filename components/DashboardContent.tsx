@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Link } from '@/lib/navigation'
 import { useAuth } from '@/components/AuthProvider'
@@ -10,13 +10,13 @@ import BomBulkUploadModal from '@/components/BomBulkUploadModal'
 import DashboardShell from '@/components/DashboardShell'
 import type { BomSummary } from '@/lib/types'
 import { formatUploadedAt } from '@/lib/format'
-import { scoreBand } from '@/lib/risk'
+import { bomRiskBand, type BomBand } from '@/lib/risk'
 import {
-  AlertTriangle, Bell, ChevronRight, FileText, Search,
-  ShieldAlert, UploadCloud, CheckCircle, ArrowRight,
+  AlertTriangle, Bell, ArrowRight, FileText, Search,
+  ShieldAlert, CheckCircle,
 } from 'lucide-react'
 
-// ─── Static alert data ────────────────────────────────────────────────────────
+// ─── Static alert data (alerts tab placeholder) ───────────────────────────────
 
 const ALERTS = [
   { id: 1,  part: 'STM32F405RGT6',     type: 'EOL',       message: 'Hit EOL. Last-time-buy window closes in 14 days. 0 units in stock across all distributors.', severity: 'high',   time: '10m ago', bom: 'Motor Controller v3'   },
@@ -33,218 +33,218 @@ const ALERTS = [
   { id: 12, part: 'MAX3232CPE+',        type: 'Resolved',  message: 'New stock available at Mouser. Lead time reduced to 4 weeks.',                                 severity: 'info',   time: '4d ago',  bom: 'Display Interface'     },
 ]
 
-// ─── Rotating ticker ──────────────────────────────────────────────────────────
+// ─── Overview (action board) ──────────────────────────────────────────────────
 
-const FEED_ITEMS = [
-  `${ALERTS.filter(a => a.severity !== 'info').length} new alerts since your last visit on Monday.`,
-  'STM32F405RGT6 last-time-buy window closes in 14 days.',
-  '38% of your parts have China-origin tariff exposure. Estimated $12,400 in added cost.',
+const BOARD_LANES: {
+  band: BomBand
+  title: string
+  hint: string
+  accent: string
+  text: string
+  rail: string
+}[] = [
+  {
+    band: 'Critical',
+    title: 'Critical',
+    hint: 'Act this week',
+    accent: '#c62026',
+    text: 'text-[#c62026]',
+    rail: 'border-[#c62026]/30 bg-[rgb(198_32_38_/_4%)]',
+  },
+  {
+    band: 'Watch',
+    title: 'Watch',
+    hint: 'Track closely',
+    accent: '#a25a05',
+    text: 'text-[#a25a05]',
+    rail: 'border-[#a25a05]/30 bg-[rgb(162_90_5_/_5%)]',
+  },
+  {
+    band: 'Clear',
+    title: 'Clear',
+    hint: 'No flags',
+    accent: '#167c48',
+    text: 'text-[#167c48]',
+    rail: 'border-slate-200 bg-white',
+  },
 ]
 
-function RotatingFeed() {
-  const [active, setActive] = useState(0)
-  const [fading, setFading] = useState(false)
-  useEffect(() => {
-    const t = setInterval(() => {
-      setFading(true)
-      setTimeout(() => { setActive(a => (a + 1) % FEED_ITEMS.length); setFading(false) }, 300)
-    }, 4000)
-    return () => clearInterval(t)
-  }, [])
-  return (
-    <div className="mb-6" style={{ transition: 'opacity 0.3s', opacity: fading ? 0 : 1 }}>
-      <div className="bg-white border border-slate-200 rounded-xl px-5 py-3.5 shadow-sm flex items-center gap-4">
-        <p className="flex-1 text-sm font-medium text-slate-700">{FEED_ITEMS[active]}</p>
-        <div className="flex gap-1.5 shrink-0">
-          {FEED_ITEMS.map((_, i) => (
-            <button key={i} onClick={() => { setActive(i); setFading(false) }}
-              className="w-1.5 h-1.5 rounded-full transition-all duration-300"
-              style={{ background: i === active ? '#0062ff' : '#cbd5e1' }} />
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Portfolio risk distribution ──────────────────────────────────────────────
-
-function PortfolioRisk({ boms }: { boms: BomSummary[] }) {
-  const [expanded, setExpanded] = useState<string | null>(null)
-  const criticalBoms = boms.filter(b => b.overallRiskScore >= 7)
-  const warningBoms  = boms.filter(b => b.overallRiskScore >= 4 && b.overallRiskScore < 7)
-  const healthyBoms  = boms.filter(b => b.overallRiskScore < 4)
-  const total = boms.length
-
-  const tiers = [
-    { id: 'critical', label: 'Critical', items: criticalBoms, color: '#ef4444', bg: '#fef2f2', border: '#fecaca', Icon: ShieldAlert,    detail: `${criticalBoms.length} BOMs need immediate action. EOL parts with last-time-buy windows closing within 45 days.` },
-    { id: 'warning',  label: 'Warning',  items: warningBoms,  color: '#f59e0b', bg: '#fffbeb', border: '#fde68a', Icon: AlertTriangle,  detail: `${warningBoms.length} BOMs have lead time issues, discontinued components, or rising tariff exposure.`           },
-    { id: 'healthy',  label: 'Healthy',  items: healthyBoms,  color: '#10b981', bg: '#f0fdf4', border: '#a7f3d0', Icon: CheckCircle,    detail: `${healthyBoms.length} BOMs are in good standing. No critical lifecycle issues and adequate supply.`                },
-  ]
-
-  return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 mb-8">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Portfolio Risk Distribution</span>
-        <span className="text-xs text-slate-400">Click a segment to explore</span>
-      </div>
-      <div className="flex h-6 rounded-lg overflow-hidden gap-0.5 mb-5">
-        {tiers.map(t => (
-          <button key={t.id}
-            onClick={() => setExpanded(expanded === t.id ? null : t.id)}
-            className="relative flex items-center justify-center transition-all"
-            style={{ width: `${(t.items.length / total) * 100}%`, minWidth: (t.items.length / total) * 100 < 5 ? 28 : undefined, background: t.color, opacity: expanded && expanded !== t.id ? 0.3 : 1 }}
-            title={`${t.label}: ${t.items.length} BOMs`}>
-            {(t.items.length / total) * 100 > 5 && <span className="text-white text-[10px] font-bold">{t.items.length}</span>}
-          </button>
-        ))}
-      </div>
-      <div className="grid grid-cols-3 gap-3">
-        {tiers.map(t => {
-          const isActive = expanded === t.id
-          return (
-            <button key={t.id}
-              onClick={() => setExpanded(isActive ? null : t.id)}
-              className="text-left rounded-xl border-2 p-4 transition-all"
-              style={{ borderColor: isActive ? t.color : '#e2e8f0', background: isActive ? t.bg : '#fff' }}>
-              <div className="flex items-center gap-2 mb-3">
-                <t.Icon className="w-4 h-4 shrink-0" style={{ color: t.color }} />
-                <span className="text-sm font-bold text-slate-900">{t.label}</span>
-              </div>
-              <span className="text-3xl font-bold leading-none" style={{ color: t.color }}>{t.items.length}</span>
-              <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden my-3">
-                <div className="h-full rounded-full" style={{ width: `${Math.min((t.items.length / total) * 200, 100)}%`, background: t.color }} />
-              </div>
-              <p className="text-xs text-slate-500 leading-relaxed">{t.detail}</p>
-            </button>
-          )
-        })}
-      </div>
-      {expanded && (() => {
-        const t = tiers.find(x => x.id === expanded)!
-        return (
-          <div className="mt-3 rounded-xl border p-4" style={{ borderColor: t.border, background: t.bg }}>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <t.Icon className="w-4 h-4" style={{ color: t.color }} /> {t.label} BOMs, most urgent
-              </span>
-              <span className="text-xs font-semibold" style={{ color: t.color }}>{t.items.length} total</span>
-            </div>
-            {t.items.slice(0, 3).map(bom => (
-              <div key={bom.id} className="flex items-center gap-3 bg-white border border-slate-200 rounded-lg px-4 py-2.5 shadow-sm mb-2">
-                <t.Icon className="w-4 h-4 shrink-0" style={{ color: t.color }} />
-                <span className="flex-1 text-sm font-medium text-slate-900 truncate">{bom.name}</span>
-                <span className="text-xs text-slate-400">{bom.atRiskCount} at-risk</span>
-              </div>
-            ))}
-          </div>
-        )
-      })()}
-    </div>
-  )
-}
-
-// ─── Pages ────────────────────────────────────────────────────────────────────
-
 function OverviewPage({ boms, loading, goToBoms, onViewBom }: {
-  boms: BomSummary[], loading: boolean
+  boms: BomSummary[]
+  loading: boolean
   goToBoms: () => void
   onViewBom: (id: string) => void
 }) {
-  const totalLines         = boms.reduce((s, b) => s + b.lineCount, 0)
-  const criticalCount      = boms.filter(b => b.overallRiskScore >= 7).length
-  const warningCount       = boms.filter(b => b.overallRiskScore >= 4 && b.overallRiskScore < 7).length
-  const needsAttentionBoms = [...boms].filter(b => b.atRiskCount > 0).sort((a, b) => b.atRiskCount - a.atRiskCount)
+  const totalLines = boms.reduce((s, b) => s + b.lineCount, 0)
+  const totalAtRisk = boms.reduce((s, b) => s + b.atRiskCount, 0)
+
+  const lanes = useMemo(() => {
+    const buckets: Record<BomBand, BomSummary[]> = { Critical: [], Watch: [], Clear: [] }
+    for (const bom of boms) {
+      buckets[bomRiskBand(bom)].push(bom)
+    }
+    for (const band of Object.keys(buckets) as BomBand[]) {
+      buckets[band].sort((a, b) => b.atRiskCount - a.atRiskCount || b.overallRiskScore - a.overallRiskScore)
+    }
+    return buckets
+  }, [boms])
+
+  const criticalN = lanes.Critical.length
+  const watchN = lanes.Watch.length
 
   return (
-    <div className="flex-1 p-8 overflow-y-auto">
-      <RotatingFeed />
+    <div className="flex-1 overflow-y-auto bg-white">
+      <div className="border-b border-slate-200">
+        <div className="mx-auto max-w-[1180px] px-6 py-8">
+          <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Dashboard</p>
+          <h1 className="mt-1 text-[28px] font-semibold tracking-tight text-slate-900">
+            {loading ? 'Loading portfolio…' : 'Where to act next'}
+          </h1>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        {[
-          { label: 'Total BOMs',      value: loading ? '-' : String(boms.length),                    sub: 'across all projects',                                              highlight: false },
-          { label: 'Lines Monitored', value: loading ? '-' : totalLines.toLocaleString(),             sub: 'components tracked',                                               highlight: false },
-          { label: 'Needs Attention', value: loading ? '-' : String(criticalCount + warningCount),    sub: `${criticalCount} critical · ${warningCount} warning`,              highlight: (criticalCount + warningCount) > 0 },
-        ].map((s, i) => (
-          <div key={i} className="border border-slate-200 rounded-xl p-5 bg-white shadow-sm flex flex-col">
-            <span className="text-sm font-medium text-slate-500">{s.label}</span>
-            <span className={`text-3xl font-bold tracking-tight mt-1 ${s.highlight ? 'text-red-600' : 'text-slate-900'}`}>{s.value}</span>
-            <span className="text-xs text-slate-400 mt-1">{s.sub}</span>
+          {!loading && boms.length > 0 ? (
+            <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-slate-500">
+              {criticalN + watchN === 0 ? (
+                <>
+                  All <span className="font-mono font-medium text-slate-800">{boms.length}</span> BOMs are clear
+                  across <span className="font-mono font-medium text-slate-800">{totalLines.toLocaleString()}</span> lines.
+                </>
+              ) : (
+                <>
+                  You have{' '}
+                  {criticalN > 0 ? (
+                    <>
+                      <span className="font-mono font-semibold text-[#c62026]">{criticalN}</span> critical
+                    </>
+                  ) : null}
+                  {criticalN > 0 && watchN > 0 ? ' and ' : null}
+                  {watchN > 0 ? (
+                    <>
+                      <span className="font-mono font-semibold text-[#a25a05]">{watchN}</span> on watch
+                    </>
+                  ) : null}
+                  {' '}
+                  — <span className="font-mono font-medium text-slate-800">{totalAtRisk}</span> parts flagged
+                  across the portfolio. Work the board left to right.
+                </>
+              )}
+            </p>
+          ) : !loading ? (
+            <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-slate-500">
+              Upload a BOM to start scoring lifecycle, stock, and trade exposure. Your action board fills in from there.
+            </p>
+          ) : null}
+
+          <div className="mt-5 flex flex-wrap items-center gap-4">
+            <button
+              type="button"
+              onClick={goToBoms}
+              className="inline-flex items-center gap-1.5 bg-[#0062ff] px-4 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-blue-700"
+            >
+              Open BOMs
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+            {!loading && boms.length > 0 ? (
+              <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-slate-400">
+                {boms.length} BOMs · {totalLines.toLocaleString()} lines
+              </span>
+            ) : null}
           </div>
-        ))}
+        </div>
       </div>
 
-      {/* Portfolio risk */}
-      {!loading && boms.length > 0 && <PortfolioRisk boms={boms} />}
-
-      {/* Needs Attention table */}
-      {loading ? (
-        <div className="flex items-center justify-center h-48 text-slate-400 text-sm">Loading BOMs…</div>
-      ) : boms.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-64 text-center">
-          <p className="text-slate-700 font-medium text-base">No BOMs yet</p>
-          <p className="text-slate-400 text-sm">Upload a BOM from the BOMs tab to start monitoring risk.</p>
-          <button onClick={goToBoms}
-            className="mt-4 bg-[#0062ff] text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 hover:bg-blue-700 transition-colors">
-            Go to BOMs <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      ) : (
-        <div>
-          <div className="flex items-baseline justify-between mb-4">
-            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Needs Attention</h2>
-            <button onClick={goToBoms} className="text-xs font-semibold text-[#0062ff] flex items-center gap-1 hover:text-blue-700">
-              View all BOMs <ChevronRight className="w-3.5 h-3.5" />
+      <div className="mx-auto max-w-[1180px] px-6 py-8">
+        {loading ? (
+          <div className="grid gap-4 md:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="min-h-[280px] animate-pulse border border-slate-200 bg-[#f4f6f9]" />
+            ))}
+          </div>
+        ) : boms.length === 0 ? (
+          <div className="border border-dashed border-slate-300 bg-[#f4f6f9] px-8 py-20 text-center">
+            <p className="text-[16px] font-medium text-slate-800">Your action board is empty</p>
+            <p className="mx-auto mt-2 max-w-md text-[14px] leading-relaxed text-slate-500">
+              Once you upload BOMs, they land here sorted into Critical, Watch, and Clear so you know where to start.
+            </p>
+            <button
+              type="button"
+              onClick={goToBoms}
+              className="mt-6 inline-flex items-center gap-1.5 bg-[#0062ff] px-4 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-blue-700"
+            >
+              Go to BOMs
+              <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
-                <tr>
-                  {['BOM Name', 'At-Risk Parts', 'Last Updated', ''].map(h => (
-                    <th key={h} className="px-5 py-3.5 font-semibold">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {needsAttentionBoms.map(bom => (
-                  <tr key={bom.id} className="hover:bg-slate-50/80">
-                    <td className="px-5 py-4 font-medium text-slate-900">
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-slate-400 shrink-0" />
-                        {bom.name}
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="text-xs font-bold text-red-600">{bom.atRiskCount} parts</span>
-                    </td>
-                    <td className="px-5 py-4 text-slate-500">{formatUploadedAt(bom.uploadedAt)}</td>
-                    <td className="px-5 py-4 text-right">
-                      <button onClick={() => onViewBom(bom.id)}
-                        className="font-semibold flex items-center gap-1 ml-auto text-[#0062ff] hover:text-blue-700">
-                        View <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-3">
+            {BOARD_LANES.map((lane) => {
+              const items = lanes[lane.band]
+              return (
+                <section key={lane.band} className={`flex min-h-[320px] flex-col border ${lane.rail}`}>
+                  <header className="flex items-baseline justify-between gap-3 border-b border-slate-200/80 px-4 py-3">
+                    <div>
+                      <h2 className={`font-mono text-[11px] font-semibold uppercase tracking-[0.12em] ${lane.text}`}>
+                        {lane.title}
+                      </h2>
+                      <p className="mt-0.5 text-[12px] text-slate-400">{lane.hint}</p>
+                    </div>
+                    <span className={`font-mono text-[22px] font-semibold tabular-nums ${lane.text}`}>
+                      {items.length}
+                    </span>
+                  </header>
+
+                  <div className="flex flex-1 flex-col gap-2 p-3">
+                    {items.length === 0 ? (
+                      <p className="px-1 py-6 text-center text-[13px] text-slate-400">Nothing here.</p>
+                    ) : (
+                      items.map((bom, i) => (
+                        <button
+                          key={bom.id}
+                          type="button"
+                          onClick={() => onViewBom(bom.id)}
+                          className="group border border-slate-200/80 bg-white px-3.5 py-3 text-left transition-all hover:border-slate-300 hover:shadow-[0_12px_28px_-20px_rgb(15_27_45_/_35%)]"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="font-mono text-[10px] tabular-nums text-slate-300">
+                              {String(i + 1).padStart(2, '0')}
+                            </span>
+                            <span className={`font-mono text-[14px] font-semibold tabular-nums ${lane.text}`}>
+                              {bom.overallRiskScore.toFixed(1)}
+                            </span>
+                          </div>
+                          <p className="mt-1.5 truncate text-[14px] font-semibold text-slate-900 group-hover:text-[#0062ff]">
+                            {bom.name}
+                          </p>
+                          <p className="mt-1 font-mono text-[11px] text-slate-400">
+                            {bom.lineCount.toLocaleString()} lines
+                            {bom.atRiskCount > 0 ? (
+                              <>
+                                <span className="mx-1.5 text-slate-300">·</span>
+                                <span className="text-[#c62026]">{bom.atRiskCount} at risk</span>
+                              </>
+                            ) : null}
+                          </p>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </section>
+              )
+            })}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
+
+// ─── BOMs tab ─────────────────────────────────────────────────────────────────
 
 const BOM_FILTERS = ['All', 'Critical', 'Watch', 'Clear'] as const
 type BomFilter = (typeof BOM_FILTERS)[number]
 
-function matchesBand(score: number, filter: BomFilter): boolean {
-  if (filter === 'Critical') return score >= 7
-  if (filter === 'Watch') return score >= 4 && score < 7
-  if (filter === 'Clear') return score < 4
-  return true
+function matchesBomFilter(bom: BomSummary, filter: BomFilter): boolean {
+  if (filter === 'All') return true
+  return bomRiskBand(bom) === filter
 }
 
 function BomDossierSkeleton() {
@@ -280,9 +280,14 @@ function BomDossier({
   onView: () => void
   onDelete: () => void
 }) {
-  const band = scoreBand(bom.overallRiskScore)
-  const isCritical = bom.overallRiskScore >= 7
-  const isWatch = bom.overallRiskScore >= 4 && bom.overallRiskScore < 7
+  const bandLabel = bomRiskBand(bom)
+  // Style accents from the band label (not raw score alone) so UI matches filters.
+  const style =
+    bandLabel === 'Critical'
+      ? { text: 'text-[#c62026]', accent: '#c62026', border: 'border-[#c62026]/25 hover:border-[#c62026]/45', showRail: true }
+      : bandLabel === 'Watch'
+        ? { text: 'text-[#a25a05]', accent: '#a25a05', border: 'border-[#a25a05]/25 hover:border-[#a25a05]/40', showRail: true }
+        : { text: 'text-[#167c48]', accent: '#167c48', border: 'border-slate-200 hover:border-slate-300', showRail: false }
 
   return (
     <article
@@ -295,21 +300,11 @@ function BomDossier({
           onView()
         }
       }}
-      className={`group relative cursor-pointer border bg-white transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0062ff] ${
-        isCritical
-          ? 'border-[#c62026]/25 hover:border-[#c62026]/45'
-          : isWatch
-            ? 'border-[#a25a05]/25 hover:border-[#a25a05]/40'
-            : 'border-slate-200 hover:border-slate-300'
-      } hover:shadow-[0_18px_40px_-28px_rgb(15_27_45_/_30%)]`}
+      className={`group relative cursor-pointer border bg-white transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0062ff] ${style.border} hover:shadow-[0_18px_40px_-28px_rgb(15_27_45_/_30%)]`}
     >
-      {(isCritical || isWatch) && (
-        <span
-          className="absolute inset-y-0 left-0 w-[3px]"
-          style={{ background: band.accent }}
-          aria-hidden
-        />
-      )}
+      {style.showRail ? (
+        <span className="absolute inset-y-0 left-0 w-[3px]" style={{ background: style.accent }} aria-hidden />
+      ) : null}
 
       <div className="flex flex-col gap-5 px-6 py-5 sm:flex-row sm:items-stretch sm:justify-between">
         <div className="flex min-w-0 flex-1 gap-4 sm:gap-5">
@@ -322,8 +317,8 @@ function BomDossier({
               <h3 className="truncate text-[16px] font-semibold tracking-tight text-slate-900 transition-colors group-hover:text-[#0062ff]">
                 {bom.name}
               </h3>
-              <span className={`font-mono text-[11px] font-semibold uppercase tracking-[0.08em] ${band.text}`}>
-                {band.label}
+              <span className={`font-mono text-[11px] font-semibold uppercase tracking-[0.08em] ${style.text}`}>
+                {bandLabel}
               </span>
             </div>
 
@@ -371,9 +366,10 @@ function BomDossier({
 
         <div className="flex shrink-0 items-center justify-between border-t border-slate-100 pt-4 sm:w-28 sm:flex-col sm:items-end sm:justify-center sm:border-t-0 sm:border-l sm:pt-0 sm:pl-6">
           <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-slate-400 sm:mb-1">Score</span>
-          <span className={`font-mono text-[28px] font-semibold tabular-nums leading-none ${band.text}`}>
+          <span className={`font-mono text-[28px] font-semibold tabular-nums leading-none ${style.text}`}>
             {bom.overallRiskScore.toFixed(1)}
           </span>
+          
         </div>
       </div>
     </article>
@@ -381,7 +377,8 @@ function BomDossier({
 }
 
 function BomsPage({ boms, loading, onViewBom, onDelete, onUpload }: {
-  boms: BomSummary[], loading: boolean
+  boms: BomSummary[]
+  loading: boolean
   onViewBom: (id: string) => void
   onDelete: (id: string) => void
   onUpload: () => void
@@ -393,24 +390,23 @@ function BomsPage({ boms, loading, onViewBom, onDelete, onUpload }: {
   const searched = boms.filter(
     (b) => b.name.toLowerCase().includes(query) || b.filename.toLowerCase().includes(query),
   )
-  const filtered = searched.filter((b) => matchesBand(b.overallRiskScore, filter))
+  const filtered = searched.filter((b) => matchesBomFilter(b, filter))
 
   const totalLines = boms.reduce((s, b) => s + b.lineCount, 0)
   const totalAtRisk = boms.reduce((s, b) => s + b.atRiskCount, 0)
-  const criticalCount = boms.filter((b) => b.overallRiskScore >= 7).length
-  const watchCount = boms.filter((b) => b.overallRiskScore >= 4 && b.overallRiskScore < 7).length
+  const criticalCount = boms.filter((b) => bomRiskBand(b) === 'Critical').length
+  const watchCount = boms.filter((b) => bomRiskBand(b) === 'Watch').length
 
   const filterCounts: Record<BomFilter, number> = {
     All: searched.length,
-    Critical: searched.filter((b) => matchesBand(b.overallRiskScore, 'Critical')).length,
-    Watch: searched.filter((b) => matchesBand(b.overallRiskScore, 'Watch')).length,
-    Clear: searched.filter((b) => matchesBand(b.overallRiskScore, 'Clear')).length,
+    Critical: searched.filter((b) => matchesBomFilter(b, 'Critical')).length,
+    Watch: searched.filter((b) => matchesBomFilter(b, 'Watch')).length,
+    Clear: searched.filter((b) => matchesBomFilter(b, 'Clear')).length,
   }
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#f4f6f9]">
       <div className="mx-auto max-w-[960px] px-6 py-8">
-        {/* Title row */}
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Portfolio</p>
@@ -454,14 +450,12 @@ function BomsPage({ boms, loading, onViewBom, onDelete, onUpload }: {
           <button
             type="button"
             onClick={onUpload}
-            className="inline-flex shrink-0 items-center gap-2 bg-[#0062ff] px-4 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-blue-700"
+            className="inline-flex shrink-0 items-center bg-[#0062ff] px-4 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-blue-700"
           >
-            <UploadCloud className="h-4 w-4" />
             Upload BOM
           </button>
         </div>
 
-        {/* Controls */}
         {!loading && boms.length > 0 ? (
           <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="relative max-w-sm flex-1">
@@ -494,7 +488,6 @@ function BomsPage({ boms, loading, onViewBom, onDelete, onUpload }: {
           </div>
         ) : null}
 
-        {/* List */}
         {loading ? (
           <BomDossierSkeleton />
         ) : boms.length === 0 ? (
@@ -507,9 +500,8 @@ function BomsPage({ boms, loading, onViewBom, onDelete, onUpload }: {
             <button
               type="button"
               onClick={onUpload}
-              className="mt-6 inline-flex items-center gap-2 bg-[#0062ff] px-4 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-blue-700"
+              className="mt-6 inline-flex items-center bg-[#0062ff] px-4 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-blue-700"
             >
-              <UploadCloud className="h-4 w-4" />
               Upload your first BOM
             </button>
           </div>
@@ -535,57 +527,84 @@ function BomsPage({ boms, loading, onViewBom, onDelete, onUpload }: {
   )
 }
 
+// ─── Alerts tab (placeholder) ─────────────────────────────────────────────────
+
 function AlertsPage() {
   const [filter, setFilter] = useState('All')
-  const filtered = ALERTS.filter(a =>
-    filter === 'All' || a.severity === filter.toLowerCase() || (filter === 'Resolved' && a.type === 'Resolved')
+  const filtered = ALERTS.filter((a) =>
+    filter === 'All' || a.severity === filter.toLowerCase() || (filter === 'Resolved' && a.type === 'Resolved'),
   )
   return (
-    <div className="flex-1 p-8 overflow-y-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="flex-1 overflow-y-auto p-8">
+      <div className="mb-6 flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Alerts</h2>
-          <p className="text-sm text-slate-500 mt-0.5">
-            {ALERTS.filter(a => a.severity === 'high').length} critical · {ALERTS.filter(a => a.severity === 'medium').length} warnings · {ALERTS.filter(a => a.type === 'Resolved').length} resolved
+          <p className="mt-0.5 text-sm text-slate-500">
+            {ALERTS.filter((a) => a.severity === 'high').length} critical ·{' '}
+            {ALERTS.filter((a) => a.severity === 'medium').length} warnings ·{' '}
+            {ALERTS.filter((a) => a.type === 'Resolved').length} resolved
           </p>
         </div>
-        <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-          {['All', 'High', 'Medium', 'Resolved'].map(f => (
-            <button key={f} onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${filter === f ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}>
+        <div className="flex rounded-lg border border-slate-200 bg-slate-100 p-0.5">
+          {['All', 'High', 'Medium', 'Resolved'].map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setFilter(f)}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
+                filter === f ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
               {f}
             </button>
           ))}
         </div>
       </div>
       <div className="space-y-3">
-        {filtered.map(alert => {
-          const isHigh = alert.severity === 'high'; const isMed = alert.severity === 'medium'
+        {filtered.map((alert) => {
+          const isHigh = alert.severity === 'high'
+          const isMed = alert.severity === 'medium'
           const isResolved = alert.type === 'Resolved'
-          const iconBg    = isResolved ? 'bg-emerald-100' : isHigh ? 'bg-red-100' : isMed ? 'bg-amber-100' : 'bg-blue-100'
+          const iconBg = isResolved ? 'bg-emerald-100' : isHigh ? 'bg-red-100' : isMed ? 'bg-amber-100' : 'bg-blue-100'
           const iconColor = isResolved ? 'text-emerald-600' : isHigh ? 'text-red-600' : isMed ? 'text-amber-600' : 'text-blue-600'
-          const typeBg    = isResolved ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : isHigh ? 'bg-red-50 text-red-700 border-red-200' : isMed ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-blue-50 text-blue-700 border-blue-200'
+          const typeBg = isResolved
+            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+            : isHigh
+              ? 'border-red-200 bg-red-50 text-red-700'
+              : isMed
+                ? 'border-amber-200 bg-amber-50 text-amber-700'
+                : 'border-blue-200 bg-blue-50 text-blue-700'
           const Icon = isResolved ? CheckCircle : isHigh ? ShieldAlert : isMed ? AlertTriangle : Bell
           return (
-            <div key={alert.id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow flex items-start gap-4">
-              <div className={`w-9 h-9 rounded-full ${iconBg} flex items-center justify-center shrink-0`}>
-                <Icon className={`w-4 h-4 ${iconColor}`} />
+            <div
+              key={alert.id}
+              className="flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+            >
+              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${iconBg}`}>
+                <Icon className={`h-4 w-4 ${iconColor}`} />
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="font-mono text-xs font-bold text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded">{alert.part}</span>
-                  <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border ${typeBg}`}>{alert.type}</span>
-                  <span className="text-xs text-slate-400 ml-auto shrink-0">{alert.time}</span>
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex flex-wrap items-center gap-2">
+                  <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs font-bold text-slate-900">
+                    {alert.part}
+                  </span>
+                  <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${typeBg}`}>
+                    {alert.type}
+                  </span>
+                  <span className="ml-auto shrink-0 text-xs text-slate-400">{alert.time}</span>
                 </div>
-                <p className="text-sm text-slate-700 leading-snug mb-2">{alert.message}</p>
+                <p className="mb-2 text-sm leading-snug text-slate-700">{alert.message}</p>
                 <div className="flex items-center gap-2">
-                  <FileText className="w-3.5 h-3.5 text-slate-400" />
+                  <FileText className="h-3.5 w-3.5 text-slate-400" />
                   <span className="text-xs text-slate-500">{alert.bom}</span>
                 </div>
               </div>
               {!isResolved && (
-                <button className="shrink-0 text-[#0062ff] text-sm font-semibold hover:text-blue-700 whitespace-nowrap flex items-center gap-1">
-                  Take Action <ArrowRight className="w-4 h-4" />
+                <button
+                  type="button"
+                  className="flex shrink-0 items-center gap-1 whitespace-nowrap text-sm font-semibold text-[#0062ff] hover:text-blue-700"
+                >
+                  Take Action <ArrowRight className="h-4 w-4" />
                 </button>
               )}
             </div>
@@ -604,7 +623,7 @@ export default function DashboardContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, loading: authLoading } = useAuth()
-  const [boms, setBoms]   = useState<BomSummary[]>([])
+  const [boms, setBoms] = useState<BomSummary[]>([])
   const [loading, setLoading] = useState(true)
 
   const tabParam = searchParams.get('tab')
@@ -620,7 +639,6 @@ export default function DashboardContent() {
     router.push(`/bom/${encodeURIComponent(id)}`)
   }
 
-  // Load BOMs
   useEffect(() => {
     if (authLoading) return
     if (!user) {
@@ -630,35 +648,30 @@ export default function DashboardContent() {
     let cancelled = false
     setLoading(true)
     listBoms()
-      .then((page) => { if (!cancelled) setBoms(page.items) })
-      .catch(() => { /* keep empty list; banner via upload errors */ })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
+      .then((result) => {
+        if (!cancelled) setBoms(result.items)
+      })
+      .catch(() => { /* keep empty list */ })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [authLoading, user, router])
 
   const [uploadOpen, setUploadOpen] = useState(false)
-
-  const openUpload = () => {
-    setUploadOpen(true)
-  }
-
-  const closeUpload = () => {
-    setUploadOpen(false)
-  }
 
   const handleUploadComplete = (saved: BomSummary[]) => {
     if (saved.length === 0) return
     setBoms((prev) => {
       const ids = new Set(prev.map((b) => b.id))
-      const merged = [...saved.filter((b) => !ids.has(b.id)), ...prev]
-      return merged
+      return [...saved.filter((b) => !ids.has(b.id)), ...prev]
     })
     listBoms()
       .then((result) => setBoms(result.items))
       .catch(() => { /* keep merged list */ })
   }
-
-  const newAlertCount = 0
 
   return (
     <DashboardShell
@@ -668,16 +681,18 @@ export default function DashboardContent() {
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {page === 'dashboard' ? (
           <OverviewPage
-            boms={boms} loading={loading}
+            boms={boms}
+            loading={loading}
             goToBoms={() => setPage('boms')}
             onViewBom={viewBom}
           />
         ) : page === 'boms' ? (
           <BomsPage
-            boms={boms} loading={loading}
+            boms={boms}
+            loading={loading}
             onViewBom={viewBom}
-            onDelete={id => setBoms(prev => prev.filter(b => b.id !== id))}
-            onUpload={openUpload}
+            onDelete={(id) => setBoms((prev) => prev.filter((b) => b.id !== id))}
+            onUpload={() => setUploadOpen(true)}
           />
         ) : (
           <AlertsPage />
@@ -686,24 +701,36 @@ export default function DashboardContent() {
 
       <BomBulkUploadModal
         open={uploadOpen}
-        onClose={closeUpload}
+        onClose={() => setUploadOpen(false)}
         onComplete={handleUploadComplete}
         existingBomCount={boms.length}
       />
 
-      {/* ── Footer ── */}
-      <footer className="shrink-0 border-t border-slate-200 bg-slate-50 px-6 py-3 flex items-center justify-between">
+      <footer className="flex shrink-0 items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-3">
         <div className="flex items-center gap-5">
           <div className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 bg-[#0062ff] shrink-0" style={{ clipPath: 'polygon(24% 0, 100% 0, 100% 100%, 0% 100%)' }} />
-            <span className="text-xs font-semibold text-[#0f1b2d]">Prokuro<span className="text-[#0062ff]">.ai</span></span>
+            <span
+              className="h-2.5 w-2.5 shrink-0 bg-[#0062ff]"
+              style={{ clipPath: 'polygon(24% 0, 100% 0, 100% 100%, 0% 100%)' }}
+            />
+            <span className="text-xs font-semibold text-[#0f1b2d]">
+              Prokuro<span className="text-[#0062ff]">.ai</span>
+            </span>
           </div>
           <span className="text-xs text-slate-400">© 2026 Prokuro.ai. All rights reserved.</span>
         </div>
         <div className="flex items-center gap-4">
-          <Link href="/" className="text-xs text-slate-400 hover:text-slate-700 transition-colors">Home</Link>
-          <a href="https://www.linkedin.com/company/prokuro/" target="_blank" rel="noopener noreferrer"
-            className="text-xs text-slate-400 hover:text-slate-700 transition-colors">LinkedIn</a>
+          <Link href="/" className="text-xs text-slate-400 transition-colors hover:text-slate-700">
+            Home
+          </Link>
+          <a
+            href="https://www.linkedin.com/company/prokuro/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-slate-400 transition-colors hover:text-slate-700"
+          >
+            LinkedIn
+          </a>
         </div>
       </footer>
     </DashboardShell>
