@@ -11,11 +11,11 @@ import DashboardShell from '@/components/DashboardShell'
 import type { BomSummary } from '@/lib/types'
 import { formatUploadedAt } from '@/lib/format'
 import { bomRiskBand, type BomBand } from '@/lib/risk'
-import { ArrowRight, Search, Upload } from 'lucide-react'
+import { ArrowRight, Search } from 'lucide-react'
 
-// ─── Portfolio helpers ────────────────────────────────────────────────────────
+// ─── Program overview helpers ─────────────────────────────────────────────────
 
-type PortfolioStats = {
+type ProgramStats = {
   bomCount: number
   totalLines: number
   totalAtRisk: number
@@ -29,7 +29,7 @@ type PortfolioStats = {
   recentBoms: BomSummary[]
 }
 
-function computePortfolioStats(boms: BomSummary[]): PortfolioStats {
+function computeProgramStats(boms: BomSummary[]): ProgramStats {
   const bandCounts: Record<BomBand, number> = {
     Critical: 0,
     Watch: 0,
@@ -98,7 +98,7 @@ function bandAccent(band: BomBand): { text: string; rail: string; dot: string } 
   }
 }
 
-function PortfolioMetric({
+function ProgramMetric({
   label,
   value,
   hint,
@@ -240,25 +240,23 @@ function OverviewPage({
   loading,
   goToBoms,
   onViewBom,
-  onUpload,
 }: {
   boms: BomSummary[]
   loading: boolean
   goToBoms: () => void
   onViewBom: (id: string) => void
-  onUpload: () => void
 }) {
-  const stats = useMemo(() => computePortfolioStats(boms), [boms])
+  const stats = useMemo(() => computeProgramStats(boms), [boms])
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#f4f6f9]">
       <div className="border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-[1180px] px-6 py-8">
-          <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Portfolio</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Program</p>
           <div className="mt-1 flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
               <h1 className="text-[28px] font-semibold tracking-tight text-slate-900">
-                {loading ? 'Loading portfolio…' : 'Supply chain overview'}
+                {loading ? 'Loading program…' : 'Program overview'}
               </h1>
               {!loading && boms.length > 0 ? (
                 <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-slate-500">
@@ -284,33 +282,15 @@ function OverviewPage({
                   ) : (
                     <>
                       All <span className="font-mono font-medium text-slate-800">{stats.scorableLines.toLocaleString()}</span>
-                      {' '}scored lines look clear across your portfolio.
+                      {' '}scored lines look clear across your program.
                     </>
                   )}
                 </p>
               ) : !loading ? (
                 <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-slate-500">
-                  Upload a BOM to score lifecycle, stock, and trade exposure line-by-line — then track what needs action here.
+                  Upload a BOM from the BOMs tab to score lifecycle, stock, and trade exposure line-by-line — then track what needs action here.
                 </p>
               ) : null}
-            </div>
-            <div className="flex shrink-0 flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={onUpload}
-                className="inline-flex items-center gap-1.5 bg-[#0062ff] px-4 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-blue-700"
-              >
-                <Upload className="h-3.5 w-3.5" aria-hidden />
-                Upload BOM
-              </button>
-              <button
-                type="button"
-                onClick={goToBoms}
-                className="inline-flex items-center gap-1.5 border border-slate-200 bg-white px-4 py-2.5 text-[13px] font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
-              >
-                All BOMs
-                <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-              </button>
             </div>
           </div>
         </div>
@@ -338,27 +318,27 @@ function OverviewPage({
             </p>
             <button
               type="button"
-              onClick={onUpload}
+              onClick={goToBoms}
               className="mt-6 inline-flex items-center gap-1.5 bg-[#0062ff] px-4 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-blue-700"
             >
-              <Upload className="h-3.5 w-3.5" aria-hidden />
-              Upload your first BOM
+              Go to BOMs
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </button>
           </div>
         ) : (
           <div className="space-y-6">
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <PortfolioMetric
+              <ProgramMetric
                 label="BOMs monitored"
                 value={String(stats.bomCount)}
                 hint={`${stats.bandCounts.Critical} critical · ${stats.bandCounts.Watch} watch`}
               />
-              <PortfolioMetric
+              <ProgramMetric
                 label="Lines tracked"
                 value={stats.totalLines.toLocaleString()}
                 hint={`${stats.scorableLines.toLocaleString()} scored · ${stats.totalUnknown.toLocaleString()} unresolved`}
               />
-              <PortfolioMetric
+              <ProgramMetric
                 label="Parts flagged"
                 value={stats.totalAtRisk.toLocaleString()}
                 hint={
@@ -368,7 +348,7 @@ function OverviewPage({
                 }
                 tone={stats.totalAtRisk > 0 ? 'text-[#c62026]' : undefined}
               />
-              <PortfolioMetric
+              <ProgramMetric
                 label="Avg BOM score"
                 value={stats.avgScore.toFixed(1)}
                 hint="Across scored BOMs (0–10 scale)"
@@ -419,7 +399,7 @@ function OverviewPage({
                 <section className="border border-slate-200 bg-white px-5 py-4">
                   <h2 className="text-[13px] font-semibold text-slate-900">Line coverage</h2>
                   <p className="mt-0.5 text-[12px] leading-relaxed text-slate-500">
-                    How your portfolio breaks down once distributor data is applied.
+                    How your program breaks down once distributor data is applied.
                   </p>
                   <div className="mt-4">
                     <PartCoverageBar
@@ -649,7 +629,7 @@ function BomsPage({ boms, loading, onViewBom, onDelete, onUpload }: {
       <div className="mx-auto max-w-[960px] px-6 py-8">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Portfolio</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">BOMs</p>
             <h1 className="mt-1 text-[28px] font-semibold tracking-tight text-slate-900">
               Bills of Materials
             </h1>
@@ -661,8 +641,8 @@ function BomsPage({ boms, loading, onViewBom, onDelete, onUpload }: {
                 {totalAtRisk > 0 ? (
                   <>
                     {' '}
-                    <span className="font-mono font-medium text-[#c62026]">{totalAtRisk}</span> parts across the
-                    portfolio need attention
+                    <span className="font-mono font-medium text-[#c62026]">{totalAtRisk}</span> parts across your
+                    program need attention
                     {criticalCount > 0 ? (
                       <>
                         {' '}
@@ -837,7 +817,6 @@ export default function DashboardContent() {
             loading={loading}
             goToBoms={() => setPage('boms')}
             onViewBom={viewBom}
-            onUpload={() => setUploadOpen(true)}
           />
         ) : (
           <BomsPage

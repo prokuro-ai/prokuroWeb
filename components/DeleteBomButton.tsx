@@ -2,6 +2,7 @@
 
 import { useLocation } from '@/lib/navigation'
 import { useEffect, useState } from 'react'
+import { AppModal, ModalNotice } from '@/components/AppModal'
 import { deleteBom } from '@/lib/api'
 
 type DeleteBomButtonProps = {
@@ -17,7 +18,7 @@ type DeleteBomButtonProps = {
 const CONFIRM_WORD = 'delete'
 
 const btnDanger =
-  'inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3.5 py-1.5 text-[13px] font-medium text-red-700 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60'
+  'inline-flex items-center gap-1.5 border border-red-200 bg-white px-3.5 py-1.5 text-[13px] font-medium text-red-700 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60'
 
 const btnGhost =
   'inline-flex items-center gap-1.5 px-2 py-1 text-[12px] font-medium text-red-600 transition-colors hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60'
@@ -49,11 +50,7 @@ export function DeleteBomButton({
   useEffect(() => {
     if (!open) return
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !deleting) {
-        setOpen(false)
-        setConfirmText('')
-        setError(null)
-      }
+      if (event.key === 'Escape' && !deleting) closeModal()
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
@@ -88,76 +85,55 @@ export function DeleteBomButton({
         {deleting ? 'Deleting…' : label}
       </button>
 
-      {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f1b2d]/60 px-4 backdrop-blur-[2px]"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) closeModal()
-          }}
-        >
-          <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
-            <div className="px-6 pt-6 pb-4">
-              <div className="mb-1 flex items-center gap-2">
-                <span
-                  className="h-3.5 w-3.5 shrink-0 bg-[#0062ff]"
-                  style={{ clipPath: 'polygon(24% 0,100% 0,100% 100%,0% 100%)' }}
-                />
-                <span className="text-xs font-semibold uppercase tracking-wider text-[#0062ff]">Delete BOM</span>
-              </div>
-              <h2 className="text-lg font-bold text-slate-900">Delete &ldquo;{bomName}&rdquo;?</h2>
-              <p className="mt-0.5 text-sm text-slate-500">
-                This permanently removes the BOM, analysis, and monitoring data. This cannot be undone.
-              </p>
-            </div>
-
-            <div className="px-6 pb-2">
-              {error && (
-                <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  {error}
-                </div>
-              )}
-
-              <label htmlFor={`delete-confirm-${bomId}`} className="block text-sm font-medium text-slate-700">
-                Type <span className="font-mono text-slate-900">{CONFIRM_WORD}</span> to confirm
-              </label>
-              <input
-                id={`delete-confirm-${bomId}`}
-                type="text"
-                value={confirmText}
-                onChange={(e) => setConfirmText(e.target.value)}
-                autoComplete="off"
-                autoFocus
-                disabled={deleting}
-                placeholder={CONFIRM_WORD}
-                className="mt-2 w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0062ff] focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-3 border-t border-slate-100 px-6 py-4">
-              <button
-                type="button"
-                onClick={() => void handleDelete()}
-                disabled={!canConfirm}
-                className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                  canConfirm
-                    ? 'bg-[#0062ff] text-white hover:bg-blue-700'
-                    : 'cursor-not-allowed bg-slate-100 text-slate-400'
-                }`}
-              >
-                {deleting ? 'Deleting…' : 'Delete'}
-              </button>
-              <button
-                type="button"
-                onClick={closeModal}
-                disabled={deleting}
-                className="rounded-lg px-4 py-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Cancel
-              </button>
-            </div>
+      <AppModal
+        open={open}
+        onClose={closeModal}
+        eyebrow="Delete BOM"
+        title={`Delete “${bomName}”?`}
+        subtitle="This permanently removes the BOM, analysis, and monitoring data. This cannot be undone."
+        closeDisabled={deleting}
+        footer={
+          <div className="flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={closeModal}
+              disabled={deleting}
+              className="px-4 py-2 text-[13px] font-medium text-slate-500 transition-colors hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleDelete()}
+              disabled={!canConfirm}
+              className={`px-4 py-2 text-[13px] font-semibold transition-colors ${
+                canConfirm
+                  ? 'bg-[#c62026] text-white hover:bg-red-700'
+                  : 'cursor-not-allowed bg-slate-200 text-slate-400'
+              }`}
+            >
+              {deleting ? 'Deleting…' : 'Delete permanently'}
+            </button>
           </div>
-        </div>
-      )}
+        }
+      >
+        {error ? <ModalNotice tone="error">{error}</ModalNotice> : null}
+
+        <label htmlFor={`delete-confirm-${bomId}`} className="block text-[13px] font-medium text-slate-700">
+          Type <span className="font-mono text-slate-900">{CONFIRM_WORD}</span> to confirm
+        </label>
+        <input
+          id={`delete-confirm-${bomId}`}
+          type="text"
+          value={confirmText}
+          onChange={(e) => setConfirmText(e.target.value)}
+          autoComplete="off"
+          autoFocus
+          disabled={deleting}
+          placeholder={CONFIRM_WORD}
+          className="mt-2 w-full border border-slate-200 px-4 py-2.5 text-[13px] text-slate-900 placeholder:text-slate-400 focus:border-[#0062ff] focus:outline-none focus:ring-1 focus:ring-[#0062ff] disabled:cursor-not-allowed disabled:bg-slate-50"
+        />
+      </AppModal>
     </>
   )
 }
