@@ -1,16 +1,16 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronLeft, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import BomPartsTable from '@/components/BomPartsTable'
 import DashboardShell from '@/components/DashboardShell'
+import EditableBomTable from '@/components/EditableBomTable'
 import { useAuth } from '@/components/AuthProvider'
 import { Link } from '@/lib/navigation'
 import { getBom } from '@/lib/api'
 import { formatUploadedAt } from '@/lib/format'
 import { hasPendingLines, isPendingLine, portfolioBadgeFromSummary } from '@/lib/risk'
-import type { AnalyzeResult, BomSummary } from '@/lib/types'
+import type { AnalyzedLine, AnalyzeResult, BomSummary } from '@/lib/types'
 
 const POLL_INTERVALS_MS = [2000, 5000, 10000, 30000]
 const POLL_CEILING_MS = 15 * 60 * 1000
@@ -35,11 +35,37 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   const { user, loading: authLoading } = useAuth()
   const [summary, setSummary] = useState<BomSummary | null>(null)
   const [result, setResult] = useState<AnalyzeResult | null>(null)
+  const [version, setVersion] = useState(1)
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [conflict, setConflict] = useState(false)
 
   const pollStartedAt = useRef<number | null>(null)
   const pollAttempt = useRef(0)
+
+  const applyRecord = useCallback((record: { summary: BomSummary; analyze: AnalyzeResult }) => {
+    setSummary(record.summary)
+    setResult(record.analyze)
+    setVersion(record.summary.version ?? 1)
+    return record.analyze
+  }, [])
+
+  const loadBom = useCallback(() => {
+    if (!id) {
+      setLoaded(true)
+      return
+    }
+    setError(null)
+    setConflict(false)
+    return getBom(id)
+      .then((record) => applyRecord(record))
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Failed to load BOM')
+      })
+      .finally(() => {
+        setLoaded(true)
+      })
+  }, [id, applyRecord])
 
   useEffect(() => {
     if (authLoading) return
@@ -55,14 +81,9 @@ export default function BomResultPage({ id }: BomResultPageProps) {
     let cancelled = false
     let timer: ReturnType<typeof setTimeout> | undefined
     setError(null)
+    setConflict(false)
     pollStartedAt.current = null
     pollAttempt.current = 0
-
-    const applyRecord = (record: { summary: BomSummary; analyze: AnalyzeResult }) => {
-      setSummary(record.summary)
-      setResult(record.analyze)
-      return record.analyze
-    }
 
     const schedulePoll = (analyze: AnalyzeResult) => {
       if (!hasPendingLines(analyze)) return
@@ -103,7 +124,13 @@ export default function BomResultPage({ id }: BomResultPageProps) {
       cancelled = true
       if (timer) clearTimeout(timer)
     }
-  }, [authLoading, user, id, router])
+  }, [authLoading, user, id, router, applyRecord])
+
+  function handleLinesChange(lines: AnalyzedLine[]) {
+    setResult((prev) =>
+      prev ? { ...prev, lines, summary: { ...prev.summary, total: lines.length } } : prev,
+    )
+  }
 
   if (!loaded || authLoading) return null
 
@@ -111,7 +138,9 @@ export default function BomResultPage({ id }: BomResultPageProps) {
     return (
       <DashboardShell activeTab="boms">
         <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
-          <h1 className="text-[18px] font-semibold text-slate-900">{error ? 'Could not load BOM' : 'BOM not found'}</h1>
+          <h1 className="text-[18px] font-semibold text-slate-900">
+            {error ? 'Could not load BOM' : 'BOM not found'}
+          </h1>
           <p className="mt-2 text-[13px] text-slate-500">
             {error ?? 'This BOM may not exist in your account, or you may not have access to it.'}
           </p>
@@ -149,6 +178,21 @@ export default function BomResultPage({ id }: BomResultPageProps) {
 
   return (
     <DashboardShell activeTab="boms">
+      {conflict && (
+        <div className="border-b border-amber-200 bg-amber-50 px-8 py-3 text-sm text-amber-900">
+          This BOM was updated elsewhere.{' '}
+          <button
+            type="button"
+            className="font-semibold underline"
+            onClick={() => {
+              setLoaded(false)
+              void loadBom()
+            }}
+          >
+            Refresh to see the latest
+          </button>
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto bg-white">
         <div className="border-b border-slate-200">
           <div className="mx-auto max-w-[1120px] px-6 pt-6 pb-0">
@@ -250,7 +294,14 @@ export default function BomResultPage({ id }: BomResultPageProps) {
             </span>
           </div>
 
-          <BomPartsTable lines={result.lines} />
+          <EditableBomTable
+            bomId={id}
+            version={version}
+            lines={result.lines}
+            onLinesChange={handleLinesChange}
+            onVersionChange={setVersion}
+            onConflict={() => setConflict(true)}
+          />
         </div>
       </div>
     </DashboardShell>

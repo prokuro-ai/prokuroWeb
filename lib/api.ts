@@ -1,11 +1,52 @@
 import { getIdToken } from './auth'
 import { uploadEndpoint } from './gateway-url'
-import type { AnalyzeResult, BomSummary, ParseResult } from './types'
+import type { AnalyzedLine, AnalyzeResult, BomSummary, ParseResult } from './types'
 
 export interface BomRecord {
   summary: BomSummary
   analyze: AnalyzeResult
   parse?: ParseResult | null
+}
+
+export class BomConflictError extends Error {
+  constructor(message = 'this BOM was updated elsewhere, refresh to see the latest') {
+    super(message)
+    this.name = 'BomConflictError'
+  }
+}
+
+export class BomServerError extends Error {
+  constructor(message = 'Your change could not be saved, please try again') {
+    super(message)
+    this.name = 'BomServerError'
+  }
+}
+
+export class BomNetworkError extends Error {
+  constructor(message = "couldn't reach the server") {
+    super(message)
+    this.name = 'BomNetworkError'
+  }
+}
+
+export type BomLinePatch = {
+  version: number
+  mpn?: string
+  manufacturer?: string
+  quantity?: number
+  refdes?: string
+  description?: string
+}
+
+export type BomLineMutationResult = {
+  version: number
+  lineIndex: number
+  line: AnalyzedLine
+}
+
+export type BomLineDeleteResult = {
+  version: number
+  lineCount: number
 }
 
 export interface Page<T> {
@@ -114,6 +155,93 @@ export async function deleteBom(id: string): Promise<void> {
 
   const body: unknown = await res.json().catch(() => null)
   throw new Error(await readErrorMessage(res, body))
+}
+
+async function throwIfBomWriteFailed(res: Response, body: unknown): Promise<never> {
+  if (res.status === 409) {
+    const message =
+      typeof body === 'object' && body && 'error' in body && typeof body.error === 'string'
+        ? body.error
+        : undefined
+    throw new BomConflictError(message)
+  }
+  if (res.status >= 500) {
+    throw new BomServerError()
+  }
+  throw new Error(await readErrorMessage(res, body))
+}
+
+async function bomWriteFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(input, init)
+  } catch {
+    throw new BomNetworkError()
+  }
+}
+
+export async function putBom(
+  id: string,
+  version: number,
+  lines: AnalyzedLine[],
+): Promise<BomRecord> {
+  const res = await bomWriteFetch(`/api/boms/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ version, lines }),
+  })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) await throwIfBomWriteFailed(res, body)
+  return body as BomRecord
+}
+
+export async function patchBomLine(
+  id: string,
+  lineIndex: number,
+  patch: BomLinePatch,
+): Promise<BomLineMutationResult> {
+  const res = await bomWriteFetch(
+    `/api/boms/${encodeURIComponent(id)}/lines/${encodeURIComponent(String(lineIndex))}`,
+    {
+      method: 'PATCH',
+      headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+    },
+  )
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) await throwIfBomWriteFailed(res, body)
+  return body as BomLineMutationResult
+}
+
+export async function deleteBomLine(
+  id: string,
+  lineIndex: number,
+  version: number,
+): Promise<BomLineDeleteResult> {
+  const qs = new URLSearchParams({ version: String(version) })
+  const res = await bomWriteFetch(
+    `/api/boms/${encodeURIComponent(id)}/lines/${encodeURIComponent(String(lineIndex))}?${qs}`,
+    {
+      method: 'DELETE',
+      headers: await authHeaders(),
+    },
+  )
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) await throwIfBomWriteFailed(res, body)
+  return body as BomLineDeleteResult
+}
+
+export async function addBomLine(
+  id: string,
+  input: BomLinePatch,
+): Promise<BomLineMutationResult> {
+  const res = await bomWriteFetch(`/api/boms/${encodeURIComponent(id)}/lines`, {
+    method: 'POST',
+    headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) await throwIfBomWriteFailed(res, body)
+  return body as BomLineMutationResult
 }
 
 export async function saveBom(

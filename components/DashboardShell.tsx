@@ -20,12 +20,15 @@ type DashboardShellProps = {
   activeTab?: DashboardTab
   /** Active BOM count shown in the profile dropdown plan usage meter. */
   bomCount?: number
+  /** Public demo mode: nav stays on /demo and profile is read-only. */
+  demoMode?: boolean
 }
 
 export default function DashboardShell({
   children,
   activeTab = 'dashboard',
   bomCount = 0,
+  demoMode = false,
 }: DashboardShellProps) {
   const router = useRouter()
   const { user, refresh } = useAuth()
@@ -35,13 +38,16 @@ export default function DashboardShell({
   const profileRef = useRef<HTMLDivElement>(null)
 
   const newAlertCount = 0
-  const initials = user
-    ? (user.firstName?.[0] ?? '') + (user.lastName?.[0] ?? '')
-    : 'U'
+  const initials = demoMode
+    ? 'DM'
+    : user
+      ? (user.firstName?.[0] ?? '') + (user.lastName?.[0] ?? '')
+      : 'U'
 
+  const basePath = demoMode ? '/demo' : '/dashboard'
   const nav = [
-    { id: 'dashboard' as const, label: 'Dashboard', href: '/dashboard?tab=dashboard' },
-    { id: 'boms' as const, label: 'BOMs', href: '/dashboard?tab=boms' },
+    { id: 'dashboard' as const, label: 'Dashboard', href: `${basePath}?tab=dashboard` },
+    { id: 'boms' as const, label: 'BOMs', href: `${basePath}?tab=boms` },
   ]
 
   useEffect(() => {
@@ -65,7 +71,7 @@ export default function DashboardShell({
     <div className="relative flex h-screen flex-col bg-slate-50 font-sans text-slate-900">
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6">
         <div className="flex h-full items-center gap-8">
-          <Link href="/dashboard" className="flex items-center gap-2">
+          <Link href={basePath} className="flex items-center gap-2">
             <span
               className="h-4 w-4 shrink-0 bg-[#0062ff]"
               style={{ clipPath: 'polygon(24% 0, 100% 0, 100% 100%, 0% 100%)' }}
@@ -162,69 +168,97 @@ export default function DashboardShell({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <p className="truncate text-sm font-semibold text-[#0f1b2d]">
-                        {user ? `${user.firstName} ${user.lastName}`.trim() || user.email : 'Account'}
+                        {demoMode
+                          ? 'Demo Viewer'
+                          : user
+                            ? `${user.firstName} ${user.lastName}`.trim() || user.email
+                            : 'Account'}
                       </p>
                       <span className="shrink-0 rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-[#0062ff]">
-                        Growth
+                        {demoMode ? 'Demo' : 'Growth'}
                       </span>
                     </div>
-                    <p className="truncate text-xs text-slate-500">{user?.email ?? ''}</p>
-                    {user?.company?.trim() && (
-                      <p className="mt-0.5 text-xs text-slate-400">{user.company}</p>
+                    <p className="truncate text-xs text-slate-500">
+                      {demoMode ? 'demo@prokuro.ai' : (user?.email ?? '')}
+                    </p>
+                    {demoMode ? (
+                      <p className="mt-0.5 text-xs text-slate-400">Sample portfolio · read-only</p>
+                    ) : (
+                      user?.company?.trim() && (
+                        <p className="mt-0.5 text-xs text-slate-400">{user.company}</p>
+                      )
                     )}
                   </div>
                 </div>
 
-                <div className="border-b border-slate-100 px-4 py-3.5">
-                  <div className="mb-1.5 flex items-center justify-between">
-                    <span className="text-xs font-medium text-slate-600">Active BOMs</span>
-                    <span className="text-xs text-slate-400">{bomCount} / 20</span>
+                {!demoMode && (
+                  <div className="border-b border-slate-100 px-4 py-3.5">
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <span className="text-xs font-medium text-slate-600">Active BOMs</span>
+                      <span className="text-xs text-slate-400">{bomCount} / 20</span>
+                    </div>
+                    <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className="h-full rounded-full bg-[#0062ff]"
+                        style={{ width: `${bomPct}%` }}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        router.push('/account')
+                        setProfileOpen(false)
+                      }}
+                      className="group flex w-full items-center justify-between text-left text-xs font-semibold text-[#0062ff]"
+                    >
+                      Upgrade to Scale
+                      <ChevronRight className="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" />
+                    </button>
                   </div>
-                  <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="h-full rounded-full bg-[#0062ff]"
-                      style={{ width: `${bomPct}%` }}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      router.push('/account')
-                      setProfileOpen(false)
-                    }}
-                    className="group flex w-full items-center justify-between text-left text-xs font-semibold text-[#0062ff]"
-                  >
-                    Upgrade to Scale
-                    <ChevronRight className="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" />
-                  </button>
-                </div>
+                )}
 
                 <div className="py-1.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      router.push('/account')
-                      setProfileOpen(false)
-                    }}
-                    className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50"
-                  >
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-100 transition-colors group-hover:bg-slate-200">
-                      <Settings className="h-3.5 w-3.5 text-slate-500" />
-                    </div>
-                    <span className="flex-1 text-sm font-medium text-[#0f1b2d]">Account Settings</span>
-                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300 group-hover:text-slate-400" />
-                  </button>
+                  {demoMode ? (
+                    <Link
+                      href="/"
+                      onClick={() => setProfileOpen(false)}
+                      className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50"
+                    >
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-100 transition-colors group-hover:bg-slate-200">
+                        <Settings className="h-3.5 w-3.5 text-slate-500" />
+                      </div>
+                      <span className="flex-1 text-sm font-medium text-[#0f1b2d]">Back to home</span>
+                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300 group-hover:text-slate-400" />
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        router.push('/account')
+                        setProfileOpen(false)
+                      }}
+                      className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50"
+                    >
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-100 transition-colors group-hover:bg-slate-200">
+                        <Settings className="h-3.5 w-3.5 text-slate-500" />
+                      </div>
+                      <span className="flex-1 text-sm font-medium text-[#0f1b2d]">Account Settings</span>
+                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300 group-hover:text-slate-400" />
+                    </button>
+                  )}
                 </div>
 
-                <div className="border-t border-slate-100 p-2">
-                  <button
-                    type="button"
-                    onClick={handleSignOut}
-                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
-                  >
-                    <LogOut className="h-4 w-4 shrink-0" /> Sign out
-                  </button>
-                </div>
+                {!demoMode && (
+                  <div className="border-t border-slate-100 p-2">
+                    <button
+                      type="button"
+                      onClick={handleSignOut}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+                    >
+                      <LogOut className="h-4 w-4 shrink-0" /> Sign out
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

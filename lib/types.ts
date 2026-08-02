@@ -3,6 +3,9 @@ export interface BomSummary {
   name: string
   filename: string
   uploadedAt: string
+  /** Optimistic concurrency token; required on every BOM write. */
+  version: number
+  updatedAt?: string
   lineCount: number
   overallRiskScore: number
   atRiskCount: number
