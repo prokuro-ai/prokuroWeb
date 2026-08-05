@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronLeft, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import BomPartsTable from '@/components/BomPartsTable'
 import DashboardShell from '@/components/DashboardShell'
 import EditableBomTable from '@/components/EditableBomTable'
 import { useAuth } from '@/components/AuthProvider'
@@ -11,6 +12,12 @@ import { getBom } from '@/lib/api'
 import { formatUploadedAt } from '@/lib/format'
 import { hasPendingLines, isPendingLine, portfolioBadgeFromSummary } from '@/lib/risk'
 import type { AnalyzedLine, AnalyzeResult, BomSummary } from '@/lib/types'
+
+const actionBtn =
+  'border border-slate-200 px-4 py-2 font-mono text-[11px] font-medium uppercase tracking-[0.08em] transition-colors'
+const actionBtnIdle = `${actionBtn} text-slate-700 hover:border-slate-300 hover:bg-slate-50`
+const actionBtnActive = `${actionBtn} border-[#0062ff] bg-[#0062ff]/5 text-[#0062ff]`
+const actionBtnDisabled = `${actionBtn} cursor-not-allowed text-slate-400`
 
 const POLL_INTERVALS_MS = [2000, 5000, 10000, 30000]
 const POLL_CEILING_MS = 15 * 60 * 1000
@@ -39,6 +46,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [conflict, setConflict] = useState(false)
+  const [editing, setEditing] = useState(false)
 
   const pollStartedAt = useRef<number | null>(null)
   const pollAttempt = useRef(0)
@@ -224,14 +232,24 @@ export default function BomResultPage({ id }: BomResultPageProps) {
                   Uploaded {uploadedLabel}
                 </p>
               </div>
-              <button
-                type="button"
-                disabled
-                title="Export coming soon"
-                className="cursor-not-allowed border border-slate-200 px-4 py-2 font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400"
-              >
-                Export
-              </button>
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditing((current) => !current)}
+                  aria-pressed={editing}
+                  className={editing ? actionBtnActive : actionBtnIdle}
+                >
+                  {editing ? 'Done' : 'Edit'}
+                </button>
+                <button
+                  type="button"
+                  disabled
+                  title="Export coming soon"
+                  className={actionBtnDisabled}
+                >
+                  Export
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-wrap items-end justify-between gap-6 border-t border-slate-200 py-5">
@@ -290,18 +308,22 @@ export default function BomResultPage({ id }: BomResultPageProps) {
               Part-by-part breakdown
             </h2>
             <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-slate-400">
-              {result.lines.length} parts
+              {editing ? 'Editing lines' : `${result.lines.length} parts`}
             </span>
           </div>
 
-          <EditableBomTable
-            bomId={id}
-            version={version}
-            lines={result.lines}
-            onLinesChange={handleLinesChange}
-            onVersionChange={setVersion}
-            onConflict={() => setConflict(true)}
-          />
+          {editing ? (
+            <EditableBomTable
+              bomId={id}
+              version={version}
+              lines={result.lines}
+              onLinesChange={handleLinesChange}
+              onVersionChange={setVersion}
+              onConflict={() => setConflict(true)}
+            />
+          ) : (
+            <BomPartsTable lines={result.lines} />
+          )}
         </div>
       </div>
     </DashboardShell>

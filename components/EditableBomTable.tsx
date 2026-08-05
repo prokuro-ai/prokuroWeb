@@ -33,10 +33,10 @@ function isLookupFailed(line: AnalyzedLine): boolean {
 
 function lifecycleBadge(status: string) {
   const s = status.toLowerCase()
-  if (s === 'eol' || s === 'discontinued') return 'bg-red-100 text-red-700 border border-red-200'
-  if (s === 'nrnd') return 'bg-amber-100 text-amber-700 border border-amber-200'
-  if (s === 'active') return 'bg-emerald-100 text-emerald-700 border border-emerald-200'
-  return 'bg-slate-100 text-slate-500 border border-slate-200'
+  if (s === 'eol' || s === 'discontinued') return 'bg-red-100 text-red-700'
+  if (s === 'nrnd') return 'bg-amber-100 text-amber-700'
+  if (s === 'active') return 'bg-emerald-100 text-emerald-700'
+  return 'bg-slate-100 text-slate-500'
 }
 
 function lifecycleLabel(status: string) {
@@ -48,10 +48,11 @@ function lifecycleLabel(status: string) {
   return status
 }
 
-function riskLevelBadge(level: string | undefined) {
-  if (level === 'red') return 'bg-red-100 text-red-700 border-red-200'
-  if (level === 'yellow') return 'bg-amber-100 text-amber-700 border-amber-200'
-  return 'bg-emerald-100 text-emerald-700 border-emerald-200'
+function riskLevelText(level: string | undefined) {
+  if (level === 'red') return 'text-[#c62026]'
+  if (level === 'yellow') return 'text-[#a25a05]'
+  if (level === 'unknown') return 'text-slate-500'
+  return 'text-[#167c48]'
 }
 
 function messageForSaveError(err: unknown): string {
@@ -243,28 +244,46 @@ export default function EditableBomTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      {rowError && (
-        <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
+    <div className="overflow-hidden border border-slate-200 bg-white shadow-[0_24px_48px_-30px_rgb(15_27_45_/_24%)]">
+      <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-[#f4f6f9] px-5 py-2.5">
+        <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-slate-500">
+          Edit mode · click a cell to change it
+        </p>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void handleAdd()}
+          className="ml-auto inline-flex items-center gap-1.5 border border-slate-200 bg-white px-3 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-40"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Add line
+        </button>
+      </div>
+      {rowError ? (
+        <div className="border-b border-amber-200 bg-amber-50 px-5 py-2 text-[13px] text-amber-800">
           {rowError}
         </div>
-      )}
+      ) : null}
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-            <tr>
+        <table className="w-full min-w-[860px] border-collapse text-left text-[13px]">
+          <thead>
+            <tr className="border-b border-slate-200 bg-[#f4f6f9]">
               {[
-                'Part Number',
+                'Part',
                 'Manufacturer',
                 'Qty',
-                'Refdes',
+                'Ref des',
                 'Description',
                 'Lifecycle',
                 'Stock',
                 'Risk',
                 '',
               ].map((h) => (
-                <th key={h || 'actions'} className="px-3 py-3 font-semibold whitespace-nowrap">
+                <th
+                  key={h || 'actions'}
+                  scope="col"
+                  className="px-4 py-2.5 font-mono text-[11px] font-medium uppercase tracking-[0.09em] text-slate-400 whitespace-nowrap"
+                >
                   {h}
                 </th>
               ))}
@@ -275,8 +294,8 @@ export default function EditableBomTable({
               const lookupFailed = isLookupFailed(line)
               const avail = line.availability_status?.toLowerCase() ?? ''
               return (
-                <tr key={`${line.row_index}-${i}`} className="hover:bg-slate-50/80">
-                  <td className="px-2 py-2">
+                <tr key={`${line.row_index}-${i}`} className="bg-white hover:bg-slate-50/80">
+                  <td className="px-3 py-2">
                     <EditableCell
                       value={line.mpn ?? ''}
                       field="mpn"
@@ -284,67 +303,69 @@ export default function EditableBomTable({
                       onCommit={(field, next) => handleFieldCommit(i, field, next)}
                     />
                   </td>
-                  <td className="px-2 py-2">
+                  <td className="px-3 py-2">
                     <EditableCell
                       value={line.manufacturer ?? ''}
                       field="manufacturer"
                       onCommit={(field, next) => handleFieldCommit(i, field, next)}
                     />
                   </td>
-                  <td className="px-2 py-2">
+                  <td className="px-3 py-2">
                     <EditableCell
                       value={line.quantity != null ? String(line.quantity) : ''}
                       field="quantity"
                       onCommit={(field, next) => handleFieldCommit(i, field, next)}
                     />
                   </td>
-                  <td className="px-2 py-2">
+                  <td className="px-3 py-2">
                     <EditableCell
                       value={line.refdes ?? ''}
                       field="refdes"
                       onCommit={(field, next) => handleFieldCommit(i, field, next)}
                     />
                   </td>
-                  <td className="px-2 py-2">
+                  <td className="px-3 py-2">
                     <EditableCell
                       value={line.description ?? ''}
                       field="description"
                       onCommit={(field, next) => handleFieldCommit(i, field, next)}
                     />
                   </td>
-                  <td className="px-3 py-3">
+                  <td className="px-4 py-3">
                     <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-bold ${lifecycleBadge(line.lifecycle_status)}`}
+                      className={`px-2 py-0.5 font-mono text-[11px] font-medium uppercase tracking-[0.06em] ${lifecycleBadge(line.lifecycle_status)}`}
                     >
                       {lifecycleLabel(line.lifecycle_status)}
                     </span>
                   </td>
-                  <td className="px-3 py-3 font-medium">
+                  <td className="px-4 py-3 font-mono text-[13px] tabular-nums">
                     {lookupFailed ? (
-                      <span className="text-xs text-slate-400">Unknown</span>
+                      <span className="text-slate-400">—</span>
                     ) : avail === 'outofstock' || avail === 'nomatch' ? (
-                      <span className="text-xs font-bold text-red-600">
+                      <span className="font-semibold text-red-600">
                         {avail === 'nomatch' ? 'No match' : 'Out of stock'}
                       </span>
                     ) : (
-                      <span className="text-xs text-slate-700">
-                        {line.total_avail.toLocaleString()}
-                      </span>
+                      <span className="text-slate-700">{line.total_avail.toLocaleString()}</span>
                     )}
                   </td>
-                  <td className="px-3 py-3">
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${riskLevelBadge(line.risk_level)}`}
-                    >
-                      {line.risk_level ?? 'green'}
+                  <td className="px-4 py-3">
+                    <span className={`font-mono text-[12px] font-semibold ${riskLevelText(line.risk_level)}`}>
+                      {line.risk_level === 'red'
+                        ? 'Critical'
+                        : line.risk_level === 'yellow'
+                          ? 'Watch'
+                          : line.risk_level === 'unknown'
+                            ? 'Unknown'
+                            : 'Clear'}
                     </span>
                   </td>
-                  <td className="px-2 py-2">
+                  <td className="px-3 py-2">
                     <button
                       type="button"
                       disabled={busy}
                       onClick={() => void handleDelete(i)}
-                      className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
+                      className="p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
                       aria-label={`Remove line ${i + 1}`}
                       title="Remove line"
                     >
@@ -356,17 +377,6 @@ export default function EditableBomTable({
             })}
           </tbody>
         </table>
-      </div>
-      <div className="border-t border-slate-100 px-4 py-3">
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void handleAdd()}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Add line
-        </button>
       </div>
     </div>
   )

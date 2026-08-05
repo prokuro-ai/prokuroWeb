@@ -1,22 +1,12 @@
+'use client'
+
+import { useState } from 'react'
 import type { AnalyzeResult, AnalyzedLine, BomSummary } from '@/lib/types'
 import { formatUploadedAt } from '@/lib/format'
 import { Link } from '@/lib/navigation'
 import { ChevronLeft } from 'lucide-react'
+import BomPartsTable from '@/components/BomPartsTable'
 import EditableBomTable from '@/components/EditableBomTable'
-
-function isLookupFailed(line: AnalyzedLine): boolean {
-  const avail = line.availability_status?.toLowerCase() ?? ''
-  const match = line.match_status?.toLowerCase() ?? ''
-  return avail === 'pending' || match === 'pending'
-}
-
-function lifecycleBadge(status: string) {
-  const s = status.toLowerCase()
-  if (s === 'eol' || s === 'discontinued') return 'bg-red-100 text-red-700 border border-red-200'
-  if (s === 'nrnd') return 'bg-amber-100 text-amber-700 border border-amber-200'
-  if (s === 'active') return 'bg-emerald-100 text-emerald-700 border border-emerald-200'
-  return 'bg-slate-100 text-slate-500 border border-slate-200'
-}
 
 function lifecycleLabel(status: string) {
   const s = status.toLowerCase()
@@ -27,137 +17,12 @@ function lifecycleLabel(status: string) {
   return status
 }
 
-function isUrgent(line: AnalyzedLine) {
-  if (isLookupFailed(line)) return false
-  const s = line.lifecycle_status.toLowerCase()
-  return s === 'eol' || s === 'nrnd' || s === 'discontinued'
-}
-
 function riskBadge(result: AnalyzeResult) {
   const red = result.summary.red_count ?? 0
   const yellow = result.summary.yellow_count ?? 0
   if (red > 0) return { label: 'Critical', cls: 'bg-red-100 text-red-700' }
   if (yellow > 0) return { label: 'Warning', cls: 'bg-amber-100 text-amber-700' }
   return { label: 'Healthy', cls: 'bg-emerald-100 text-emerald-700' }
-}
-
-function riskLevelBadge(level: string | undefined) {
-  if (level === 'red') return 'bg-red-100 text-red-700 border-red-200'
-  if (level === 'yellow') return 'bg-amber-100 text-amber-700 border-amber-200'
-  return 'bg-emerald-100 text-emerald-700 border-emerald-200'
-}
-
-export function BomDetailTable({ lines }: { lines: AnalyzedLine[] }) {
-  return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-            <tr>
-              {[
-                'Part Number',
-                'Manufacturer',
-                'Qty',
-                'Lifecycle',
-                'Stock',
-                'Lead Time',
-                'Tariff',
-                'Risk',
-                'Alternate',
-              ].map((h) => (
-                <th key={h} className="px-4 py-3 font-semibold whitespace-nowrap">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {lines.map((line, i) => {
-              const urgent = isUrgent(line)
-              const lookupFailed = isLookupFailed(line)
-              const leadWeeks =
-                line.factory_lead_days != null ? Math.round(line.factory_lead_days / 7) : null
-              const avail = line.availability_status?.toLowerCase() ?? ''
-
-              return (
-                <tr
-                  key={line.row_index ?? i}
-                  className={`hover:bg-slate-50/80 ${urgent ? 'bg-red-50/40' : ''}`}
-                >
-                  <td className="px-4 py-3 font-mono text-xs font-bold text-slate-800">
-                    {line.mpn ?? '-'}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-slate-600">{line.manufacturer ?? '-'}</td>
-                  <td className="px-4 py-3 text-slate-600">{line.quantity ?? '-'}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-bold ${lifecycleBadge(line.lifecycle_status)}`}
-                    >
-                      {lifecycleLabel(line.lifecycle_status)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 font-medium">
-                    {lookupFailed ? (
-                      <span className="text-xs text-slate-400">Unknown</span>
-                    ) : avail === 'outofstock' || avail === 'nomatch' ? (
-                      <span className="text-xs font-bold text-red-600">
-                        {avail === 'nomatch' ? 'No match' : 'Out of stock'}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-slate-700">
-                        {line.total_avail.toLocaleString()}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-xs">
-                    {lookupFailed || leadWeeks == null ? (
-                      <span className="text-slate-400">Unknown</span>
-                    ) : (
-                      <span
-                        className={
-                          leadWeeks > 30 ? 'font-semibold text-amber-600' : 'text-slate-600'
-                        }
-                      >
-                        {leadWeeks}w
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-slate-600">
-                    {line.total_duty_pct != null && line.total_duty_pct > 0
-                      ? `${line.total_duty_pct}%`
-                      : '-'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${riskLevelBadge(line.risk_level)}`}
-                    >
-                      {line.risk_level ?? 'green'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    {line.aml_candidates.length > 0 ? (
-                      <div className="space-y-1">
-                        {line.aml_candidates.map((mpn, j) => (
-                          <span
-                            key={j}
-                            className="block rounded border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 font-mono text-xs text-emerald-700"
-                          >
-                            {mpn}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-slate-400">-</span>
-                    )}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
 }
 
 type BomReportViewProps = {
@@ -184,6 +49,13 @@ export default function BomReportView({
   onVersionChange,
   onConflict,
 }: BomReportViewProps) {
+  const [editing, setEditing] = useState(false)
+  const canEdit =
+    bomId != null &&
+    version != null &&
+    onLinesChange != null &&
+    onVersionChange != null &&
+    onConflict != null
   const badge = riskBadge(result)
   const needsAction = (result.summary.red_count ?? 0) + (result.summary.yellow_count ?? 0)
   const eolCount = result.lines.filter((l) =>
@@ -230,6 +102,20 @@ export default function BomReportView({
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            {canEdit ? (
+              <button
+                type="button"
+                onClick={() => setEditing((current) => !current)}
+                aria-pressed={editing}
+                className={`rounded-lg border px-5 py-2 text-sm font-medium shadow-sm transition-colors ${
+                  editing
+                    ? 'border-[#0062ff] bg-[#0062ff]/5 text-[#0062ff]'
+                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                {editing ? 'Done' : 'Edit'}
+              </button>
+            ) : null}
             <button
               type="button"
               disabled
@@ -342,23 +228,21 @@ export default function BomReportView({
               <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
                 Part-by-Part Breakdown
               </h2>
-              <span className="text-xs text-slate-400">{result.lines.length} parts</span>
+              <span className="text-xs text-slate-400">
+                {editing ? 'Editing lines' : `${result.lines.length} parts`}
+              </span>
             </div>
-            {bomId != null &&
-            version != null &&
-            onLinesChange &&
-            onVersionChange &&
-            onConflict ? (
+            {canEdit && editing ? (
               <EditableBomTable
-                bomId={bomId}
-                version={version}
+                bomId={bomId!}
+                version={version!}
                 lines={result.lines}
-                onLinesChange={onLinesChange}
-                onVersionChange={onVersionChange}
-                onConflict={onConflict}
+                onLinesChange={onLinesChange!}
+                onVersionChange={onVersionChange!}
+                onConflict={onConflict!}
               />
             ) : (
-              <BomDetailTable lines={result.lines} />
+              <BomPartsTable lines={result.lines} />
             )}
           </div>
         </div>
