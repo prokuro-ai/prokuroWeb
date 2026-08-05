@@ -26,7 +26,9 @@ function MetaStat({ label, value, tone }: { label: string; value: string; tone?:
   return (
     <div className="min-w-0">
       <div className="font-mono text-[10px] uppercase tracking-[0.1em] text-slate-400">{label}</div>
-      <div className={`mt-1 font-mono text-[22px] font-semibold tabular-nums tracking-tight ${tone ?? 'text-slate-900'}`}>
+      <div
+        className={`mt-1 font-mono text-[18px] font-semibold tabular-nums tracking-tight sm:text-[22px] ${tone ?? 'text-slate-900'}`}
+      >
         {value}
       </div>
     </div>
@@ -187,7 +189,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   return (
     <DashboardShell activeTab="boms">
       {conflict && (
-        <div className="border-b border-amber-200 bg-amber-50 px-8 py-3 text-sm text-amber-900">
+        <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:px-6">
           This BOM was updated elsewhere.{' '}
           <button
             type="button"
@@ -203,18 +205,18 @@ export default function BomResultPage({ id }: BomResultPageProps) {
       )}
       <div className="flex-1 overflow-y-auto bg-white">
         <div className="border-b border-slate-200">
-          <div className="mx-auto max-w-[1120px] px-6 pt-6 pb-0">
-            <div className="mb-5 flex items-start gap-3">
+          <div className="mx-auto max-w-[1120px] px-4 pt-5 pb-0 sm:px-6 sm:pt-6">
+            <div className="mb-4 flex flex-wrap items-start gap-x-3 gap-y-3 sm:mb-5">
               <Link
                 href="/dashboard?tab=boms"
-                className="mt-1 shrink-0 p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-800"
+                className="mt-0.5 shrink-0 p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-800 sm:mt-1"
                 aria-label="Back to BOMs"
               >
                 <ChevronLeft className="h-5 w-5" />
               </Link>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <h1 className="truncate text-[22px] font-semibold tracking-tight text-slate-900">
+              <div className="min-w-0 flex-1 basis-[min(100%,16rem)]">
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+                  <h1 className="max-w-full truncate text-[18px] font-semibold tracking-tight text-slate-900 sm:text-[22px]">
                     {displayName}
                   </h1>
                   <span
@@ -224,15 +226,15 @@ export default function BomResultPage({ id }: BomResultPageProps) {
                     {badge.label}
                   </span>
                 </div>
-                <p className="mt-1 font-mono text-[12px] uppercase tracking-[0.08em] text-slate-400">
-                  {result.source_filename}
+                <p className="mt-1 break-words font-mono text-[11px] uppercase tracking-[0.08em] text-slate-400 sm:text-[12px]">
+                  <span className="inline-block max-w-full truncate align-bottom">{result.source_filename}</span>
                   <span className="mx-2 text-slate-300">·</span>
                   {result.lines.length.toLocaleString()} lines
                   <span className="mx-2 text-slate-300">·</span>
                   Uploaded {uploadedLabel}
                 </p>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="ml-auto flex shrink-0 items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setEditing((current) => !current)}
@@ -252,8 +254,8 @@ export default function BomResultPage({ id }: BomResultPageProps) {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-end justify-between gap-6 border-t border-slate-200 py-5">
-              <div className="grid min-w-0 flex-1 grid-cols-2 gap-x-10 gap-y-5 sm:grid-cols-4">
+            <div className="flex flex-col gap-4 border-t border-slate-200 py-4 sm:gap-5 sm:py-5 lg:flex-row lg:items-end lg:justify-between">
+              <div className="grid min-w-0 w-full grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4 sm:gap-x-8 lg:flex-1 lg:gap-x-10">
                 <MetaStat label="Lines" value={result.lines.length.toLocaleString()} />
                 <MetaStat
                   label="Flagged"
@@ -271,10 +273,10 @@ export default function BomResultPage({ id }: BomResultPageProps) {
                   tone={longLead > 0 ? 'text-[#a25a05]' : undefined}
                 />
               </div>
-              <div className="flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.08em] text-slate-500">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] uppercase tracking-[0.08em] text-slate-500 sm:text-[12px] lg:max-w-[16rem] lg:justify-end lg:text-right">
                 {scorableLines > 0 ? (
                   <>
-                    <span className={`h-1.5 w-1.5 ${flagged > 0 ? 'bg-[#c62026]' : 'bg-[#167c48]'}`} aria-hidden />
+                    <span className={`h-1.5 w-1.5 shrink-0 ${flagged > 0 ? 'bg-[#c62026]' : 'bg-[#167c48]'}`} aria-hidden />
                     <span className="text-slate-900">{flaggedPct}% of scored lines flagged</span>
                   </>
                 ) : (
@@ -291,7 +293,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
           </div>
         </div>
 
-        <div className="mx-auto max-w-[1120px] px-6 py-8">
+        <div className="mx-auto max-w-[1120px] px-4 py-6 sm:px-6 sm:py-8">
           {pendingCount > 0 ? (
             <div className="mb-6 flex items-center gap-3 border border-[#0062ff]/25 bg-[#0062ff]/5 px-4 py-3">
               <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[#0062ff]" aria-hidden />

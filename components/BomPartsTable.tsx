@@ -69,23 +69,25 @@ function LineDetail({ line }: { line: AnalyzedLine }) {
   const lineLabel = String(line.row_index).padStart(4, '0')
 
   return (
-    <div className="border-t border-slate-200 bg-[#f4f6f9] px-6 py-5">
-      <div className="space-y-5">
+    <div className="border-t border-slate-200 bg-[#f4f6f9] px-4 py-4 sm:px-6 sm:py-5">
+      <div className="space-y-4 sm:space-y-5">
         <div>
           <p className={`font-mono text-[11px] uppercase tracking-[0.09em] ${risk.text}`}>
             Line {lineLabel}: why {risk.label.toLowerCase()}
           </p>
           {line.description ? (
-            <p className="mt-2 max-w-[72ch] text-[15px] leading-relaxed text-slate-600">{line.description}</p>
+            <p className="mt-2 max-w-[72ch] text-[14px] leading-relaxed text-slate-600 sm:text-[15px]">
+              {line.description}
+            </p>
           ) : (
-            <p className="mt-2 max-w-[72ch] text-[15px] leading-relaxed text-slate-400">
+            <p className="mt-2 max-w-[72ch] text-[14px] leading-relaxed text-slate-400 sm:text-[15px]">
               Decision detail for this line is coming soon. Lifecycle, stock, tariff, and alternate
               recommendations will land here once the analyst pipeline is live.
             </p>
           )}
         </div>
 
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-4 border-t border-slate-200 pt-4 md:grid-cols-3 lg:grid-cols-6">
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-slate-200 pt-4 sm:gap-x-6 sm:gap-y-4 md:grid-cols-3 lg:grid-cols-6">
           <Signal label="Lifecycle" value={pending ? 'Resolving…' : lifecycleLabel(line.lifecycle_status)} />
           <Signal label="Distributor stock" value={pending ? 'Resolving…' : stockLabel(line)} />
           <Signal label="Factory lead" value={weeks == null ? '—' : `${weeks} weeks`} />
@@ -297,8 +299,8 @@ export default function BomPartsTable({ lines }: { lines: AnalyzedLine[] }) {
 
   return (
     <div className="overflow-hidden border border-slate-200 bg-white shadow-[0_24px_48px_-30px_rgb(15_27_45_/_24%)]">
-      <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-[#f4f6f9] px-5 py-2.5">
-        <div className="relative min-w-0 flex-1 sm:max-w-xs">
+      <div className="flex flex-col gap-2.5 border-b border-slate-200 bg-[#f4f6f9] px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:px-5">
+        <div className="relative min-w-0 w-full sm:max-w-xs sm:flex-1">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden />
           <input
             value={search}
@@ -308,7 +310,7 @@ export default function BomPartsTable({ lines }: { lines: AnalyzedLine[] }) {
             className="w-full border border-slate-200 bg-white py-1.5 pl-8 pr-3 text-[13px] focus:border-[#0062ff] focus:outline-none focus:ring-1 focus:ring-[#0062ff]"
           />
         </div>
-        <div className="flex border border-slate-200 bg-white p-0.5">
+        <div className="flex max-w-full overflow-x-auto border border-slate-200 bg-white p-0.5">
           {FILTERS.map((option) => {
             const count = option === 'All' ? lines.length : counts[FILTER_LEVEL[option]]
             return (
@@ -316,7 +318,7 @@ export default function BomPartsTable({ lines }: { lines: AnalyzedLine[] }) {
                 key={option}
                 type="button"
                 onClick={() => setFilter(option)}
-                className={`px-2.5 py-1 font-mono text-[11px] font-medium uppercase tracking-[0.06em] transition-colors ${
+                className={`shrink-0 px-2 py-1 font-mono text-[10px] font-medium uppercase tracking-[0.06em] transition-colors sm:px-2.5 sm:text-[11px] ${
                   filter === option ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >

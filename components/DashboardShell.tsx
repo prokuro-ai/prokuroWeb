@@ -69,9 +69,9 @@ export default function DashboardShell({
 
   return (
     <div className="relative flex h-screen flex-col bg-slate-50 font-sans text-slate-900">
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6">
-        <div className="flex h-full items-center gap-8">
-          <Link href={basePath} className="flex items-center gap-2">
+      <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 sm:px-6">
+        <div className="flex h-full min-w-0 items-center gap-4 sm:gap-8">
+          <Link href={basePath} className="flex shrink-0 items-center gap-2">
             <span
               className="h-4 w-4 shrink-0 bg-[#0062ff]"
               style={{ clipPath: 'polygon(24% 0, 100% 0, 100% 100%, 0% 100%)' }}
@@ -85,7 +85,7 @@ export default function DashboardShell({
               <Link
                 key={id}
                 href={href}
-                className={`relative flex h-full items-center gap-2 border-b-2 px-4 text-sm font-medium transition-colors ${
+                className={`relative flex h-full items-center gap-2 border-b-2 px-2.5 text-sm font-medium transition-colors sm:px-4 ${
                   activeTab === id
                     ? 'border-[#0062ff] text-[#0f1b2d]'
                     : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800'
@@ -97,13 +97,13 @@ export default function DashboardShell({
           </nav>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="relative">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <div className="relative hidden md:block">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               placeholder="Search parts, BOMs…"
-              className="w-56 rounded-md border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#0062ff]"
+              className="w-44 rounded-md border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#0062ff] lg:w-56"
             />
           </div>
 
