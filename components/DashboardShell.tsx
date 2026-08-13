@@ -13,7 +13,7 @@ import {
   Settings,
 } from 'lucide-react'
 
-type DashboardTab = 'dashboard' | 'boms'
+type DashboardTab = 'dashboard' | 'boms' | 'purchasing'
 
 type DashboardShellProps = {
   children: React.ReactNode
@@ -48,6 +48,7 @@ export default function DashboardShell({
   const nav = [
     { id: 'dashboard' as const, label: 'Dashboard', href: `${basePath}?tab=dashboard` },
     { id: 'boms' as const, label: 'BOMs', href: `${basePath}?tab=boms` },
+    { id: 'purchasing' as const, label: 'Purchasing', href: `${basePath}?tab=purchasing` },
   ]
 
   useEffect(() => {

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Link } from '@/lib/navigation'
 import DashboardShell from '@/components/DashboardShell'
 import BomReportView from '@/components/BomReportView'
+import PurchasingPage from '@/components/PurchasingPage'
 import { DEMO_BOMS, getDemoBom, getDemoSummaries } from '@/lib/demo/datasets'
 import type { BomSummary } from '@/lib/types'
 import { formatUploadedAt } from '@/lib/format'
@@ -18,7 +19,13 @@ import {
   ShieldAlert,
 } from 'lucide-react'
 
-type Page = 'dashboard' | 'boms'
+type Page = 'dashboard' | 'boms' | 'purchasing'
+
+function resolvePage(tabParam: string | null): Page {
+  if (tabParam === 'boms') return 'boms'
+  if (tabParam === 'purchasing') return 'purchasing'
+  return 'dashboard'
+}
 
 const RiskRing = ({ score }: { score: number }) => {
   const isHigh = score >= 7
@@ -547,8 +554,8 @@ export default function DemoDashboard() {
 
   const tabParam = searchParams.get('tab')
   const bomId = searchParams.get('bom')
-  const page: Page = tabParam === 'boms' ? 'boms' : 'dashboard'
-  const selected = bomId ? getDemoBom(bomId) : undefined
+  const page = resolvePage(tabParam)
+  const selected = bomId && page === 'boms' ? getDemoBom(bomId) : undefined
 
   const setPage = (next: Page) => {
     router.push(`/demo?tab=${next}`)
@@ -560,7 +567,7 @@ export default function DemoDashboard() {
 
   return (
     <DashboardShell
-      activeTab={page === 'boms' || selected ? 'boms' : 'dashboard'}
+      activeTab={selected ? 'boms' : page}
       bomCount={boms.length}
       demoMode
     >
@@ -579,6 +586,8 @@ export default function DemoDashboard() {
             goToBoms={() => setPage('boms')}
             onViewBom={viewBom}
           />
+        ) : page === 'purchasing' ? (
+          <PurchasingPage demoMode />
         ) : (
           <BomsPage boms={boms} onViewBom={viewBom} />
         )}

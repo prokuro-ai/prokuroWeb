@@ -8,6 +8,7 @@ import { listBoms } from '@/lib/api'
 import { DeleteBomButton } from '@/components/DeleteBomButton'
 import BomBulkUploadModal from '@/components/BomBulkUploadModal'
 import DashboardShell from '@/components/DashboardShell'
+import PurchasingPage from '@/components/PurchasingPage'
 import type { BomSummary } from '@/lib/types'
 import { formatUploadedAt } from '@/lib/format'
 import { bomRiskBand, type BomBand } from '@/lib/risk'
@@ -614,7 +615,6 @@ function BomsPage({ boms, loading, onViewBom, onDelete, onUpload }: {
   const totalAtRisk = boms.reduce((s, b) => s + b.atRiskCount, 0)
   const criticalCount = boms.filter((b) => bomRiskBand(b) === 'Critical').length
   const watchCount = boms.filter((b) => bomRiskBand(b) === 'Watch').length
-  const unknownCount = boms.filter((b) => bomRiskBand(b) === 'Unknown').length
 
   const filterCounts: Record<BomFilter, number> = {
     All: searched.length,
@@ -749,7 +749,13 @@ function BomsPage({ boms, loading, onViewBom, onDelete, onUpload }: {
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
-type Page = 'dashboard' | 'boms'
+type Page = 'dashboard' | 'boms' | 'purchasing'
+
+function resolvePage(tabParam: string | null): Page {
+  if (tabParam === 'boms') return 'boms'
+  if (tabParam === 'purchasing') return 'purchasing'
+  return 'dashboard'
+}
 
 export default function DashboardContent() {
   const router = useRouter()
@@ -759,7 +765,7 @@ export default function DashboardContent() {
   const [loading, setLoading] = useState(true)
 
   const tabParam = searchParams.get('tab')
-  const page: Page = tabParam === 'boms' ? 'boms' : 'dashboard'
+  const page = resolvePage(tabParam)
 
   const dashboardUrl = (tab: Page) => `/dashboard?tab=${tab}`
 
@@ -807,7 +813,7 @@ export default function DashboardContent() {
 
   return (
     <DashboardShell
-      activeTab={page === 'boms' ? 'boms' : 'dashboard'}
+      activeTab={page}
       bomCount={boms.length}
     >
       <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -818,6 +824,8 @@ export default function DashboardContent() {
             goToBoms={() => setPage('boms')}
             onViewBom={viewBom}
           />
+        ) : page === 'purchasing' ? (
+          <PurchasingPage />
         ) : (
           <BomsPage
             boms={boms}
