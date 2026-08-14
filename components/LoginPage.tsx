@@ -89,7 +89,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="auth-mockup-scope min-h-screen bg-[#f5f7fa] flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-[#f5f7fa] flex flex-col items-center justify-center p-6">
       <div className="flex items-center gap-2.5 mb-8">
         <span
           className="h-5 w-5 bg-[#0062ff] shrink-0"

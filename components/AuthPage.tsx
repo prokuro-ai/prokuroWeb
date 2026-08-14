@@ -95,7 +95,7 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="auth-mockup-scope min-h-screen flex w-full font-sans">
+    <div className="min-h-screen flex w-full font-sans">
 
       {/* ── Left Panel ──────────────────────────────────────────────── */}
       <div className="hidden lg:flex lg:w-[45%] min-h-screen bg-[#0f1b2d] relative flex-col overflow-hidden items-center justify-center">
