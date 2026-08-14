@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { DeleteBomButton } from '@/components/DeleteBomButton'
 import BomBulkUploadModal from '@/components/BomBulkUploadModal'
-import DashboardShell from '@/components/DashboardShell'
 import { useBoms } from '@/hooks/use-boms'
 import { listBoms } from '@/lib/api'
 import type { BomSummary } from '@/lib/types'
@@ -319,7 +318,7 @@ export default function BomsPage() {
   }
 
   return (
-    <DashboardShell>
+    <>
       <BomsList
         boms={boms}
         loading={loading}
@@ -333,6 +332,6 @@ export default function BomsPage() {
         onComplete={handleUploadComplete}
         existingBomCount={boms.length}
       />
-    </DashboardShell>
+    </>
   )
 }

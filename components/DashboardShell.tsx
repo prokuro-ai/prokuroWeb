@@ -8,7 +8,6 @@ import { displayNameForUser, initialsForUser, signOut } from '@/lib/auth'
 import { listBoms } from '@/lib/api'
 import {
   Bell,
-  ChevronRight,
   Files,
   LayoutDashboard,
   LogOut,
@@ -56,11 +55,22 @@ function normalizePath(pathname: string | null): string {
   return pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
 }
 
+function navClass(active: boolean, collapsed: boolean) {
+  return `relative flex items-center gap-3 px-3 py-2 text-[13px] font-medium transition-colors ${
+    collapsed ? 'md:justify-center md:px-0' : ''
+  } ${
+    active
+      ? 'bg-[#f4f6f9] text-slate-900'
+      : 'text-slate-500 hover:bg-[#f4f6f9] hover:text-slate-800'
+  }`
+}
+
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = normalizePath(usePathname())
   const { user, loading: authLoading, refresh } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
+  const [sidebarReady, setSidebarReady] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [bellOpen, setBellOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
@@ -68,7 +78,6 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const bellRef = useRef<HTMLDivElement>(null)
   const profileRef = useRef<HTMLDivElement>(null)
   const labelClass = collapsed ? 'md:hidden' : ''
-  const iconNavClass = collapsed ? 'md:justify-center md:px-0' : ''
 
   useEffect(() => {
     try {
@@ -76,6 +85,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     } catch {
       /* ignore */
     }
+    setSidebarReady(true)
   }, [])
 
   useEffect(() => {
@@ -131,7 +141,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
   if (authLoading || !user) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-50 font-sans text-[13px] text-slate-400">
+      <div className="flex h-screen items-center justify-center bg-[#f4f6f9] font-sans text-[13px] text-slate-400">
         Loading…
       </div>
     )
@@ -142,79 +152,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const bomPct = Math.min((bomCount / PLAN_BOM_LIMIT) * 100, 100)
   const settingsActive = pathname === '/account'
 
-  const navLinkClass = (active: boolean) =>
-    `flex items-center gap-3 rounded-md px-2.5 py-2 text-[13px] font-medium transition-colors ${iconNavClass} ${
-      active
-        ? 'bg-blue-50 text-[#0062ff]'
-        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-    }`
-
-  const sidebar = (
-    <aside
-      className={`flex h-full w-[232px] flex-col border-r border-slate-200 bg-white transition-[width] duration-200 ${
-        collapsed ? 'md:w-16' : 'md:w-[232px]'
-      }`}
-    >
-      <div className={`flex h-14 shrink-0 items-center border-b border-slate-200 px-4 ${collapsed ? 'md:justify-center md:px-2' : ''}`}>
-        <Link href="/dashboard" className="flex min-w-0 items-center gap-2" onClick={() => setMobileOpen(false)}>
-          <span
-            className="h-4 w-4 shrink-0 bg-[#0062ff]"
-            style={{ clipPath: 'polygon(24% 0, 100% 0, 100% 100%, 0% 100%)' }}
-          />
-          <span className={`truncate text-[16px] font-semibold tracking-tight text-[#0f1b2d] ${labelClass}`}>
-            Prokuro<span className="text-[#0062ff]">.ai</span>
-          </span>
-        </Link>
-      </div>
-
-      <nav className="flex flex-1 flex-col gap-1 p-2" aria-label="App">
-        {PRIMARY_NAV.map((item) => {
-          const Icon = item.icon
-          const active = item.match(pathname)
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={collapsed ? item.label : undefined}
-              className={navLinkClass(active)}
-              onClick={() => setMobileOpen(false)}
-            >
-              <Icon className="h-[18px] w-[18px] shrink-0" />
-              <span className={labelClass}>{item.label}</span>
-            </Link>
-          )
-        })}
-      </nav>
-
-      <div className="mt-auto space-y-1 border-t border-slate-200 p-2">
-        <Link
-          href="/account"
-          title={collapsed ? 'Settings' : undefined}
-          className={navLinkClass(settingsActive)}
-          onClick={() => setMobileOpen(false)}
-        >
-          <Settings className="h-[18px] w-[18px] shrink-0" />
-          <span className={labelClass}>Settings</span>
-        </Link>
-        <button
-          type="button"
-          onClick={toggleCollapsed}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className={`${navLinkClass(false)} hidden w-full md:flex`}
-        >
-          {collapsed ? (
-            <PanelLeftOpen className="h-[18px] w-[18px] shrink-0" />
-          ) : (
-            <PanelLeftClose className="h-[18px] w-[18px] shrink-0" />
-          )}
-          <span className={labelClass}>Collapse</span>
-        </button>
-      </div>
-    </aside>
-  )
-
   return (
-    <div className="relative flex h-screen bg-slate-50 font-sans text-slate-900">
+    <div className="relative flex h-screen bg-[#f4f6f9] font-sans text-slate-900">
       {mobileOpen ? (
         <button
           type="button"
@@ -225,18 +164,88 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       ) : null}
 
       <div
-        className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-200 md:static md:z-auto md:translate-x-0 ${
-          mobileOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed inset-y-0 left-0 z-50 md:static md:z-auto md:translate-x-0 ${
+          sidebarReady ? 'transition-transform duration-200 md:transition-none' : ''
+        } ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
       >
-        {sidebar}
+        <aside
+          className={`flex h-full w-[232px] flex-col border-r border-slate-200 bg-white ${
+            sidebarReady ? 'md:transition-[width] md:duration-200' : ''
+          } ${collapsed ? 'md:w-16' : 'md:w-[232px]'}`}
+        >
+          <div
+            className={`flex h-14 shrink-0 items-center border-b border-slate-200 px-4 ${
+              collapsed ? 'md:justify-center md:px-2' : ''
+            }`}
+          >
+            <Link href="/dashboard" className="flex min-w-0 items-center gap-2" onClick={() => setMobileOpen(false)}>
+              <span
+                className="h-4 w-4 shrink-0 bg-[#0062ff]"
+                style={{ clipPath: 'polygon(24% 0, 100% 0, 100% 100%, 0% 100%)' }}
+              />
+              <span className={`truncate text-[16px] font-semibold tracking-tight text-[#0f1b2d] ${labelClass}`}>
+                Prokuro<span className="text-[#0062ff]">.ai</span>
+              </span>
+            </Link>
+          </div>
+
+          <nav className="flex flex-1 flex-col gap-0.5 p-2" aria-label="App">
+            {PRIMARY_NAV.map((item) => {
+              const Icon = item.icon
+              const active = item.match(pathname)
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  title={collapsed ? item.label : undefined}
+                  className={navClass(active, collapsed)}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {active ? (
+                    <span className="absolute inset-y-0 left-0 w-[2px] bg-[#0062ff]" aria-hidden />
+                  ) : null}
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className={labelClass}>{item.label}</span>
+                </Link>
+              )
+            })}
+          </nav>
+
+          <div className="mt-auto border-t border-slate-200 p-2">
+            <Link
+              href="/account"
+              title={collapsed ? 'Settings' : undefined}
+              className={navClass(settingsActive, collapsed)}
+              onClick={() => setMobileOpen(false)}
+            >
+              {settingsActive ? (
+                <span className="absolute inset-y-0 left-0 w-[2px] bg-[#0062ff]" aria-hidden />
+              ) : null}
+              <Settings className="h-4 w-4 shrink-0" />
+              <span className={labelClass}>Settings</span>
+            </Link>
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              className={`${navClass(false, collapsed)} mt-0.5 w-full max-md:hidden`}
+            >
+              {collapsed ? (
+                <PanelLeftOpen className="h-4 w-4 shrink-0" />
+              ) : (
+                <PanelLeftClose className="h-4 w-4 shrink-0" />
+              )}
+              <span className={labelClass}>{collapsed ? 'Expand' : 'Collapse'}</span>
+            </button>
+          </div>
+        </aside>
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-3 sm:px-5">
           <button
             type="button"
-            className="rounded-md p-1.5 text-slate-500 hover:bg-slate-50 hover:text-slate-800 md:hidden"
+            className="p-1.5 text-slate-500 hover:bg-[#f4f6f9] hover:text-slate-800 md:hidden"
             aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
             onClick={() => setMobileOpen((open) => !open)}
           >
@@ -244,77 +253,79 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           </button>
           <div className="hidden min-w-0 flex-1 md:block" />
 
-          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-1">
             <div className="relative" ref={bellRef}>
               <button
                 type="button"
                 onClick={() => setBellOpen((open) => !open)}
-                className={`relative rounded-md p-1.5 transition-colors ${
-                  bellOpen ? 'bg-blue-50 text-[#0062ff]' : 'text-slate-400 hover:text-slate-600'
+                className={`relative p-1.5 transition-colors ${
+                  bellOpen ? 'bg-[#f4f6f9] text-slate-900' : 'text-slate-400 hover:text-slate-700'
                 }`}
                 aria-label="Alerts"
               >
                 <Bell className="h-5 w-5" />
               </button>
-              {bellOpen && (
-                <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
-                  <div className="border-b border-slate-100 px-4 py-3">
-                    <span className="text-sm font-bold text-slate-900">Alerts</span>
+              {bellOpen ? (
+                <div className="absolute right-0 top-full z-50 mt-1 w-80 border border-slate-200 bg-white shadow-[0_18px_40px_-28px_rgb(15_27_45_/_30%)]">
+                  <div className="border-b border-slate-200 px-4 py-3">
+                    <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-slate-400">Alerts</p>
                   </div>
                   <div className="px-4 py-8 text-center">
-                    <p className="text-sm font-medium text-slate-900">Alerts coming soon</p>
-                    <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                    <p className="text-[14px] font-medium text-slate-800">Alerts coming soon</p>
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-slate-500">
                       Lifecycle, stock, and tariff alerts will appear here once monitoring is enabled.
                     </p>
                   </div>
                 </div>
-              )}
+              ) : null}
             </div>
 
             <div className="relative" ref={profileRef}>
               <button
                 type="button"
                 onClick={() => setProfileOpen((open) => !open)}
-                className={`flex items-center gap-2 rounded-md p-1 transition-colors ${
-                  profileOpen ? 'bg-slate-100' : 'hover:bg-slate-50'
+                className={`flex items-center p-1 transition-colors ${
+                  profileOpen ? 'bg-[#f4f6f9]' : 'hover:bg-[#f4f6f9]'
                 }`}
                 aria-label="Account menu"
               >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0062ff] text-xs font-bold text-white">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-[#0062ff] text-[11px] font-semibold text-white">
                   {initials}
                 </div>
               </button>
-              {profileOpen && (
-                <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
-                  <div className="flex items-center gap-3 border-b border-slate-100 px-4 pb-3.5 pt-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0062ff] text-sm font-bold text-white">
+              {profileOpen ? (
+                <div className="absolute right-0 top-full z-50 mt-1 w-80 border border-slate-200 bg-white shadow-[0_18px_40px_-28px_rgb(15_27_45_/_30%)]">
+                  <div className="flex items-center gap-3 border-b border-slate-200 px-4 py-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#0062ff] text-[12px] font-semibold text-white">
                       {initials}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <p className="truncate text-sm font-semibold text-[#0f1b2d]">
+                        <p className="truncate text-[14px] font-semibold text-slate-900">
                           {displayName || user.email}
                         </p>
-                        <span className="shrink-0 rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-[#0062ff]">
+                        <span className="shrink-0 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-[#0062ff]">
                           Growth
                         </span>
                       </div>
-                      <p className="truncate text-xs text-slate-500">{user.email}</p>
+                      <p className="truncate font-mono text-[11px] text-slate-400">{user.email}</p>
                       {user.company?.trim() ? (
-                        <p className="mt-0.5 text-xs text-slate-400">{user.company}</p>
+                        <p className="mt-0.5 truncate text-[12px] text-slate-500">{user.company}</p>
                       ) : null}
                     </div>
                   </div>
 
-                  <div className="border-b border-slate-100 px-4 py-3.5">
+                  <div className="border-b border-slate-200 px-4 py-3.5">
                     <div className="mb-1.5 flex items-center justify-between">
-                      <span className="text-xs font-medium text-slate-600">Active BOMs</span>
-                      <span className="text-xs text-slate-400">
+                      <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-slate-400">
+                        Active BOMs
+                      </span>
+                      <span className="font-mono text-[11px] tabular-nums text-slate-600">
                         {bomCount} / {PLAN_BOM_LIMIT}
                       </span>
                     </div>
-                    <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-slate-100">
-                      <div className="h-full rounded-full bg-[#0062ff]" style={{ width: `${bomPct}%` }} />
+                    <div className="mb-3 h-1.5 overflow-hidden bg-slate-100">
+                      <div className="h-full bg-[#0062ff]" style={{ width: `${bomPct}%` }} />
                     </div>
                     <button
                       type="button"
@@ -322,41 +333,35 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                         router.push('/account')
                         setProfileOpen(false)
                       }}
-                      className="group flex w-full items-center justify-between text-left text-xs font-semibold text-[#0062ff]"
+                      className="font-mono text-[10px] uppercase tracking-[0.08em] text-[#0062ff] hover:underline"
                     >
                       Upgrade to Scale
-                      <ChevronRight className="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" />
                     </button>
                   </div>
 
-                  <div className="py-1.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        router.push('/account')
-                        setProfileOpen(false)
-                      }}
-                      className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50"
-                    >
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-100 transition-colors group-hover:bg-slate-200">
-                        <Settings className="h-3.5 w-3.5 text-slate-500" />
-                      </div>
-                      <span className="flex-1 text-sm font-medium text-[#0f1b2d]">Account Settings</span>
-                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300 group-hover:text-slate-400" />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      router.push('/account')
+                      setProfileOpen(false)
+                    }}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[#f4f6f9]"
+                  >
+                    <Settings className="h-4 w-4 shrink-0 text-slate-400" />
+                    <span className="text-[13px] font-medium text-slate-800">Account settings</span>
+                  </button>
 
-                  <div className="border-t border-slate-100 p-2">
+                  <div className="border-t border-slate-200">
                     <button
                       type="button"
                       onClick={handleSignOut}
-                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-[13px] font-medium text-[#c62026] transition-colors hover:bg-[#f4f6f9]"
                     >
                       <LogOut className="h-4 w-4 shrink-0" /> Sign out
                     </button>
                   </div>
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
         </header>

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import DashboardShell from '@/components/DashboardShell'
 import { placeOrder, quotePurchase } from '@/lib/api'
 import type { PurchaseStatus } from '@/lib/types'
 
@@ -41,7 +40,6 @@ export default function PurchasingPage() {
   }
 
   return (
-    <DashboardShell>
     <div className="flex-1 overflow-y-auto bg-[#f4f6f9]">
       <div className="border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-[1180px] px-6 py-8">
@@ -98,6 +96,5 @@ export default function PurchasingPage() {
         </div>
       </div>
     </div>
-    </DashboardShell>
   )
 }

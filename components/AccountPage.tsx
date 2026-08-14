@@ -2,16 +2,18 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
-import DashboardShell from '@/components/DashboardShell'
 import { displayNameForUser, initialsForUser, updateProfile } from '@/lib/auth'
 import { listBoms } from '@/lib/api'
 
-const BLUE = '#0062ff'
-const NAVY = '#0f1b2d'
 const PLAN_BOM_LIMIT = 20
 
 function InputField({
-  label, value, onChange, readOnly = false, placeholder, type = 'text',
+  label,
+  value,
+  onChange,
+  readOnly = false,
+  placeholder,
+  type = 'text',
 }: {
   label: string
   value: string
@@ -22,26 +24,22 @@ function InputField({
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-[12px] font-medium text-slate-400">{label}</label>
+      <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.08em] text-slate-400">
+        {label}
+      </label>
       <input
         type={type}
         readOnly={readOnly}
         value={value}
-        onChange={onChange ? e => onChange(e.target.value) : undefined}
+        onChange={onChange ? (e) => onChange(e.target.value) : undefined}
         placeholder={placeholder}
-        className={`w-full rounded-lg border px-3 py-2 text-[13px] transition-colors focus:outline-none focus:ring-2 focus:ring-[#0062ff]/20 focus:border-[#0062ff] ${
+        className={`w-full border px-3 py-2 text-[13px] transition-colors focus:border-[#0062ff] focus:outline-none ${
           readOnly
-            ? 'bg-slate-50 border-slate-200 text-slate-400 cursor-default'
-            : 'bg-white border-slate-200 text-[#0f1b2d]'
+            ? 'cursor-default border-slate-200 bg-[#f4f6f9] text-slate-400'
+            : 'border-slate-200 bg-white text-slate-900'
         }`}
       />
     </div>
-  )
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">{children}</p>
   )
 }
 
@@ -49,12 +47,11 @@ export default function AccountPage() {
   const { user, refresh } = useAuth()
 
   const [firstName, setFirstName] = useState('')
-  const [lastName,  setLastName]  = useState('')
-  const [company,   setCompany]   = useState('')
-  const [saving,    setSaving]    = useState(false)
-  const [saved,     setSaved]     = useState(false)
-
-  const [bomCount,  setBomCount]  = useState(0)
+  const [lastName, setLastName] = useState('')
+  const [company, setCompany] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [bomCount, setBomCount] = useState(0)
   const [inviteEmail, setInviteEmail] = useState('')
 
   useEffect(() => {
@@ -89,162 +86,144 @@ export default function AccountPage() {
     setCompany(user.company)
   }
 
-  if (!user) {
-    return <DashboardShell>{null}</DashboardShell>
-  }
+  if (!user) return null
 
-  const initials    = initialsForUser(user)
+  const initials = initialsForUser(user)
   const displayName = displayNameForUser(user)
-  const bomPct      = Math.min((bomCount / PLAN_BOM_LIMIT) * 100, 100)
+  const bomPct = Math.min((bomCount / PLAN_BOM_LIMIT) * 100, 100)
 
   return (
-    <DashboardShell>
-      <div className="flex-1 overflow-y-auto bg-slate-50 font-sans text-[#0f1b2d]">
-        <div className="mx-auto max-w-2xl space-y-8 px-6 py-8">
-
-        {/* Identity banner */}
-        <div className="flex items-center gap-4 pb-6 border-b border-slate-200">
-          <div
-            className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold shrink-0"
-            style={{ background: BLUE }}
-          >
-            {initials}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[18px] font-semibold truncate" style={{ color: NAVY }}>{displayName || user.email}</p>
-            <p className="text-[13px] text-slate-500 truncate">{user.email}</p>
-            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              {user.company?.trim() && (
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-[#0062ff]">
-                  {user.company}
-                </span>
-              )}
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
-                Growth Plan
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Profile + Company */}
-        <div>
-          <SectionLabel>Profile</SectionLabel>
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-5 py-5 border-b border-slate-100">
-              <div className="grid grid-cols-2 gap-3">
-                <InputField label="First name" value={firstName} onChange={setFirstName} />
-                <InputField label="Last name"  value={lastName}  onChange={setLastName}  />
-              </div>
-            </div>
-            <div className="px-5 py-4 border-b border-slate-100">
-              <InputField label="Work email" value={user.email} readOnly type="email" />
-            </div>
-            <div className="px-5 py-4 border-b border-slate-100">
-              <InputField label="Company" value={company} onChange={setCompany} placeholder="Your company" />
-            </div>
-            <div className="px-5 py-3 bg-slate-50 flex items-center justify-end gap-2">
-              <button
-                onClick={handleCancel}
-                disabled={saving}
-                className="px-4 py-2 rounded-lg text-[12px] font-medium text-slate-400 hover:text-slate-700 transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="px-4 py-2 rounded-lg text-[12px] font-medium text-white transition-colors disabled:opacity-60 flex items-center gap-1.5"
-                style={{ background: BLUE }}
-              >
-                {saved ? (
-                  <>
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
-                    Saved
-                  </>
-                ) : saving ? 'Saving…' : 'Save changes'}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Plan & usage */}
-        <div>
-          <SectionLabel>Plan & usage</SectionLabel>
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-5 py-5 border-b border-slate-100">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-[14px] font-semibold" style={{ color: NAVY }}>Growth Plan</p>
-                  <p className="text-[12px] text-slate-500 mt-0.5">Up to {PLAN_BOM_LIMIT} active BOMs</p>
-                </div>
-                <button
-                  className="shrink-0 ml-4 px-3.5 py-1.5 rounded-lg border text-[12px] font-semibold transition-colors hover:bg-blue-50"
-                  style={{ color: BLUE, borderColor: '#bfdbfe' }}
-                >
-                  Upgrade to Scale
-                </button>
-              </div>
-            </div>
-            <div className="px-5 py-4">
-              <div className="flex items-center justify-between text-[12px] mb-2">
-                <span className="text-slate-500">BOMs used</span>
-                <span className="font-semibold" style={{ color: NAVY }}>{bomCount} / {PLAN_BOM_LIMIT}</span>
-              </div>
-              <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-1.5">
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{ width: `${bomPct}%`, background: BLUE }}
-                />
-              </div>
-              <p className="text-[11px] text-slate-400">{PLAN_BOM_LIMIT - bomCount} BOMs remaining on your plan</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Team */}
-        <div className="pb-16">
-          <SectionLabel>Team</SectionLabel>
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-5 py-5 border-b border-slate-100">
-              <p className="text-[13px] font-medium mb-3" style={{ color: NAVY }}>Invite teammates</p>
-              <div className="flex gap-2">
-                <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={e => setInviteEmail(e.target.value)}
-                  placeholder="colleague@company.com"
-                  className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#0062ff]/20 focus:border-[#0062ff]"
-                />
-                <button
-                  disabled={!inviteEmail.includes('@')}
-                  className="shrink-0 px-4 py-2 rounded-lg text-[13px] font-medium text-white transition-colors disabled:opacity-40"
-                  style={{ background: BLUE }}
-                >
-                  Invite
-                </button>
-              </div>
-            </div>
-            {/* Current members */}
-            <div className="flex items-center gap-3 px-5 py-4">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                style={{ background: BLUE }}
-              >
-                {initials}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-medium truncate" style={{ color: NAVY }}>{displayName || user.email}</p>
-                <p className="text-[11px] text-slate-400 truncate">{user.email}</p>
-              </div>
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">Admin</span>
-            </div>
-          </div>
-        </div>
-
+    <div className="flex-1 overflow-y-auto bg-[#f4f6f9]">
+      <div className="border-b border-slate-200 bg-white">
+        <div className="mx-auto max-w-[960px] px-6 py-8">
+          <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Account</p>
+          <h1 className="mt-1 text-[28px] font-semibold tracking-tight text-slate-900">Settings</h1>
+          <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-slate-500">
+            Profile, plan usage, and team access for this workspace.
+          </p>
         </div>
       </div>
-    </DashboardShell>
+
+      <div className="mx-auto max-w-[960px] space-y-6 px-6 py-8">
+        <section className="border border-slate-200 bg-white">
+          <div className="flex items-center gap-4 border-b border-slate-200 px-5 py-5">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center bg-[#0062ff] text-[15px] font-semibold text-white">
+              {initials}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[16px] font-semibold text-slate-900">
+                {displayName || user.email}
+              </p>
+              <p className="truncate font-mono text-[12px] text-slate-400">{user.email}</p>
+              <p className="mt-1 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-[#0062ff]">
+                Growth
+                {user.company?.trim() ? ` · ${user.company}` : ''}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 border-b border-slate-200 px-5 py-5 sm:grid-cols-2">
+            <InputField label="First name" value={firstName} onChange={setFirstName} />
+            <InputField label="Last name" value={lastName} onChange={setLastName} />
+            <InputField label="Work email" value={user.email} readOnly type="email" />
+            <InputField
+              label="Company"
+              value={company}
+              onChange={setCompany}
+              placeholder="Your company"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 bg-[#f4f6f9] px-5 py-3">
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={saving}
+              className="border border-slate-300 bg-white px-4 py-2 text-[13px] font-medium text-slate-700 transition-colors hover:border-slate-400 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-[#0062ff] px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+            >
+              {saved ? 'Saved' : saving ? 'Saving…' : 'Save changes'}
+            </button>
+          </div>
+        </section>
+
+        <section className="border border-slate-200 bg-white">
+          <header className="border-b border-slate-200 px-5 py-4">
+            <h2 className="text-[15px] font-semibold text-slate-900">Plan & usage</h2>
+            <p className="mt-0.5 text-[13px] text-slate-500">Up to {PLAN_BOM_LIMIT} active BOMs on Growth.</p>
+          </header>
+          <div className="px-5 py-5">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-slate-400">
+                BOMs used
+              </span>
+              <span className="font-mono text-[13px] tabular-nums text-slate-800">
+                {bomCount} / {PLAN_BOM_LIMIT}
+              </span>
+            </div>
+            <div className="mb-2 h-1.5 overflow-hidden bg-slate-100">
+              <div className="h-full bg-[#0062ff]" style={{ width: `${bomPct}%` }} />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[13px] text-slate-500">
+                {PLAN_BOM_LIMIT - bomCount} remaining on this plan
+              </p>
+              <button
+                type="button"
+                className="font-mono text-[10px] uppercase tracking-[0.08em] text-[#0062ff] hover:underline"
+              >
+                Upgrade to Scale
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="border border-slate-200 bg-white">
+          <header className="border-b border-slate-200 px-5 py-4">
+            <h2 className="text-[15px] font-semibold text-slate-900">Team</h2>
+            <p className="mt-0.5 text-[13px] text-slate-500">Invite teammates to this workspace.</p>
+          </header>
+          <div className="border-b border-slate-200 px-5 py-5">
+            <div className="flex gap-2">
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                placeholder="colleague@company.com"
+                className="flex-1 border border-slate-200 px-3 py-2 text-[13px] text-slate-900 placeholder:text-slate-400 focus:border-[#0062ff] focus:outline-none"
+              />
+              <button
+                type="button"
+                disabled={!inviteEmail.includes('@')}
+                className="shrink-0 bg-[#0062ff] px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-40"
+              >
+                Invite
+              </button>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 px-5 py-4">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-[#0062ff] text-[11px] font-semibold text-white">
+              {initials}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13px] font-medium text-slate-900">
+                {displayName || user.email}
+              </p>
+              <p className="truncate font-mono text-[11px] text-slate-400">{user.email}</p>
+            </div>
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+              Admin
+            </span>
+          </div>
+        </section>
+      </div>
+    </div>
   )
 }

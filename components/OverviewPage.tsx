@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import DashboardShell from '@/components/DashboardShell'
 import { useBoms } from '@/hooks/use-boms'
 import type { BomSummary } from '@/lib/types'
 import { formatUploadedAt } from '@/lib/format'
@@ -461,13 +460,11 @@ export default function OverviewPage() {
   if (tab === 'boms' || tab === 'purchasing') return null
 
   return (
-    <DashboardShell>
-      <OverviewView
-        boms={boms}
-        loading={loading}
-        goToBoms={() => router.push('/boms')}
-        onViewBom={(id) => router.push(`/bom/${encodeURIComponent(id)}`)}
-      />
-    </DashboardShell>
+    <OverviewView
+      boms={boms}
+      loading={loading}
+      goToBoms={() => router.push('/boms')}
+      onViewBom={(id) => router.push(`/bom/${encodeURIComponent(id)}`)}
+    />
   )
 }
