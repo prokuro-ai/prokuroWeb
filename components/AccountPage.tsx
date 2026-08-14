@@ -1,11 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useLocation } from '@/lib/navigation'
 import { useAuth } from '@/components/AuthProvider'
-import { displayNameForUser, initialsForUser, updateProfile, signOut } from '@/lib/auth'
+import DashboardShell from '@/components/DashboardShell'
+import { displayNameForUser, initialsForUser, updateProfile } from '@/lib/auth'
 import { listBoms } from '@/lib/api'
-import { ArrowLeft, LogOut } from 'lucide-react'
 
 const BLUE = '#0062ff'
 const NAVY = '#0f1b2d'
@@ -47,8 +46,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 export default function AccountPage() {
-  const { user, loading, refresh } = useAuth()
-  const [, navigate] = useLocation()
+  const { user, refresh } = useAuth()
 
   const [firstName, setFirstName] = useState('')
   const [lastName,  setLastName]  = useState('')
@@ -84,12 +82,6 @@ export default function AccountPage() {
     }
   }
 
-  const handleSignOut = async () => {
-    await signOut()
-    await refresh()
-    navigate('/login')
-  }
-
   const handleCancel = () => {
     if (!user) return
     setFirstName(user.firstName)
@@ -97,20 +89,8 @@ export default function AccountPage() {
     setCompany(user.company)
   }
 
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-slate-50 font-sans text-[13px] text-slate-400">
-        Loading…
-      </div>
-    )
-  }
-
   if (!user) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-slate-50 font-sans text-[13px] text-slate-400">
-        Sign in to manage your account.
-      </div>
-    )
+    return <DashboardShell>{null}</DashboardShell>
   }
 
   const initials    = initialsForUser(user)
@@ -118,30 +98,9 @@ export default function AccountPage() {
   const bomPct      = Math.min((bomCount / PLAN_BOM_LIMIT) * 100, 100)
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-[#0f1b2d]">
-
-      {/* Page header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-slate-200 h-14 flex items-center justify-between px-6">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-1.5 text-[13px] text-slate-500 hover:text-slate-800 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Dashboard
-          </button>
-          <span className="text-slate-200">/</span>
-          <span className="text-[13px] font-semibold" style={{ color: NAVY }}>Account settings</span>
-        </div>
-        <button
-          onClick={handleSignOut}
-          className="flex items-center gap-1.5 text-[12px] text-slate-400 hover:text-red-600 transition-colors"
-        >
-          <LogOut className="w-3.5 h-3.5" /> Sign out
-        </button>
-      </div>
-
-      <div className="max-w-2xl mx-auto px-6 py-8 space-y-8">
+    <DashboardShell>
+      <div className="flex-1 overflow-y-auto bg-slate-50 font-sans text-[#0f1b2d]">
+        <div className="mx-auto max-w-2xl space-y-8 px-6 py-8">
 
         {/* Identity banner */}
         <div className="flex items-center gap-4 pb-6 border-b border-slate-200">
@@ -284,7 +243,8 @@ export default function AccountPage() {
           </div>
         </div>
 
+        </div>
       </div>
-    </div>
+    </DashboardShell>
   )
 }

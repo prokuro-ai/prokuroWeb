@@ -26,7 +26,7 @@ const btnGhost =
 export function DeleteBomButton({
   bomId,
   bomName,
-  redirectTo = '/dashboard',
+  redirectTo = '/boms',
   onDeleted,
   variant = 'danger',
   label = 'Delete',

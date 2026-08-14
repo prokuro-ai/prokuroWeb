@@ -1,8 +1,16 @@
-/** When false, signup/login and the app are hidden; marketing is demo-only. */
+/** When false, signup/login and the app are hidden; marketing only. */
 export const SELF_SERVE_ENABLED = true
 
 /** App routes blocked while self-serve is disabled. */
-export const APP_ROUTE_PREFIXES = ['/dashboard', '/account', '/bom', '/analyze', '/auth'] as const
+export const APP_ROUTE_PREFIXES = [
+  '/dashboard',
+  '/boms',
+  '/purchasing',
+  '/account',
+  '/bom',
+  '/analyze',
+  '/auth',
+] as const
 
 export const AUTH_ROUTE_PREFIXES = ['/login', '/signup'] as const
 
