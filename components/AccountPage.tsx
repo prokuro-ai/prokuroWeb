@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { ChevronLeft } from 'lucide-react'
 import { useAuth } from '@/components/AuthProvider'
+import { Link } from '@/lib/navigation'
 import { displayNameForUser, initialsForUser, updateProfile } from '@/lib/auth'
 import { listBoms } from '@/lib/api'
 
@@ -96,11 +98,22 @@ export default function AccountPage() {
     <div className="flex-1 overflow-y-auto bg-[#f4f6f9]">
       <div className="border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-[960px] px-6 py-8">
-          <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Account</p>
-          <h1 className="mt-1 text-[28px] font-semibold tracking-tight text-slate-900">Settings</h1>
-          <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-slate-500">
-            Profile, plan usage, and team access for this workspace.
-          </p>
+          <div className="flex items-start gap-3">
+            <Link
+              href="/dashboard"
+              className="mt-1.5 shrink-0 p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-800"
+              aria-label="Back to overview"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
+            <div className="min-w-0 flex-1">
+              <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Account</p>
+              <h1 className="mt-1 text-[28px] font-semibold tracking-tight text-slate-900">Settings</h1>
+              <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-slate-500">
+                Profile, plan usage, and team access for this workspace.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
