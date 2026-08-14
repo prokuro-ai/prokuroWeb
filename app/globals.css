@@ -503,8 +503,10 @@ html {
   letter-spacing: 0.16px;
 }
 
-/* Marketing typography only — scoped so it cannot override Tailwind in app UI. */
-.marketing-page a {
+/* Marketing typography only — scoped so it cannot override Tailwind in app UI.
+   Exclude .btn so primary CTAs keep white text (.marketing-page a is more
+   specific than .btn--primary and would otherwise force color: inherit). */
+.marketing-page a:not(.btn) {
   color: inherit;
   text-decoration: none;
   transition: color 0.2s ease;
@@ -608,6 +610,7 @@ html {
   line-height: 1.29;
   letter-spacing: 0.16px;
   font-weight: 400;
+  text-decoration: none;
   cursor: pointer;
   transition:
     transform 0.2s ease,
