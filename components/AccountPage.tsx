@@ -418,7 +418,7 @@ export default function AccountPage() {
                       try {
                         const invite = await createTeamInvite(inviteEmail.trim(), inviteRole)
                         setInviteEmail('')
-                        if (!invite.email_sent && invite.accept_url) {
+                        if (invite.accept_url) {
                           setLastAcceptUrl(invite.accept_url)
                         }
                         await reloadTeam()
@@ -439,7 +439,7 @@ export default function AccountPage() {
                 ) : null}
                 {lastAcceptUrl ? (
                   <p className="mt-2 break-all text-[12px] text-slate-500">
-                    Email not sent (SES not configured). Share this link:{' '}
+                    Share this invite link with your teammate:{' '}
                     <a href={lastAcceptUrl} className="font-medium text-[#0062ff] hover:underline">
                       {lastAcceptUrl}
                     </a>
