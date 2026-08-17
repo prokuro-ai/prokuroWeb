@@ -5,62 +5,11 @@ import Link from 'next/link'
 import { Check } from 'lucide-react'
 import { useAuth } from '@/components/AuthProvider'
 import { startCheckout } from '@/lib/api'
-import { PLAN_LIMITS } from '@/lib/planLimits'
+import { PUBLIC_PLANS } from '@/lib/publicPlans'
 import ProkuroBrandLink from '@/components/ProkuroBrandLink'
 
 const BLUE = '#0062ff'
 const NAVY = '#0f1b2d'
-
-const PLANS = [
-  {
-    id: 'free' as const,
-    name: 'Free',
-    price: '$0',
-    period: '',
-    blurb: 'Run one board through the analyst. Weekly refresh, small purchase pool.',
-    features: [
-      `${PLAN_LIMITS.free.activeBoms} active BOM · ${PLAN_LIMITS.free.maxLinesPerBom} lines`,
-      `${PLAN_LIMITS.free.analysesPerMonth} analyses / mo`,
-      'Weekly availability refresh',
-      `${PLAN_LIMITS.free.purchasingActionsPerMonth} purchasing actions / mo`,
-      'Lighter Bedrock (Haiku, capped)',
-    ],
-    cta: 'Start free',
-    highlighted: false,
-  },
-  {
-    id: 'growth' as const,
-    name: 'Growth',
-    price: '$149',
-    period: '/mo',
-    blurb: 'For buyers with a handful of live boards who need daily monitoring.',
-    features: [
-      `${PLAN_LIMITS.growth.activeBoms} active BOMs · ${PLAN_LIMITS.growth.maxLinesPerBom} lines`,
-      `${PLAN_LIMITS.growth.analysesPerMonth} analyses / mo`,
-      'Daily Digi-Key refresh + Bedrock analyst',
-      `${PLAN_LIMITS.growth.purchasingActionsPerMonth} purchasing actions / mo`,
-      'Email support',
-    ],
-    cta: 'Start Growth',
-    highlighted: true,
-  },
-  {
-    id: 'scale' as const,
-    name: 'Scale',
-    price: '$399',
-    period: '/mo',
-    blurb: 'For a small procurement pod living in Prokuro.',
-    features: [
-      `${PLAN_LIMITS.scale.activeBoms} active BOMs · ${PLAN_LIMITS.scale.maxLinesPerBom} lines`,
-      `${PLAN_LIMITS.scale.analysesPerMonth} analyses / mo`,
-      'Daily refresh + fuller agent headroom',
-      `${PLAN_LIMITS.scale.purchasingActionsPerMonth} purchasing actions / mo`,
-      'Priority support · Enterprise on request',
-    ],
-    cta: 'Start Scale',
-    highlighted: false,
-  },
-]
 
 export default function PricingPage() {
   const { user } = useAuth()
@@ -98,6 +47,9 @@ export default function PricingPage() {
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
           <ProkuroBrandLink />
           <div className="flex items-center gap-4 text-[13px]">
+            <Link href="/#pricing" className="text-slate-500 hover:text-slate-800">
+              Home
+            </Link>
             <Link href="/schedule" className="text-slate-500 hover:text-slate-800">
               Book a demo
             </Link>
@@ -129,7 +81,7 @@ export default function PricingPage() {
         ) : null}
 
         <div className="mt-10 grid gap-6 md:grid-cols-3">
-          {PLANS.map((plan) => (
+          {PUBLIC_PLANS.map((plan) => (
             <div
               key={plan.id}
               className={`rounded-2xl border bg-white p-6 shadow-sm ${

@@ -7,11 +7,12 @@ import { MarketingAuthActions } from '@/components/UserMenu'
 import ProkuroBrandLink from '@/components/ProkuroBrandLink'
 import { BOOK_DEMO_LABEL, SCHEDULE_DEMO_PATH } from '@/lib/sales'
 import { PRIVACY_PATH, TERMS_PATH } from '@/lib/legal'
+import { PUBLIC_PLANS } from '@/lib/publicPlans'
 
 const NAV_LINKS = [
   { href: '#product', label: 'Product' },
   { href: '#how-it-works', label: 'How It Works' },
-  { href: '/pricing', label: 'Pricing' },
+  { href: '#pricing', label: 'Pricing' },
   { href: '/schedule', label: 'Book a demo' },
   { href: '#company', label: 'Company' },
 ] as const
@@ -691,6 +692,67 @@ export default function LandingPage() {
                 That&apos;s what a personalized procurement analyst delivers: not a list of 12 parametric matches you still have to validate yourself. The value isn&apos;t the alternate. It&apos;s eliminating the cross-functional coordination that usually takes days.
               </p>
             </div>
+          </div>
+        </section>
+
+        <section id="pricing" className="section">
+          <div className="container">
+            <Reveal>
+              <p className="eyebrow">Pricing</p>
+            </Reveal>
+            <Reveal delay={0.05}>
+              <h2>Free to try. Growth and Scale when boards go live.</h2>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <p className="section-lead">
+                Pay for how many BOMs you keep monitored. Caps keep API spend under control.
+                Enterprise (SSO, custom volume) stays sales-led.
+              </p>
+            </Reveal>
+            <div className="pricing-grid three-col">
+              {PUBLIC_PLANS.map((plan, index) => (
+                <Reveal key={plan.id} delay={0.08 * index}>
+                  <article
+                    className={`pricing-card${plan.highlighted ? ' pricing-card--featured' : ''}`}
+                  >
+                    <div className="pricing-card__head">
+                      <h3>{plan.name}</h3>
+                      {plan.highlighted ? <span className="pricing-card__badge">Popular</span> : null}
+                    </div>
+                    <p className="pricing-card__price">
+                      <span>{plan.price}</span>
+                      {plan.period ? <small>{plan.period}</small> : null}
+                    </p>
+                    <p className="pricing-card__blurb">{plan.blurb}</p>
+                    <ul className="pricing-card__features">
+                      {plan.features.map((feature) => (
+                        <li key={feature}>
+                          <Check size={16} aria-hidden="true" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <a
+                      className={`btn ${plan.highlighted ? 'btn--primary' : 'btn--ghost'}`}
+                      href={
+                        plan.id === 'free'
+                          ? '/login?next=%2Fdashboard'
+                          : `/pricing`
+                      }
+                    >
+                      {plan.cta}
+                      <ArrowRight size={14} aria-hidden="true" />
+                    </a>
+                  </article>
+                </Reveal>
+              ))}
+            </div>
+            <Reveal delay={0.2}>
+              <p className="pricing-footnote">
+                Prefer a dedicated page? See full checkout on{' '}
+                <a href="/pricing">prokuro.ai/pricing</a>.
+              </p>
+            </Reveal>
           </div>
         </section>
 
