@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowRight, CheckCircle, FileText, Loader2, XCircle } from 'lucide-react'
 import { AppModal, ModalNotice } from '@/components/AppModal'
 import BomColumnMappingStep from '@/components/BomColumnMappingStep'
-import { analyzeFile, parseFile, saveBom } from '@/lib/api'
+import { analyzeFile, getBillingStatus, parseFile, saveBom } from '@/lib/api'
+import { limitsFor } from '@/lib/planLimits'
 import {
   buildColumnMappings,
   extractHeaders,
@@ -18,7 +19,6 @@ import type { BomSummary, ColumnMapping, ParseResult } from '@/lib/types'
 const ACCEPT_MIME =
   '.csv,.xlsx,.xls,.txt,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel'
 
-const MAX_FILES = 20
 const PREVIEW_DEBOUNCE_MS = 400
 
 type QueueItem = {
@@ -72,6 +72,16 @@ export default function BomBulkUploadModal({
   const [mapping, setMapping] = useState<ColumnMapping[]>([])
   const [headers, setHeaders] = useState<string[]>([])
   const [preview, setPreview] = useState<string[][]>([])
+  const [maxFiles, setMaxFiles] = useState(limitsFor('free').activeBoms)
+
+  useEffect(() => {
+    if (!open) return
+    getBillingStatus()
+      .then((status) => {
+        setMaxFiles(status.limits?.active_boms ?? limitsFor(status.plan).activeBoms)
+      })
+      .catch(() => setMaxFiles(limitsFor('free').activeBoms))
+  }, [open])
 
   const reset = useCallback(() => {
     setStep('select')
@@ -101,9 +111,9 @@ export default function BomBulkUploadModal({
     const incoming = Array.from(files)
     if (incoming.length === 0) return
 
-    const slotsLeft = MAX_FILES - existingBomCount - items.length
+    const slotsLeft = maxFiles - existingBomCount - items.length
     if (slotsLeft <= 0) {
-      setPickError(`Your plan supports up to ${MAX_FILES} BOMs. Remove files or upgrade to add more.`)
+      setPickError(`Your plan supports up to ${maxFiles} BOMs. Remove files or upgrade to add more.`)
       return
     }
 

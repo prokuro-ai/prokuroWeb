@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Link } from '@/lib/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import { signOut } from '@/lib/auth'
+import { getBillingStatus, type BillingAccountStatus } from '@/lib/api'
+import { limitsFor, planLabel } from '@/lib/planLimits'
 import {
   Bell,
   ChevronRight,
@@ -34,6 +36,7 @@ export default function DashboardShell({
   const { user, refresh } = useAuth()
   const [bellOpen, setBellOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [billing, setBilling] = useState<BillingAccountStatus | null>(null)
   const bellRef = useRef<HTMLDivElement>(null)
   const profileRef = useRef<HTMLDivElement>(null)
 
@@ -59,13 +62,26 @@ export default function DashboardShell({
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
+  useEffect(() => {
+    if (demoMode || !user) return
+    getBillingStatus()
+      .then(setBilling)
+      .catch(() => setBilling({ plan: 'free', status: 'none', can_purchase: true }))
+  }, [demoMode, user])
+
   const handleSignOut = async () => {
     await signOut()
     await refresh()
     router.push('/login')
   }
 
-  const bomPct = Math.min((bomCount / 20) * 100, 100)
+  const activePlan = billing?.plan ?? 'free'
+  const bomLimit = billing?.limits?.active_boms ?? limitsFor(activePlan).activeBoms
+  const bomPct = Math.min((bomCount / bomLimit) * 100, 100)
+  const badge = demoMode ? 'Demo' : planLabel(activePlan)
+  const upgradeLabel =
+    activePlan === 'free' ? 'Upgrade to Growth' : activePlan === 'growth' ? 'Upgrade to Scale' : 'Manage billing'
+  const upgradeHref = activePlan === 'scale' ? '/account' : '/pricing'
 
   return (
     <div className="relative flex h-screen flex-col bg-slate-50 font-sans text-slate-900">
@@ -175,7 +191,7 @@ export default function DashboardShell({
                             : 'Account'}
                       </p>
                       <span className="shrink-0 rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-[#0062ff]">
-                        {demoMode ? 'Demo' : 'Growth'}
+                        {badge}
                       </span>
                     </div>
                     <p className="truncate text-xs text-slate-500">
@@ -195,7 +211,7 @@ export default function DashboardShell({
                   <div className="border-b border-slate-100 px-4 py-3.5">
                     <div className="mb-1.5 flex items-center justify-between">
                       <span className="text-xs font-medium text-slate-600">Active BOMs</span>
-                      <span className="text-xs text-slate-400">{bomCount} / 20</span>
+                      <span className="text-xs text-slate-400">{bomCount} / {bomLimit}</span>
                     </div>
                     <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-slate-100">
                       <div
@@ -206,12 +222,12 @@ export default function DashboardShell({
                     <button
                       type="button"
                       onClick={() => {
-                        router.push('/account')
+                        router.push(upgradeHref)
                         setProfileOpen(false)
                       }}
                       className="group flex w-full items-center justify-between text-left text-xs font-semibold text-[#0062ff]"
                     >
-                      Upgrade to Scale
+                      {upgradeLabel}
                       <ChevronRight className="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" />
                     </button>
                   </div>

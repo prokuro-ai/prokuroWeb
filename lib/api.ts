@@ -264,3 +264,113 @@ export async function saveBom(
   if (!res.ok) throw new Error(await readErrorMessage(res, body))
   return body as BomSummary
 }
+
+export type BillingPlan = 'free' | 'growth' | 'scale'
+export type BillingStatus = 'none' | 'trialing' | 'active' | 'past_due' | 'canceled'
+
+export type PlanLimitsApi = {
+  seats: number
+  active_boms: number
+  max_lines_per_bom: number
+  lines_per_month: number
+  analyses_per_month: number
+  purchasing_actions_per_month: number
+  orders_per_month: number
+  concurrent_analyses: number
+  unique_mpn_lookups_per_day: number
+  refresh: 'weekly' | 'daily'
+  bedrock: string
+}
+
+export type PlanUsageApi = {
+  analyses_count: number
+  lines_count: number
+  purchasing_actions_count: number
+  orders_count: number
+}
+
+export type BillingAccountStatus = {
+  plan: BillingPlan
+  status: BillingStatus
+  can_purchase: boolean
+  limits?: PlanLimitsApi
+  usage?: PlanUsageApi
+  stripe_customer_id?: string | null
+  current_period_end?: string | null
+}
+
+export async function getBillingStatus(): Promise<BillingAccountStatus> {
+  const res = await fetch('/api/billing/status', { headers: await authHeaders() })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  return body as BillingAccountStatus
+}
+
+export async function startCheckout(
+  plan: Exclude<BillingPlan, 'free'>,
+  successUrl: string,
+  cancelUrl: string,
+): Promise<string> {
+  const res = await fetch('/api/billing/checkout', {
+    method: 'POST',
+    headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ plan, success_url: successUrl, cancel_url: cancelUrl }),
+  })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  const url = (body as { url?: string }).url
+  if (!url) throw new Error('Checkout URL missing')
+  return url
+}
+
+export async function openBillingPortal(returnUrl: string): Promise<string> {
+  const res = await fetch('/api/billing/portal', {
+    method: 'POST',
+    headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ return_url: returnUrl }),
+  })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  const url = (body as { url?: string }).url
+  if (!url) throw new Error('Portal URL missing')
+  return url
+}
+
+export type PurchaseProvider = 'digikey' | 'mouser'
+
+export type PurchaseLine = {
+  mpn: string
+  quantity: number
+  manufacturer?: string
+}
+
+export type QuoteResponse = {
+  provider: PurchaseProvider
+  status: string
+  lines?: Array<{
+    mpn: string
+    quantity: number
+    unit_price?: number
+    extended_price?: number
+    currency?: string
+    error?: string
+  }>
+  subtotal?: number
+  currency?: string
+  message?: string
+}
+
+export async function purchaseQuote(
+  provider: PurchaseProvider,
+  lines: PurchaseLine[],
+): Promise<QuoteResponse> {
+  const res = await fetch('/api/purchase/quote', {
+    method: 'POST',
+    headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ provider, lines }),
+  })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  return body as QuoteResponse
+}
+
