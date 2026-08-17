@@ -14,6 +14,7 @@ import {
   revokeTeamInvite,
   startCheckout,
   type BillingAccountStatus,
+  type BillingStatus,
   type TeamInvite,
   type TeamRole,
 } from '@/lib/api'
@@ -63,6 +64,66 @@ function planLabel(plan: BillingAccountStatus['plan']) {
   return `${shortPlanLabel(plan)} Plan`
 }
 
+function billingStatusLabel(status: BillingStatus | undefined) {
+  switch (status) {
+    case 'active':
+      return 'Active'
+    case 'trialing':
+      return 'Trial'
+    case 'past_due':
+      return 'Past due'
+    case 'canceled':
+      return 'Canceled'
+    case 'none':
+    default:
+      return 'No subscription'
+  }
+}
+
+function formatPeriodEnd(value: string | null | undefined) {
+  if (!value) return null
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+function UsageMeter({
+  label,
+  used,
+  limit,
+}: {
+  label: string
+  used: number
+  limit: number
+}) {
+  const safeLimit = Math.max(limit, 1)
+  const pct = Math.min((used / safeLimit) * 100, 100)
+  const remaining = Math.max(limit - used, 0)
+  return (
+    <div>
+      <div className="mb-1.5 flex items-center justify-between text-[12px]">
+        <span className="text-slate-500">{label}</span>
+        <span className="font-semibold" style={{ color: NAVY }}>
+          {used} / {limit}
+        </span>
+      </div>
+      <div className="mb-1 h-2 overflow-hidden rounded-full bg-slate-100">
+        <div
+          className="h-full rounded-full transition-all"
+          style={{ width: `${pct}%`, background: BLUE }}
+        />
+      </div>
+      <p className="text-[11px] text-slate-400">
+        {remaining} remaining this period
+      </p>
+    </div>
+  )
+}
+
 function roleLabel(role: TeamRole) {
   if (role === 'read_only') return 'Read only'
   if (role === 'admin') return 'Admin'
@@ -96,6 +157,7 @@ export default function AccountPage() {
   const [billing, setBilling] = useState<BillingAccountStatus | null>(null)
   const [billingBusy, setBillingBusy] = useState(false)
   const [billingError, setBillingError] = useState<string | null>(null)
+  const [billingNotice, setBillingNotice] = useState<string | null>(null)
   const { team, reload: reloadTeam, canManage } = useTeam()
 
   useEffect(() => {
@@ -118,6 +180,31 @@ export default function AccountPage() {
           can_purchase: true,
         }),
       )
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const billingParam = params.get('billing')
+    if (!billingParam) return
+
+    if (billingParam === 'success') {
+      setBillingNotice('Payment received. Refreshing your plan…')
+      getBillingStatus()
+        .then((status) => {
+          setBilling(status)
+          setBillingNotice(`You're on the ${planLabel(status.plan)}.`)
+        })
+        .catch(() => {
+          setBillingNotice('Payment received. Your plan will update shortly.')
+        })
+    } else if (billingParam === 'cancel') {
+      setBillingNotice('Checkout canceled — no changes were made.')
+    }
+
+    params.delete('billing')
+    const next = `${window.location.pathname}${params.toString() ? `?${params}` : ''}`
+    window.history.replaceState({}, '', next)
   }, [])
 
   const handleSave = async () => {
@@ -194,13 +281,22 @@ export default function AccountPage() {
   const displayName = displayNameForUser(user)
   const activePlan = billing?.plan ?? 'free'
   const planLimits = limitsFor(activePlan)
-  const bomLimit =
-    billing?.limits?.active_boms ?? planLimits.activeBoms
-  const bomPct = Math.min((bomCount / bomLimit) * 100, 100)
+  const apiLimits = billing?.limits
+  const usage = billing?.usage
+  const bomLimit = apiLimits?.active_boms ?? planLimits.activeBoms
+  const analysesLimit = apiLimits?.analyses_per_month ?? planLimits.analysesPerMonth
+  const linesLimit = apiLimits?.lines_per_month ?? planLimits.linesPerMonth
+  const purchasingLimit =
+    apiLimits?.purchasing_actions_per_month ?? planLimits.purchasingActionsPerMonth
+  const ordersLimit = apiLimits?.orders_per_month ?? planLimits.ordersPerMonth
+  const seatsLimit = team?.seats.limit ?? apiLimits?.seats ?? planLimits.seats
+  const seatsUsed = team?.seats.used ?? 1
   const planName = planLabel(activePlan)
-  const refreshLabel = (billing?.limits?.refresh ?? planLimits.refresh) === 'daily'
+  const refreshLabel = (apiLimits?.refresh ?? planLimits.refresh) === 'daily'
     ? 'Daily refresh'
     : 'Weekly refresh'
+  const periodEnd = formatPeriodEnd(billing?.current_period_end)
+  const statusLabel = billingStatusLabel(billing?.status)
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-50 font-sans text-[#0f1b2d]">
@@ -297,17 +393,26 @@ export default function AccountPage() {
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
             <div className="border-b border-slate-100 px-5 py-5">
               <div className="flex items-start justify-between gap-4">
-                <div>
+                <div className="min-w-0">
                   <p className="text-[14px] font-semibold" style={{ color: NAVY }}>
                     {planName}
                   </p>
                   <p className="mt-0.5 text-[12px] text-slate-500">
-                    Status: {billing?.status ?? 'none'}
+                    {statusLabel}
                     {' · '}
                     {refreshLabel}
                     {billing?.can_purchase
                       ? ' · purchasing on (plan caps apply)'
-                      : ' · purchasing locked'}
+                      : ' · purchasing locked until subscription is active'}
+                  </p>
+                  {periodEnd ? (
+                    <p className="mt-1 text-[12px] text-slate-400">
+                      Current period ends {periodEnd}
+                    </p>
+                  ) : null}
+                  <p className="mt-2 text-[12px] text-slate-400">
+                    {seatsLimit} seat{seatsLimit === 1 ? '' : 's'} · up to {bomLimit} monitored BOM
+                    {bomLimit === 1 ? '' : 's'} · {linesLimit.toLocaleString()} lines / month
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
@@ -320,7 +425,7 @@ export default function AccountPage() {
                         className="rounded-lg px-3.5 py-1.5 text-[12px] font-semibold text-white disabled:opacity-60"
                         style={{ background: BLUE }}
                       >
-                        Upgrade to Growth
+                        {billingBusy ? 'Opening…' : 'Upgrade to Growth'}
                       </button>
                       <button
                         type="button"
@@ -331,6 +436,16 @@ export default function AccountPage() {
                       >
                         View plans
                       </button>
+                      {billing?.stripe_customer_id ? (
+                        <button
+                          type="button"
+                          disabled={billingBusy}
+                          onClick={handleManageBilling}
+                          className="rounded-lg border border-slate-200 px-3.5 py-1.5 text-[12px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                        >
+                          {billingBusy ? 'Opening…' : 'Manage billing'}
+                        </button>
+                      ) : null}
                     </>
                   ) : (
                     <>
@@ -342,39 +457,64 @@ export default function AccountPage() {
                           className="rounded-lg border px-3.5 py-1.5 text-[12px] font-semibold transition-colors hover:bg-blue-50 disabled:opacity-60"
                           style={{ color: BLUE, borderColor: '#bfdbfe' }}
                         >
-                          Upgrade to Scale
+                          {billingBusy ? 'Opening…' : 'Upgrade to Scale'}
                         </button>
                       ) : null}
                       <button
                         type="button"
-                        disabled={billingBusy}
+                        disabled={billingBusy || !billing?.stripe_customer_id}
                         onClick={handleManageBilling}
                         className="rounded-lg border border-slate-200 px-3.5 py-1.5 text-[12px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                        title={
+                          billing?.stripe_customer_id
+                            ? undefined
+                            : 'Complete checkout once to unlock the Stripe customer portal'
+                        }
                       >
-                        Manage billing
+                        {billingBusy ? 'Opening…' : 'Manage billing'}
                       </button>
                     </>
                   )}
                 </div>
               </div>
-              {billingError ? <p className="mt-3 text-[12px] text-red-600">{billingError}</p> : null}
+              {billingNotice ? (
+                <p className="mt-3 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-[12px] text-[#0062ff]">
+                  {billingNotice}
+                </p>
+              ) : null}
+              {billingError ? (
+                <p className="mt-3 text-[12px] text-red-600">{billingError}</p>
+              ) : null}
             </div>
-            <div className="px-5 py-4">
-              <div className="mb-2 flex items-center justify-between text-[12px]">
-                <span className="text-slate-500">BOMs used</span>
-                <span className="font-semibold" style={{ color: NAVY }}>
-                  {bomCount} / {bomLimit}
-                </span>
-              </div>
-              <div className="mb-1.5 h-2 overflow-hidden rounded-full bg-slate-100">
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{ width: `${bomPct}%`, background: BLUE }}
-                />
-              </div>
-              <p className="text-[11px] text-slate-400">
-                {Math.max(bomLimit - bomCount, 0)} monitored BOM slots remaining · {refreshLabel.toLowerCase()}
-              </p>
+
+            <div className="grid gap-5 px-5 py-5 sm:grid-cols-2">
+              <UsageMeter label="Team seats" used={seatsUsed} limit={seatsLimit} />
+              <UsageMeter label="Monitored BOMs" used={bomCount} limit={bomLimit} />
+              <UsageMeter
+                label="Analyses this month"
+                used={usage?.analyses_count ?? 0}
+                limit={analysesLimit}
+              />
+              <UsageMeter
+                label="Lines analyzed this month"
+                used={usage?.lines_count ?? 0}
+                limit={linesLimit}
+              />
+              <UsageMeter
+                label="Purchasing actions"
+                used={usage?.purchasing_actions_count ?? 0}
+                limit={purchasingLimit}
+              />
+              <UsageMeter
+                label="Orders this month"
+                used={usage?.orders_count ?? 0}
+                limit={ordersLimit}
+              />
+            </div>
+
+            <div className="border-t border-slate-100 bg-slate-50 px-5 py-3 text-[11px] text-slate-400">
+              Caps reset with your billing period. Free stays open for small purchasing under monthly
+              limits; Growth unlocks seats and higher volume.
             </div>
           </div>
         </div>
