@@ -25,6 +25,9 @@ const stashRoot = path.join(root, '.pages-stash')
 const MOVES = [
   { from: path.join(root, 'app', 'api'), to: path.join(stashRoot, 'api') },
   { from: path.join(root, 'middleware.ts'), to: path.join(stashRoot, 'middleware.ts') },
+  // Product shell (dashboard, bom/[id], account, purchasing, …)
+  { from: path.join(root, 'app', '(app)'), to: path.join(stashRoot, '(app)') },
+  // Legacy top-level product routes (kept if any remain outside (app))
   { from: path.join(root, 'app', 'dashboard'), to: path.join(stashRoot, 'dashboard') },
   { from: path.join(root, 'app', 'login'), to: path.join(stashRoot, 'login') },
   { from: path.join(root, 'app', 'signup'), to: path.join(stashRoot, 'signup') },
