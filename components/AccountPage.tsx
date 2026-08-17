@@ -66,7 +66,8 @@ function planLabel(plan: BillingAccountStatus['plan']) {
 function roleLabel(role: TeamRole) {
   if (role === 'read_only') return 'Read only'
   if (role === 'admin') return 'Admin'
-  return 'Owner'
+  if (role === 'owner') return 'Owner'
+  return String(role)
 }
 
 function initialsForEmail(value: string) {
