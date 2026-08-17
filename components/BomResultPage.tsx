@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronLeft, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import BomPartsTable from '@/components/BomPartsTable'
-import DashboardShell from '@/components/DashboardShell'
 import EditableBomTable from '@/components/EditableBomTable'
 import { useAuth } from '@/components/AuthProvider'
 import { Link } from '@/lib/navigation'
@@ -142,12 +141,15 @@ export default function BomResultPage({ id }: BomResultPageProps) {
     )
   }
 
-  if (!loaded || authLoading) return null
+  if (!loaded) {
+    return (
+      <div className="flex flex-1 items-center justify-center text-[13px] text-slate-400">Loading…</div>
+    )
+  }
 
   if (!result) {
     return (
-      <DashboardShell activeTab="boms">
-        <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
+      <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
           <h1 className="text-[18px] font-semibold text-slate-900">
             {error ? 'Could not load BOM' : 'BOM not found'}
           </h1>
@@ -155,13 +157,12 @@ export default function BomResultPage({ id }: BomResultPageProps) {
             {error ?? 'This BOM may not exist in your account, or you may not have access to it.'}
           </p>
           <Link
-            href="/dashboard?tab=boms"
-            className="mt-6 rounded-lg bg-primary px-4 py-2 text-[13px] font-medium text-white hover:bg-primary-hover"
+            href="/boms"
+            className="mt-6 bg-[#0062ff] px-4 py-2 text-[13px] font-medium text-white hover:bg-blue-700"
           >
             Back to BOMs
           </Link>
-        </div>
-      </DashboardShell>
+      </div>
     )
   }
 
@@ -187,7 +188,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
     : formatUploadedAt(result.analyzed_at)
 
   return (
-    <DashboardShell activeTab="boms">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {conflict && (
         <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:px-6">
           This BOM was updated elsewhere.{' '}
@@ -208,7 +209,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
           <div className="mx-auto max-w-[1120px] px-4 pt-5 pb-0 sm:px-6 sm:pt-6">
             <div className="mb-4 flex flex-wrap items-start gap-x-3 gap-y-3 sm:mb-5">
               <Link
-                href="/dashboard?tab=boms"
+                href="/boms"
                 className="mt-0.5 shrink-0 p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-800 sm:mt-1"
                 aria-label="Back to BOMs"
               >
@@ -328,6 +329,6 @@ export default function BomResultPage({ id }: BomResultPageProps) {
           )}
         </div>
       </div>
-    </DashboardShell>
+    </div>
   )
 }

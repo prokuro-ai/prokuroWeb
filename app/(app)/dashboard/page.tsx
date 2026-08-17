@@ -1,10 +1,10 @@
 import { Suspense } from 'react'
-import DashboardContent from '@/components/DashboardContent'
+import OverviewPage from '@/components/OverviewPage'
 
 export default function DashboardPage() {
   return (
     <Suspense fallback={null}>
-      <DashboardContent />
+      <OverviewPage />
     </Suspense>
   )
 }

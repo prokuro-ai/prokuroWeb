@@ -486,7 +486,6 @@ body {
   font-family: var(--font-plex-sans), 'Helvetica Neue', Arial, sans-serif;
   font-size: 16px;
   font-weight: 400;
-  letter-spacing: 0.16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -501,23 +500,26 @@ html {
 .marketing-page {
   overflow-x: clip;
   min-width: 0;
+  letter-spacing: 0.16px;
 }
 
-a {
+/* Marketing typography only — scoped so it cannot override Tailwind in app UI.
+   Exclude .btn so primary CTAs keep white text (.marketing-page a is more
+   specific than .btn--primary and would otherwise force color: inherit). */
+.marketing-page a:not(.btn) {
   color: inherit;
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
-p {
+.marketing-page p {
   margin: 0;
   color: var(--color-ink-muted);
 }
 
-h1,
-h2,
-h3 {
+.marketing-page :is(h1, h2, h3) {
   color: var(--color-ink);
+  margin: 0;
 }
 
 .container {
@@ -570,13 +572,6 @@ h3 {
   margin: 0 0 var(--space-md);
 }
 
-h1,
-h2,
-h3 {
-  color: var(--color-ink);
-  margin: 0;
-}
-
 .marketing-page h1 {
   margin: 0 0 var(--space-lg);
   font-size: clamp(42px, 6vw, 60px);
@@ -615,6 +610,7 @@ h3 {
   line-height: 1.29;
   letter-spacing: 0.16px;
   font-weight: 400;
+  text-decoration: none;
   cursor: pointer;
   transition:
     transform 0.2s ease,
@@ -3046,19 +3042,4 @@ body.modal-open {
     font-size: 13px;
     padding: 4px 0;
   }
-}
-
-.auth-mockup-scope {
-  font-family: var(--font-inter), 'Inter', sans-serif;
-  letter-spacing: normal;
-  text-rendering: auto;
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-}
-
-.auth-mockup-scope :is(h1, h2, h3, h4, h5, h6, p, a, ul, ol, li, span, div, form, button, input, label, svg) {
-  all: revert-layer;
-}
-
-.auth-mockup-scope input::placeholder {
-  all: revert-layer;
 }

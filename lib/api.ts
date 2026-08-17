@@ -1,6 +1,15 @@
 import { getIdToken } from './auth'
 import { uploadEndpoint } from './gateway-url'
-import type { AnalyzedLine, AnalyzeResult, BomSummary, ParseResult } from './types'
+import type {
+  AnalyzedLine,
+  AnalyzeResult,
+  BomSummary,
+  ParseResult,
+  PlaceOrderRequest,
+  PlaceOrderResponse,
+  QuoteRequest,
+  QuoteResponse,
+} from './types'
 
 export interface BomRecord {
   summary: BomSummary
@@ -265,6 +274,34 @@ export async function saveBom(
   return body as BomSummary
 }
 
+export async function quotePurchase(request: QuoteRequest): Promise<QuoteResponse> {
+  const res = await fetch('/api/purchase/quote', {
+    method: 'POST',
+    headers: {
+      ...(await authHeaders()),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  return body as QuoteResponse
+}
+
+export async function placeOrder(request: PlaceOrderRequest): Promise<PlaceOrderResponse> {
+  const res = await fetch('/api/purchase/orders', {
+    method: 'POST',
+    headers: {
+      ...(await authHeaders()),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  return body as PlaceOrderResponse
+}
+
 export type BillingPlan = 'free' | 'growth' | 'scale'
 export type BillingStatus = 'none' | 'trialing' | 'active' | 'past_due' | 'canceled'
 
@@ -335,42 +372,3 @@ export async function openBillingPortal(returnUrl: string): Promise<string> {
   if (!url) throw new Error('Portal URL missing')
   return url
 }
-
-export type PurchaseProvider = 'digikey' | 'mouser'
-
-export type PurchaseLine = {
-  mpn: string
-  quantity: number
-  manufacturer?: string
-}
-
-export type QuoteResponse = {
-  provider: PurchaseProvider
-  status: string
-  lines?: Array<{
-    mpn: string
-    quantity: number
-    unit_price?: number
-    extended_price?: number
-    currency?: string
-    error?: string
-  }>
-  subtotal?: number
-  currency?: string
-  message?: string
-}
-
-export async function purchaseQuote(
-  provider: PurchaseProvider,
-  lines: PurchaseLine[],
-): Promise<QuoteResponse> {
-  const res = await fetch('/api/purchase/quote', {
-    method: 'POST',
-    headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ provider, lines }),
-  })
-  const body: unknown = await readJsonBody(res)
-  if (!res.ok) throw new Error(await readErrorMessage(res, body))
-  return body as QuoteResponse
-}
-

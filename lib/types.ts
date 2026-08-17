@@ -63,7 +63,6 @@ export interface ParseResult {
   lines: BomLine[]
   warnings: ParseWarning[]
   stats: ParseStats
-  flywheel_events: unknown[]
 }
 
 export interface AnalyzeSummary {
@@ -124,4 +123,32 @@ export interface AnalyzeResult {
   warnings: unknown[]
   stats: Record<string, unknown>
   analyzed_at: string
+}
+
+export type PurchaseProviderId = 'digikey' | 'mouser'
+export type PurchaseStatus = 'not_implemented'
+
+export interface PurchaseLine {
+  mpn: string
+  quantity: number
+}
+
+export interface QuoteRequest {
+  provider: PurchaseProviderId
+  lines: PurchaseLine[]
+}
+
+export interface QuoteResponse {
+  provider: PurchaseProviderId
+  status: PurchaseStatus
+}
+
+export interface PlaceOrderRequest {
+  provider: PurchaseProviderId
+  lines: PurchaseLine[]
+}
+
+export interface PlaceOrderResponse {
+  provider: PurchaseProviderId
+  status: PurchaseStatus
 }
