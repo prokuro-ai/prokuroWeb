@@ -372,3 +372,101 @@ export async function openBillingPortal(returnUrl: string): Promise<string> {
   if (!url) throw new Error('Portal URL missing')
   return url
 }
+
+export type TeamRole = 'owner' | 'admin' | 'read_only'
+
+export type TeamMember = {
+  user_id: string
+  email?: string | null
+  role: TeamRole
+  created_at: string
+}
+
+export type TeamInvite = {
+  id: string
+  email: string
+  role: TeamRole
+  invited_by: string
+  expires_at: string
+  created_at: string
+  accept_url?: string
+}
+
+export type TeamSnapshot = {
+  account_id: string
+  user_id: string
+  role: TeamRole
+  plan: BillingPlan
+  seats: { used: number; limit: number }
+  members: TeamMember[]
+  invites: TeamInvite[]
+}
+
+export async function getTeam(): Promise<TeamSnapshot> {
+  const res = await fetch('/api/team/members', { headers: await authHeaders() })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  return body as TeamSnapshot
+}
+
+export async function createTeamInvite(
+  email: string,
+  role: Exclude<TeamRole, 'owner'>,
+): Promise<TeamInvite & { email_sent?: boolean }> {
+  const res = await fetch('/api/team/invites', {
+    method: 'POST',
+    headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, role }),
+  })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  return body as TeamInvite & { email_sent?: boolean }
+}
+
+export async function revokeTeamInvite(id: string): Promise<void> {
+  const res = await fetch(`/api/team/invites/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: await authHeaders(),
+  })
+  if (!res.ok) {
+    const body: unknown = await readJsonBody(res)
+    throw new Error(await readErrorMessage(res, body))
+  }
+}
+
+export async function removeTeamMember(userId: string): Promise<void> {
+  const res = await fetch(`/api/team/members/${encodeURIComponent(userId)}`, {
+    method: 'DELETE',
+    headers: await authHeaders(),
+  })
+  if (!res.ok) {
+    const body: unknown = await readJsonBody(res)
+    throw new Error(await readErrorMessage(res, body))
+  }
+}
+
+export async function patchTeamMemberRole(
+  userId: string,
+  role: Exclude<TeamRole, 'owner'>,
+): Promise<TeamMember> {
+  const res = await fetch(`/api/team/members/${encodeURIComponent(userId)}`, {
+    method: 'PATCH',
+    headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role }),
+  })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  return body as TeamMember
+}
+
+export async function acceptTeamInvite(token: string): Promise<{ account_id: string; role: TeamRole }> {
+  const res = await fetch('/api/team/invites/accept', {
+    method: 'POST',
+    headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  return body as { account_id: string; role: TeamRole }
+}
+

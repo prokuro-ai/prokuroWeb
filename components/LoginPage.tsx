@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Link, useLocation } from '@/lib/navigation'
+import { Link, consumeNextPath, rememberNextPath, safeNextPath, useLocation } from '@/lib/navigation'
+import { useSearchParams } from 'next/navigation'
 import GoogleSignInButton from '@/components/GoogleSignInButton'
 import { useAuth } from '@/components/AuthProvider'
 import {
@@ -19,12 +20,18 @@ type View = 'form' | 'confirm'
 export default function LoginPage() {
   const [, navigate] = useLocation()
   const { user, refresh, loading: authLoading } = useAuth()
+  const searchParams = useSearchParams()
+  const nextPath = safeNextPath(searchParams.get('next'))
+
+  useEffect(() => {
+    rememberNextPath(nextPath)
+  }, [nextPath])
 
   useEffect(() => {
     if (!authLoading && user) {
-      navigate('/dashboard')
+      navigate(consumeNextPath(nextPath))
     }
-  }, [authLoading, user, navigate])
+  }, [authLoading, user, navigate, nextPath])
 
   const [view, setView] = useState<View>('form')
   const [confirmFlow, setConfirmFlow] = useState<EmailVerificationFlow>('signIn')
@@ -36,7 +43,7 @@ export default function LoginPage() {
 
   const finishAuth = async () => {
     await refresh()
-    navigate('/dashboard')
+    navigate(consumeNextPath(nextPath))
   }
 
   const resetForm = () => {
@@ -184,7 +191,10 @@ export default function LoginPage() {
             <div className="mt-6 pt-6 border-t border-[#f0f3f7] text-center">
               <p className="text-[14px] text-[#7a8598]">
                 Don&apos;t have an account?{' '}
-                <Link href="/signup" className="cursor-pointer font-semibold text-[#0062ff] hover:underline">
+                <Link
+                  href={nextPath === '/dashboard' ? '/signup' : `/signup?next=${encodeURIComponent(nextPath)}`}
+                  className="cursor-pointer font-semibold text-[#0062ff] hover:underline"
+                >
                   Sign up
                 </Link>
               </p>

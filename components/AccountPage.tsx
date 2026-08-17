@@ -5,12 +5,19 @@ import { useLocation } from '@/lib/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import { displayNameForUser, initialsForUser, updateProfile, signOut } from '@/lib/auth'
 import {
+  createTeamInvite,
   getBillingStatus,
   listBoms,
   openBillingPortal,
+  patchTeamMemberRole,
+  removeTeamMember,
+  revokeTeamInvite,
   startCheckout,
   type BillingAccountStatus,
+  type TeamInvite,
+  type TeamRole,
 } from '@/lib/api'
+import { useTeam } from '@/hooks/use-team'
 import { limitsFor, planLabel as shortPlanLabel } from '@/lib/planLimits'
 import { ArrowLeft, LogOut } from 'lucide-react'
 
@@ -56,6 +63,19 @@ function planLabel(plan: BillingAccountStatus['plan']) {
   return `${shortPlanLabel(plan)} Plan`
 }
 
+function roleLabel(role: TeamRole) {
+  if (role === 'read_only') return 'Read only'
+  if (role === 'admin') return 'Admin'
+  return 'Owner'
+}
+
+function initialsForEmail(value: string) {
+  const local = value.split('@')[0] ?? value
+  const parts = local.split(/[.\s_-]+/).filter(Boolean)
+  if (parts.length >= 2) return `${parts[0]![0] ?? ''}${parts[1]![0] ?? ''}`.toUpperCase()
+  return local.slice(0, 2).toUpperCase() || '?'
+}
+
 export default function AccountPage() {
   const { user, loading, refresh } = useAuth()
   const [, navigate] = useLocation()
@@ -68,9 +88,14 @@ export default function AccountPage() {
 
   const [bomCount, setBomCount] = useState(0)
   const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState<Exclude<TeamRole, 'owner'>>('read_only')
+  const [inviteBusy, setInviteBusy] = useState(false)
+  const [inviteError, setInviteError] = useState<string | null>(null)
+  const [lastAcceptUrl, setLastAcceptUrl] = useState<string | null>(null)
   const [billing, setBilling] = useState<BillingAccountStatus | null>(null)
   const [billingBusy, setBillingBusy] = useState(false)
   const [billingError, setBillingError] = useState<string | null>(null)
+  const { team, reload: reloadTeam, canManage } = useTeam()
 
   useEffect(() => {
     if (!user) return
@@ -356,48 +381,186 @@ export default function AccountPage() {
         <div className="pb-16">
           <SectionLabel>Team</SectionLabel>
           <p className="mb-3 text-[12px] text-slate-400">
-            Seat invites land next (Mounir). Limits today: {planLimits.seats} seat
-            {planLimits.seats === 1 ? '' : 's'} on {shortPlanLabel(activePlan)}.
+            {team
+              ? `${team.seats.used} / ${team.seats.limit} seats used on ${shortPlanLabel(team.plan)}.`
+              : `Limits today: ${planLimits.seats} seat${planLimits.seats === 1 ? '' : 's'} on ${shortPlanLabel(activePlan)}.`}
+            {team ? ` Your role: ${roleLabel(team.role)}.` : ''}
           </p>
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-            <div className="border-b border-slate-100 px-5 py-5">
-              <p className="mb-3 text-[13px] font-medium" style={{ color: NAVY }}>
-                Invite teammates
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  placeholder="colleague@company.com"
-                  className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-[13px] focus:border-[#0062ff] focus:outline-none focus:ring-2 focus:ring-[#0062ff]/20"
-                />
-                <button
-                  disabled={!inviteEmail.includes('@')}
-                  className="shrink-0 rounded-lg px-4 py-2 text-[13px] font-medium text-white transition-colors disabled:opacity-40"
+            {canManage ? (
+              <div className="border-b border-slate-100 px-5 py-5">
+                <p className="mb-3 text-[13px] font-medium" style={{ color: NAVY }}>
+                  Invite teammates
+                </p>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <input
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    placeholder="colleague@company.com"
+                    className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-[13px] focus:border-[#0062ff] focus:outline-none focus:ring-2 focus:ring-[#0062ff]/20"
+                  />
+                  <select
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value as Exclude<TeamRole, 'owner'>)}
+                    className="rounded-lg border border-slate-200 px-3 py-2 text-[13px] text-[#0f1b2d]"
+                  >
+                    <option value="read_only">Read only</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <button
+                    type="button"
+                    disabled={!inviteEmail.includes('@') || inviteBusy}
+                    onClick={async () => {
+                      setInviteBusy(true)
+                      setInviteError(null)
+                      setLastAcceptUrl(null)
+                      try {
+                        const invite = await createTeamInvite(inviteEmail.trim(), inviteRole)
+                        setInviteEmail('')
+                        if (!invite.email_sent && invite.accept_url) {
+                          setLastAcceptUrl(invite.accept_url)
+                        }
+                        await reloadTeam()
+                      } catch (err) {
+                        setInviteError(err instanceof Error ? err.message : 'Invite failed')
+                      } finally {
+                        setInviteBusy(false)
+                      }
+                    }}
+                    className="shrink-0 rounded-lg px-4 py-2 text-[13px] font-medium text-white transition-colors disabled:opacity-40"
+                    style={{ background: BLUE }}
+                  >
+                    {inviteBusy ? 'Sending…' : 'Invite'}
+                  </button>
+                </div>
+                {inviteError ? (
+                  <p className="mt-2 text-[12px] text-red-500">{inviteError}</p>
+                ) : null}
+                {lastAcceptUrl ? (
+                  <p className="mt-2 break-all text-[12px] text-slate-500">
+                    Email not sent (SES not configured). Share this link:{' '}
+                    <a href={lastAcceptUrl} className="font-medium text-[#0062ff] hover:underline">
+                      {lastAcceptUrl}
+                    </a>
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
+            {(team?.members ?? []).map((member) => (
+              <div
+                key={member.user_id}
+                className="flex items-center gap-3 border-b border-slate-100 px-5 py-4 last:border-b-0"
+              >
+                <div
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
                   style={{ background: BLUE }}
                 >
-                  Invite
-                </button>
+                  {initialsForEmail(member.email ?? member.user_id)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] font-medium" style={{ color: NAVY }}>
+                    {member.email || member.user_id}
+                    {member.user_id === team?.user_id ? ' (you)' : ''}
+                  </p>
+                  <p className="truncate text-[11px] text-slate-400">{member.user_id}</p>
+                </div>
+                {canManage && member.role !== 'owner' ? (
+                  <select
+                    value={member.role}
+                    onChange={async (e) => {
+                      const role = e.target.value as Exclude<TeamRole, 'owner'>
+                      try {
+                        await patchTeamMemberRole(member.user_id, role)
+                        await reloadTeam()
+                      } catch (err) {
+                        setInviteError(err instanceof Error ? err.message : 'Could not update role')
+                      }
+                    }}
+                    className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600"
+                  >
+                    <option value="read_only">Read only</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                ) : (
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                    {roleLabel(member.role)}
+                  </span>
+                )}
+                {canManage && member.role !== 'owner' ? (
+                  <button
+                    type="button"
+                    className="text-[11px] font-medium text-slate-400 hover:text-red-500"
+                    onClick={async () => {
+                      try {
+                        await removeTeamMember(member.user_id)
+                        await reloadTeam()
+                      } catch (err) {
+                        setInviteError(err instanceof Error ? err.message : 'Could not remove member')
+                      }
+                    }}
+                  >
+                    Remove
+                  </button>
+                ) : null}
               </div>
-            </div>
-            <div className="flex items-center gap-3 px-5 py-4">
+            ))}
+
+            {!team?.members?.length ? (
+              <div className="flex items-center gap-3 px-5 py-4">
+                <div
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                  style={{ background: BLUE }}
+                >
+                  {initials}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] font-medium" style={{ color: NAVY }}>
+                    {displayName || user.email}
+                  </p>
+                  <p className="truncate text-[11px] text-slate-400">{user.email}</p>
+                </div>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                  Owner
+                </span>
+              </div>
+            ) : null}
+
+            {(team?.invites ?? []).map((invite: TeamInvite) => (
               <div
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-                style={{ background: BLUE }}
+                key={invite.id}
+                className="flex items-center gap-3 border-t border-slate-100 px-5 py-4"
               >
-                {initials}
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-[10px] font-bold text-amber-700">
+                  …
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] font-medium" style={{ color: NAVY }}>
+                    {invite.email}
+                  </p>
+                  <p className="truncate text-[11px] text-slate-400">
+                    Pending · {roleLabel(invite.role)} · expires {new Date(invite.expires_at).toLocaleDateString()}
+                  </p>
+                </div>
+                {canManage ? (
+                  <button
+                    type="button"
+                    className="text-[11px] font-medium text-slate-400 hover:text-red-500"
+                    onClick={async () => {
+                      try {
+                        await revokeTeamInvite(invite.id)
+                        await reloadTeam()
+                      } catch (err) {
+                        setInviteError(err instanceof Error ? err.message : 'Could not revoke invite')
+                      }
+                    }}
+                  >
+                    Revoke
+                  </button>
+                ) : null}
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-medium" style={{ color: NAVY }}>
-                  {displayName || user.email}
-                </p>
-                <p className="truncate text-[11px] text-slate-400">{user.email}</p>
-              </div>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
-                Admin
-              </span>
-            </div>
+            ))}
           </div>
         </div>
       </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { placeOrder, quotePurchase } from '@/lib/api'
+import { useTeam } from '@/hooks/use-team'
 import type { PurchaseStatus } from '@/lib/types'
 
 function statusLabel(status: PurchaseStatus): string {
@@ -12,6 +13,7 @@ function statusLabel(status: PurchaseStatus): string {
 }
 
 export default function PurchasingPage() {
+  const { canWrite } = useTeam()
   const [busy, setBusy] = useState<'quote' | 'order' | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -70,7 +72,7 @@ export default function PurchasingPage() {
             <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
               <button
                 type="button"
-                disabled={busy !== null}
+                disabled={busy !== null || !canWrite}
                 onClick={() => void runAction('quote')}
                 className="border border-slate-900 bg-slate-900 px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -78,13 +80,16 @@ export default function PurchasingPage() {
               </button>
               <button
                 type="button"
-                disabled={busy !== null}
+                disabled={busy !== null || !canWrite}
                 onClick={() => void runAction('order')}
                 className="border border-slate-300 bg-white px-4 py-2 text-[13px] font-medium text-slate-800 transition-colors hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {busy === 'order' ? 'Submitting…' : 'Place order'}
               </button>
             </div>
+            {!canWrite ? (
+              <p className="mt-4 text-[12px] text-slate-400">Read-only members cannot quote or order.</p>
+            ) : null}
 
             {message ? (
               <p className="mt-4 font-mono text-[12px] text-slate-600">{message}</p>

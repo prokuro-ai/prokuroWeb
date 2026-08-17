@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Link, useLocation } from '@/lib/navigation'
+import { Link, consumeNextPath, rememberNextPath, safeNextPath, useLocation } from '@/lib/navigation'
+import { useSearchParams } from 'next/navigation'
 import { ArrowRight } from 'lucide-react'
 import { PRIVACY_PATH, TERMS_PATH } from '@/lib/legal'
 import GoogleSignInButton from '@/components/GoogleSignInButton'
@@ -16,7 +17,6 @@ const COPY = {
   subheading: 'Create your account and upload your first BOM. No credit card required.',
   switchPrompt: 'Already have an account?',
   switchCta: 'Log in',
-  switchHref: '/login',
 } as const
 
 type View = 'form' | 'confirm'
@@ -24,13 +24,19 @@ type View = 'form' | 'confirm'
 export default function AuthPage() {
   const [, navigate] = useLocation()
   const { user, refresh, loading: authLoading } = useAuth()
+  const searchParams = useSearchParams()
+  const nextPath = safeNextPath(searchParams.get('next'))
   const copy = COPY
 
   useEffect(() => {
+    rememberNextPath(nextPath)
+  }, [nextPath])
+
+  useEffect(() => {
     if (!authLoading && user) {
-      navigate('/dashboard')
+      navigate(consumeNextPath(nextPath))
     }
-  }, [authLoading, user, navigate])
+  }, [authLoading, user, navigate, nextPath])
 
   const [view, setView] = useState<View>('form')
   const [confirmFlow, setConfirmFlow] = useState<EmailVerificationFlow>('signUp')
@@ -42,7 +48,7 @@ export default function AuthPage() {
 
   const finishAuth = async () => {
     await refresh()
-    navigate('/dashboard')
+    navigate(consumeNextPath(nextPath))
   }
 
   const resetToForm = () => {
@@ -265,7 +271,10 @@ export default function AuthPage() {
               <div className="mt-7 pt-7 border-t border-[#f0f3f7] text-center">
                 <p className="text-[15px] text-[#7a8598]">
                   {copy.switchPrompt}{' '}
-                  <Link href={copy.switchHref} className="cursor-pointer font-semibold text-[#0062ff] hover:underline">
+                  <Link
+                    href={nextPath === '/dashboard' ? '/login' : `/login?next=${encodeURIComponent(nextPath)}`}
+                    className="cursor-pointer font-semibold text-[#0062ff] hover:underline"
+                  >
                     {copy.switchCta}
                   </Link>
                 </p>

@@ -8,6 +8,7 @@ import EditableBomTable from '@/components/EditableBomTable'
 import { useAuth } from '@/components/AuthProvider'
 import { Link } from '@/lib/navigation'
 import { getBom } from '@/lib/api'
+import { useTeam } from '@/hooks/use-team'
 import { formatUploadedAt } from '@/lib/format'
 import { hasPendingLines, isPendingLine, portfolioBadgeFromSummary } from '@/lib/risk'
 import type { AnalyzedLine, AnalyzeResult, BomSummary } from '@/lib/types'
@@ -41,6 +42,7 @@ type BomResultPageProps = {
 export default function BomResultPage({ id }: BomResultPageProps) {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
+  const { canWrite } = useTeam()
   const [summary, setSummary] = useState<BomSummary | null>(null)
   const [result, setResult] = useState<AnalyzeResult | null>(null)
   const [version, setVersion] = useState(1)
@@ -236,14 +238,16 @@ export default function BomResultPage({ id }: BomResultPageProps) {
                 </p>
               </div>
               <div className="ml-auto flex shrink-0 items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEditing((current) => !current)}
-                  aria-pressed={editing}
-                  className={editing ? actionBtnActive : actionBtnIdle}
-                >
-                  {editing ? 'Done' : 'Edit'}
-                </button>
+                {canWrite ? (
+                  <button
+                    type="button"
+                    onClick={() => setEditing((current) => !current)}
+                    aria-pressed={editing}
+                    className={editing ? actionBtnActive : actionBtnIdle}
+                  >
+                    {editing ? 'Done' : 'Edit'}
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   disabled

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { DeleteBomButton } from '@/components/DeleteBomButton'
 import BomBulkUploadModal from '@/components/BomBulkUploadModal'
 import { useBoms } from '@/hooks/use-boms'
+import { useTeam } from '@/hooks/use-team'
 import { listBoms } from '@/lib/api'
 import type { BomSummary } from '@/lib/types'
 import { formatUploadedAt } from '@/lib/format'
@@ -44,11 +45,13 @@ function BomDossierSkeleton() {
 function BomDossier({
   bom,
   index,
+  canWrite,
   onView,
   onDelete,
 }: {
   bom: BomSummary
   index: number
+  canWrite: boolean
   onView: () => void
   onDelete: () => void
 }) {
@@ -119,21 +122,23 @@ function BomDossier({
                 Open report
                 <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
               </span>
-              <span
-                role="presentation"
-                onClick={(event) => event.stopPropagation()}
-                onKeyDown={(event) => event.stopPropagation()}
-              >
-                <DeleteBomButton
-                  bomId={bom.id}
-                  bomName={bom.name}
-                  redirectTo={null}
-                  variant="ghost"
-                  label="Delete"
-                  className="text-[12px] text-slate-400 hover:text-red-600"
-                  onDeleted={onDelete}
-                />
-              </span>
+              {canWrite ? (
+                <span
+                  role="presentation"
+                  onClick={(event) => event.stopPropagation()}
+                  onKeyDown={(event) => event.stopPropagation()}
+                >
+                  <DeleteBomButton
+                    bomId={bom.id}
+                    bomName={bom.name}
+                    redirectTo={null}
+                    variant="ghost"
+                    label="Delete"
+                    className="text-[12px] text-slate-400 hover:text-red-600"
+                    onDeleted={onDelete}
+                  />
+                </span>
+              ) : null}
             </div>
           </div>
         </div>
@@ -149,9 +154,10 @@ function BomDossier({
   )
 }
 
-function BomsList({ boms, loading, onViewBom, onDelete, onUpload }: {
+function BomsList({ boms, loading, canWrite, onViewBom, onDelete, onUpload }: {
   boms: BomSummary[]
   loading: boolean
+  canWrite: boolean
   onViewBom: (id: string) => void
   onDelete: (id: string) => void
   onUpload: () => void
@@ -221,13 +227,15 @@ function BomsList({ boms, loading, onViewBom, onDelete, onUpload }: {
               </p>
             )}
           </div>
-          <button
-            type="button"
-            onClick={onUpload}
-            className="inline-flex shrink-0 items-center bg-[#0062ff] px-4 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-blue-700"
-          >
-            Upload BOM
-          </button>
+          {canWrite ? (
+            <button
+              type="button"
+              onClick={onUpload}
+              className="inline-flex shrink-0 items-center bg-[#0062ff] px-4 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-blue-700"
+            >
+              Upload BOM
+            </button>
+          ) : null}
         </div>
 
         {!loading && boms.length > 0 ? (
@@ -271,13 +279,17 @@ function BomsList({ boms, loading, onViewBom, onDelete, onUpload }: {
               Drop in CSV or Excel — messy headers, distributor SKUs, multi-sheet workbooks. Prokuro maps
               the columns and scores every line.
             </p>
-            <button
-              type="button"
-              onClick={onUpload}
-              className="mt-6 inline-flex items-center bg-[#0062ff] px-4 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-blue-700"
-            >
-              Upload your first BOM
-            </button>
+            {canWrite ? (
+              <button
+                type="button"
+                onClick={onUpload}
+                className="mt-6 inline-flex items-center bg-[#0062ff] px-4 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-blue-700"
+              >
+                Upload your first BOM
+              </button>
+            ) : (
+              <p className="mt-6 text-[13px] text-slate-400">Ask an admin to upload a BOM.</p>
+            )}
           </div>
         ) : filtered.length === 0 ? (
           <div className="border border-dashed border-slate-300 bg-white px-6 py-14 text-center text-[14px] text-slate-400">
@@ -290,6 +302,7 @@ function BomsList({ boms, loading, onViewBom, onDelete, onUpload }: {
                 key={bom.id}
                 bom={bom}
                 index={index}
+                canWrite={canWrite}
                 onView={() => onViewBom(bom.id)}
                 onDelete={() => onDelete(bom.id)}
               />
@@ -304,6 +317,7 @@ function BomsList({ boms, loading, onViewBom, onDelete, onUpload }: {
 export default function BomsPage() {
   const router = useRouter()
   const { boms, setBoms, loading } = useBoms()
+  const { canWrite } = useTeam()
   const [uploadOpen, setUploadOpen] = useState(false)
 
   const handleUploadComplete = (saved: BomSummary[]) => {
@@ -322,6 +336,7 @@ export default function BomsPage() {
       <BomsList
         boms={boms}
         loading={loading}
+        canWrite={canWrite}
         onViewBom={(id) => router.push(`/bom/${encodeURIComponent(id)}`)}
         onDelete={(id) => setBoms((prev) => prev.filter((b) => b.id !== id))}
         onUpload={() => setUploadOpen(true)}

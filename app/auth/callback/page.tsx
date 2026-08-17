@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Hub } from 'aws-amplify/utils'
 import { useAuth } from '@/components/AuthProvider'
 import { configureAmplify } from '@/lib/amplify-config'
+import { consumeNextPath } from '@/lib/navigation'
 
 export default function AuthCallbackPage() {
   const router = useRouter()
@@ -17,7 +18,7 @@ export default function AuthCallbackPage() {
       if (payload.event === 'signInWithRedirect') {
         try {
           await refresh()
-          router.replace('/dashboard')
+          router.replace(consumeNextPath())
         } catch {
           setFailed(true)
         }
