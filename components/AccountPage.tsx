@@ -422,6 +422,11 @@ export default function AccountPage() {
                         if (invite.accept_url) {
                           setLastAcceptUrl(invite.accept_url)
                         }
+                        if (invite.email_sent === false) {
+                          setInviteError(
+                            'Invite created, but email could not be sent yet (SES not verified). Copy the link below and share it.',
+                          )
+                        }
                         await reloadTeam()
                       } catch (err) {
                         setInviteError(err instanceof Error ? err.message : 'Invite failed')
@@ -436,15 +441,31 @@ export default function AccountPage() {
                   </button>
                 </div>
                 {inviteError ? (
-                  <p className="mt-2 text-[12px] text-red-500">{inviteError}</p>
+                  <p className="mt-2 text-[12px] text-amber-700">{inviteError}</p>
                 ) : null}
                 {lastAcceptUrl ? (
-                  <p className="mt-2 break-all text-[12px] text-slate-500">
-                    Share this invite link with your teammate:{' '}
-                    <a href={lastAcceptUrl} className="font-medium text-[#0062ff] hover:underline">
+                  <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                    <p className="text-[11px] font-medium text-slate-500">Invite link</p>
+                    <a
+                      href={lastAcceptUrl}
+                      className="mt-1 block break-all text-[12px] font-medium text-[#0062ff] hover:underline"
+                    >
                       {lastAcceptUrl}
                     </a>
-                  </p>
+                    <button
+                      type="button"
+                      className="mt-2 text-[11px] font-semibold text-slate-600 hover:text-[#0062ff]"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(lastAcceptUrl)
+                        } catch {
+                          /* ignore */
+                        }
+                      }}
+                    >
+                      Copy link
+                    </button>
+                  </div>
                 ) : null}
               </div>
             ) : null}
@@ -541,8 +562,26 @@ export default function AccountPage() {
                     {invite.email}
                   </p>
                   <p className="truncate text-[11px] text-slate-400">
-                    Pending · {roleLabel(invite.role)} · expires {new Date(invite.expires_at).toLocaleDateString()}
+                    Pending · {roleLabel(invite.role)} · expires{' '}
+                    {new Date(invite.expires_at).toLocaleDateString()}
+                    {invite.accept_url ? ' · email not sent' : ''}
                   </p>
+                  {invite.accept_url ? (
+                    <button
+                      type="button"
+                      className="mt-1 text-[11px] font-semibold text-[#0062ff] hover:underline"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(invite.accept_url!)
+                          setLastAcceptUrl(invite.accept_url!)
+                        } catch {
+                          setLastAcceptUrl(invite.accept_url!)
+                        }
+                      }}
+                    >
+                      Copy invite link
+                    </button>
+                  ) : null}
                 </div>
                 {canManage ? (
                   <button

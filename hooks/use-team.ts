@@ -21,6 +21,7 @@ export function useTeam() {
     getTeam()
       .then((snapshot) => {
         const role = normalizeRole(snapshot.role) ?? 'owner'
+        const origin = typeof window !== 'undefined' ? window.location.origin : ''
         setTeam({
           ...snapshot,
           role,
@@ -31,6 +32,11 @@ export function useTeam() {
           invites: (snapshot.invites ?? []).map((invite) => ({
             ...invite,
             role: normalizeRole(invite.role) ?? invite.role,
+            accept_url:
+              invite.accept_url ||
+              (origin && invite.id
+                ? `${origin}/invite/accept?token=${encodeURIComponent(invite.id)}`
+                : undefined),
           })),
         })
       })
