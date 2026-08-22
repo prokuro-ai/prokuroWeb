@@ -111,6 +111,7 @@ const LOGOS: LogoEntry[] = [
   { kind: 'logo', src: '/images/logos/Southwest_Airlines_logo_2014.svg.png', alt: 'Southwest Airlines' },
   { kind: 'logo', src: '/images/logos/ServiceNow-Logo.png', alt: 'ServiceNow' },
   { kind: 'logo', src: '/images/logos/Cisco_logo_blue_2016.svg.png', alt: 'Cisco' },
+  { kind: 'logo', src: '/images/logos/tufts.png', alt: 'Tufts Medicine' },
 ]
 
 type RiskTone = 'ok' | 'warn' | 'bad'
