@@ -8,6 +8,7 @@ import { startCheckout } from '@/lib/api'
 import { PUBLIC_PLANS } from '@/lib/publicPlans'
 import ProkuroBrandLink from '@/components/ProkuroBrandLink'
 import { SCHEDULE_DEMO_PATH } from '@/lib/sales'
+import { SELF_SERVE_ENABLED } from '@/lib/access'
 
 const BLUE = '#0062ff'
 const NAVY = '#0f1b2d'
@@ -18,6 +19,10 @@ export default function PricingPage() {
   const [error, setError] = useState<string | null>(null)
 
   const handleCheckout = async (plan: 'growth' | 'scale') => {
+    if (!SELF_SERVE_ENABLED) {
+      window.location.href = SCHEDULE_DEMO_PATH
+      return
+    }
     if (!user) {
       window.location.href = `/login?next=${encodeURIComponent('/pricing')}`
       return
@@ -39,6 +44,10 @@ export default function PricingPage() {
   }
 
   const handleFree = () => {
+    if (!SELF_SERVE_ENABLED) {
+      window.location.href = SCHEDULE_DEMO_PATH
+      return
+    }
     window.location.href = user ? '/dashboard' : `/login?next=${encodeURIComponent('/dashboard')}`
   }
 
@@ -54,9 +63,11 @@ export default function PricingPage() {
             <Link href="/schedule" className="text-slate-500 hover:text-slate-800">
               Book a demo
             </Link>
-            <Link href={user ? '/account' : '/login'} className="font-semibold text-[#0062ff]">
-              {user ? 'Account' : 'Sign in'}
-            </Link>
+            {SELF_SERVE_ENABLED ? (
+              <Link href={user ? '/account' : '/login'} className="font-semibold text-[#0062ff]">
+                {user ? 'Account' : 'Sign in'}
+              </Link>
+            ) : null}
           </div>
         </div>
       </header>

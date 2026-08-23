@@ -8,6 +8,7 @@ import ProkuroBrandLink from '@/components/ProkuroBrandLink'
 import { BOOK_DEMO_LABEL, SCHEDULE_DEMO_PATH } from '@/lib/sales'
 import { PRIVACY_PATH, TERMS_PATH } from '@/lib/legal'
 import { PUBLIC_PLANS } from '@/lib/publicPlans'
+import { SELF_SERVE_ENABLED } from '@/lib/access'
 
 const NAV_LINKS = [
   { href: '#product', label: 'Product' },
@@ -723,7 +724,7 @@ export default function LandingPage() {
                     <a
                       className={`btn ${plan.highlighted ? 'btn--primary' : 'btn--ghost'}`}
                       href={
-                        plan.salesLed
+                        plan.salesLed || !SELF_SERVE_ENABLED
                           ? SCHEDULE_DEMO_PATH
                           : plan.id === 'free'
                             ? '/login?next=%2Fdashboard'

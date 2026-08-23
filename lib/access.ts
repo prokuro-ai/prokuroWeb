@@ -1,5 +1,8 @@
-/** When false, signup/login and the app are hidden; marketing only. */
-export const SELF_SERVE_ENABLED = true
+/**
+ * When false, signup/login and the app are hidden; marketing only (Book a demo).
+ * Flip to true when Bedrock/product is ready for public self-serve.
+ */
+export const SELF_SERVE_ENABLED = false
 
 /** App routes blocked while self-serve is disabled. */
 export const APP_ROUTE_PREFIXES = [
