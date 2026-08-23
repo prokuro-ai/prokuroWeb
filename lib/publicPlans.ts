@@ -1,7 +1,9 @@
 import { PLAN_LIMITS, type PlanId } from '@/lib/planLimits'
 
+export type PublicPlanId = PlanId | 'enterprise'
+
 export type PublicPlan = {
-  id: PlanId
+  id: PublicPlanId
   name: string
   price: string
   period: string
@@ -9,6 +11,8 @@ export type PublicPlan = {
   features: string[]
   cta: string
   highlighted: boolean
+  /** Sales-led plans link to demo booking instead of self-serve checkout. */
+  salesLed?: boolean
 }
 
 export const PUBLIC_PLANS: PublicPlan[] = [
@@ -55,9 +59,26 @@ export const PUBLIC_PLANS: PublicPlan[] = [
       `${PLAN_LIMITS.scale.analysesPerMonth} analyses / mo`,
       'Daily refresh + fuller agent headroom',
       `${PLAN_LIMITS.scale.purchasingActionsPerMonth} purchasing actions / mo`,
-      'Priority support · Enterprise on request',
+      'Priority support',
     ],
     cta: 'Start Scale',
     highlighted: false,
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    price: 'Custom',
+    period: '',
+    blurb: 'For mid-size OEMs rolling out across a procurement team.',
+    features: [
+      'Custom BOM volume & refresh SLAs',
+      'SSO / SAML + team provisioning',
+      'White-glove onboarding on a real BOM',
+      'Dedicated support & annual contracts',
+      'Custom integrations on request',
+    ],
+    cta: 'Book a demo',
+    highlighted: false,
+    salesLed: true,
   },
 ]

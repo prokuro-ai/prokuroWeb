@@ -7,6 +7,7 @@ import { useAuth } from '@/components/AuthProvider'
 import { startCheckout } from '@/lib/api'
 import { PUBLIC_PLANS } from '@/lib/publicPlans'
 import ProkuroBrandLink from '@/components/ProkuroBrandLink'
+import { SCHEDULE_DEMO_PATH } from '@/lib/sales'
 
 const BLUE = '#0062ff'
 const NAVY = '#0f1b2d'
@@ -44,7 +45,7 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-[#0f1b2d]">
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
           <ProkuroBrandLink />
           <div className="flex items-center gap-4 text-[13px]">
             <Link href="/#pricing" className="text-slate-500 hover:text-slate-800">
@@ -60,7 +61,7 @@ export default function PricingPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-14">
+      <main className="mx-auto max-w-7xl px-6 py-14">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-400">
             Pricing
@@ -70,7 +71,7 @@ export default function PricingPage() {
           </h1>
           <p className="mt-3 text-[15px] text-slate-500">
             Pay for how many BOMs you keep monitored. We cap lines so API spend cannot explode.
-            Enterprise (SSO, custom volume) is sales-led.
+            Enterprise adds SSO, custom volume, and white-glove rollout.
           </p>
         </div>
 
@@ -80,7 +81,7 @@ export default function PricingPage() {
           </p>
         ) : null}
 
-        <div className="mt-10 grid gap-6 md:grid-cols-3">
+        <div className="mt-10 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
           {PUBLIC_PLANS.map((plan) => (
             <div
               key={plan.id}
@@ -118,11 +119,23 @@ export default function PricingPage() {
               <button
                 type="button"
                 disabled={busy === plan.id}
-                onClick={() =>
-                  plan.id === 'free' ? handleFree() : handleCheckout(plan.id)
-                }
-                className="mt-6 w-full rounded-lg px-4 py-2.5 text-[13px] font-semibold text-white transition-opacity disabled:opacity-60"
-                style={{ background: BLUE }}
+                onClick={() => {
+                  if (plan.salesLed) {
+                    window.location.href = SCHEDULE_DEMO_PATH
+                    return
+                  }
+                  if (plan.id === 'free') {
+                    handleFree()
+                    return
+                  }
+                  handleCheckout(plan.id as 'growth' | 'scale')
+                }}
+                className={`mt-6 w-full rounded-lg px-4 py-2.5 text-[13px] font-semibold transition-opacity disabled:opacity-60 ${
+                  plan.highlighted
+                    ? 'text-white'
+                    : 'border border-slate-200 bg-white text-[#0f1b2d] hover:bg-slate-50'
+                }`}
+                style={plan.highlighted ? { background: BLUE } : undefined}
               >
                 {busy === plan.id ? 'Redirecting…' : plan.cta}
               </button>

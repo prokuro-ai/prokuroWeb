@@ -707,10 +707,10 @@ export default function LandingPage() {
             <Reveal delay={0.1}>
               <p className="section-lead">
                 Pay for how many BOMs you keep monitored. Caps keep API spend under control.
-                Enterprise (SSO, custom volume) stays sales-led.
+                Need SSO or custom volume? Enterprise is sales-led.
               </p>
             </Reveal>
-            <div className="pricing-grid three-col">
+            <div className="pricing-grid four-col">
               {PUBLIC_PLANS.map((plan, index) => (
                 <Reveal key={plan.id} delay={0.08 * index}>
                   <article
@@ -736,9 +736,11 @@ export default function LandingPage() {
                     <a
                       className={`btn ${plan.highlighted ? 'btn--primary' : 'btn--ghost'}`}
                       href={
-                        plan.id === 'free'
-                          ? '/login?next=%2Fdashboard'
-                          : `/pricing`
+                        plan.salesLed
+                          ? SCHEDULE_DEMO_PATH
+                          : plan.id === 'free'
+                            ? '/login?next=%2Fdashboard'
+                            : `/pricing`
                       }
                     >
                       {plan.cta}

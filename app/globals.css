@@ -1371,6 +1371,10 @@ body.nav-open {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.four-col {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .pricing-grid {
   margin-top: var(--space-xl);
 }
@@ -2972,6 +2976,7 @@ body.modal-open {
 
 @media (max-width: 1056px) {
   .three-col,
+  .four-col,
   .steps,
   .problem-stats__grid,
   .pricing-grid {
@@ -3074,6 +3079,7 @@ body.modal-open {
   }
 
   .three-col,
+  .four-col,
   .steps,
   .feature-grid,
   .two-col,
