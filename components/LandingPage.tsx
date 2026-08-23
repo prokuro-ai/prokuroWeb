@@ -69,6 +69,13 @@ const PROBLEM_STATS = [
   { value: '3–5 days', label: 'Typical cross-functional scramble when a single part goes NRND', source: 'Procurement teams' },
 ]
 
+const PILOT_BENEFITS = [
+  'Guided onboarding with your procurement team on a real BOM',
+  'Decision-ready risk analysis, not another dashboard to babysit',
+  'Alternates cross-checked against lifecycle, stock, tariff exposure, and your AML',
+  'Direct input into how the analyst fits your sourcing workflow',
+]
+
 const PROBLEM_POINTS = [
   {
     title: 'Fragmented data, no source of truth',
@@ -739,40 +746,46 @@ export default function LandingPage() {
 
         <section id="company" className="section section--surface">
           <div className="container">
-            <Reveal>
-              <div className="early-access-card">
-                <p className="early-access-card__eyebrow">What you&apos;ll get</p>
-                <h3 className="early-access-card__title">A decision report, not another tool to babysit.</h3>
-                <p className="early-access-card__body">
-                  Upload a BOM and get decision cards for every at-risk line: lifecycle reasoning, recommended alternates, tariff impact, and what to do this week. Export and share with engineering and quality.
-                </p>
-                <div className="early-access-card__metric">
-                  <span>Typical first scan</span>
-                  <strong>Under 5 min</strong>
+            <div className="split-panel">
+              <Reveal>
+                <div className="split-panel__copy">
+                  <p className="eyebrow">Enterprise</p>
+                  <h2>Need a guided rollout for your procurement team?</h2>
+                  <p>
+                    For mid-size OEMs rolling out across a team, we run scoped pilots on a real BOM: white-glove onboarding, dedicated support, and annual contracts. Same analyst as self-serve, built for how your organization sources.
+                  </p>
+                  <ul className="split-panel__stats">
+                    {PILOT_BENEFITS.map((benefit) => (
+                      <li key={benefit}>
+                        <Check size={18} aria-hidden="true" />
+                        <span>{benefit}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <a className="btn btn--primary" href={SCHEDULE_DEMO_PATH} style={{ marginTop: 'var(--space-lg)' }}>
+                    Book a demo
+                    <ArrowRight size={14} aria-hidden="true" />
+                  </a>
                 </div>
-                <div className="early-access-card__metric early-access-card__metric--muted">
-                  <span>Built for</span>
-                  <strong>Procurement &amp; supply chain</strong>
+              </Reveal>
+              <Reveal delay={0.15}>
+                <div className="early-access-card">
+                  <p className="early-access-card__eyebrow">What you&apos;ll get</p>
+                  <h3 className="early-access-card__title">A decision report, not another tool to babysit.</h3>
+                  <p className="early-access-card__body">
+                    Upload a BOM and get decision cards for every at-risk line: lifecycle reasoning, recommended alternates, tariff impact, and what to do this week. Export and share with engineering and quality.
+                  </p>
+                  <div className="early-access-card__metric">
+                    <span>Typical first scan</span>
+                    <strong>Under 5 min</strong>
+                  </div>
+                  <div className="early-access-card__metric early-access-card__metric--muted">
+                    <span>Built for</span>
+                    <strong>Procurement &amp; supply chain</strong>
+                  </div>
                 </div>
-              </div>
-            </Reveal>
-          </div>
-        </section>
-
-        <section className="section cta-banner">
-          <div className="container cta-banner__inner">
-            <Reveal>
-              <h2>From BOM upload to decision in minutes, not days.</h2>
-              <p>
-                Book a demo and we&apos;ll walk through your BOM workflow on a real file: lifecycle risk, alternates, and tariff exposure in one report.
-              </p>
-              <div className="cta-banner__actions">
-                <a className="btn btn--primary" href={SCHEDULE_DEMO_PATH}>
-                  Book a demo
-                  <ArrowRight size={14} aria-hidden="true" />
-                </a>
-              </div>
-            </Reveal>
+              </Reveal>
+            </div>
           </div>
         </section>
       </main>
