@@ -71,9 +71,52 @@ async function authHeaders(): Promise<HeadersInit> {
 
 async function readErrorMessage(res: Response, body: unknown): Promise<string> {
   if (typeof body === 'object' && body && 'error' in body && typeof body.error === 'string') {
-    return body.error
+    const payload = body as { error: string; message?: string }
+    if (payload.error === 'plan_cap_exceeded' && payload.message) {
+      return payload.message
+    }
+    return payload.error
   }
   return `HTTP ${res.status}`
+}
+
+export class PlanCapError extends Error {
+  readonly cap: string
+  readonly used: number
+  readonly limit: number
+  readonly plan: string
+
+  constructor(message: string, cap: string, used: number, limit: number, plan: string) {
+    super(message)
+    this.name = 'PlanCapError'
+    this.cap = cap
+    this.used = used
+    this.limit = limit
+    this.plan = plan
+  }
+}
+
+function parsePlanCapError(res: Response, body: unknown): PlanCapError | null {
+  if (res.status !== 402 || typeof body !== 'object' || !body || !('error' in body)) return null
+  const payload = body as {
+    error?: string
+    cap?: string
+    used?: number
+    limit?: number
+    plan?: string
+    message?: string
+  }
+  if (payload.error !== 'plan_cap_exceeded') return null
+  const message =
+    payload.message ??
+    `Plan limit reached (${payload.used ?? '?'}/${payload.limit ?? '?'} on ${payload.cap ?? 'cap'}).`
+  return new PlanCapError(
+    message,
+    payload.cap ?? 'cap',
+    payload.used ?? 0,
+    payload.limit ?? 0,
+    payload.plan ?? 'free',
+  )
 }
 
 async function postFile(
@@ -387,6 +430,8 @@ export type TeamMember = {
   created_at: string
 }
 
+export type TeamInviteDelivery = 'sent' | 'queued' | 'not_configured' | 'failed'
+
 export type TeamInvite = {
   id: string
   email: string
@@ -395,6 +440,9 @@ export type TeamInvite = {
   expires_at: string
   created_at: string
   accept_url?: string
+  email_sent?: boolean
+  email_delivery?: TeamInviteDelivery
+  email_error?: string | null
 }
 
 export type TeamSnapshot = {
@@ -417,15 +465,17 @@ export async function getTeam(): Promise<TeamSnapshot> {
 export async function createTeamInvite(
   email: string,
   role: Exclude<TeamRole, 'owner'>,
-): Promise<TeamInvite & { email_sent?: boolean }> {
+): Promise<TeamInvite> {
   const res = await fetch('/api/team/invites', {
     method: 'POST',
     headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, role }),
   })
   const body: unknown = await readJsonBody(res)
-  if (!res.ok) throw new Error(await readErrorMessage(res, body))
-  return body as TeamInvite & { email_sent?: boolean }
+  if (!res.ok) {
+    throw parsePlanCapError(res, body) ?? new Error(await readErrorMessage(res, body))
+  }
+  return body as TeamInvite
 }
 
 export async function revokeTeamInvite(id: string): Promise<void> {

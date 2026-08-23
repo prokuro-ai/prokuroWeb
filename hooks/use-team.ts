@@ -16,6 +16,7 @@ function normalizeRole(role: unknown): TeamRole | null {
 
 export function useTeam() {
   const [team, setTeam] = useState<TeamSnapshot | null>(null)
+  const [loaded, setLoaded] = useState(false)
 
   const reload = useCallback(() => {
     getTeam()
@@ -41,6 +42,7 @@ export function useTeam() {
         })
       })
       .catch(() => {})
+      .finally(() => setLoaded(true))
   }, [])
 
   useEffect(() => {
@@ -48,11 +50,20 @@ export function useTeam() {
   }, [reload])
 
   const role = team?.role
+  const canManage = loaded && (role === 'owner' || role === 'admin')
+  const seatsUsed = team?.seats.used ?? 1
+  const seatsLimit = team?.seats.limit ?? 1
+  const canInvite =
+    canManage && team?.plan !== 'free' && seatsUsed < seatsLimit
+
   return {
     team,
+    loaded,
     reload,
-    canWrite: role !== 'read_only',
-    // Default to manageable while team is loading so Invite UI is visible on Account.
-    canManage: role !== 'read_only',
+    canWrite: loaded && role !== 'read_only',
+    canManage,
+    canInvite,
+    seatsUsed,
+    seatsLimit,
   }
 }

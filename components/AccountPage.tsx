@@ -83,13 +83,31 @@ function billingStatusLabel(status: BillingStatus | undefined, planSource?: Plan
 
 function formatPeriodEnd(value: string | null | undefined) {
   if (!value) return null
-  const date = new Date(value)
+  const asNumber = Number(value)
+  const date = Number.isFinite(asNumber) && value.trim() !== ''
+    ? new Date(asNumber * 1000)
+    : new Date(value)
   if (Number.isNaN(date.getTime())) return null
   return date.toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   })
+}
+
+function inviteDeliveryNotice(invite: { email: string; email_delivery?: string; email_error?: string | null }) {
+  switch (invite.email_delivery) {
+    case 'sent':
+      return `Invite email sent to ${invite.email}.`
+    case 'queued':
+      return `Invite queued for email delivery to ${invite.email}. Copy the link below if it does not arrive.`
+    case 'failed':
+      return invite.email_error
+        ? `Invite created but email failed: ${invite.email_error}. Copy the link below.`
+        : 'Invite created but email delivery failed. Copy the link below.'
+    default:
+      return 'Invite created. Copy the link below and share it with your teammate.'
+  }
 }
 
 function UsageMeter({
@@ -160,7 +178,7 @@ export default function AccountPage() {
   const [billingBusy, setBillingBusy] = useState(false)
   const [billingError, setBillingError] = useState<string | null>(null)
   const [billingNotice, setBillingNotice] = useState<string | null>(null)
-  const { team, reload: reloadTeam, canManage } = useTeam()
+  const { team, reload: reloadTeam, canManage, canInvite } = useTeam()
 
   useEffect(() => {
     if (!user) return
@@ -422,7 +440,8 @@ export default function AccountPage() {
                   ) : null}
                   <p className="mt-2 text-[12px] text-slate-400">
                     {seatsLimit} seat{seatsLimit === 1 ? '' : 's'} · up to {bomLimit} monitored BOM
-                    {bomLimit === 1 ? '' : 's'} · {linesLimit.toLocaleString()} lines / month
+                    {bomLimit === 1 ? '' : 's'} · {linesLimit.toLocaleString()} lines / month ·{' '}
+                    {apiLimits?.max_lines_per_bom ?? planLimits.maxLinesPerBom} lines max per BOM
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
@@ -523,8 +542,8 @@ export default function AccountPage() {
             </div>
 
             <div className="border-t border-slate-100 bg-slate-50 px-5 py-3 text-[11px] text-slate-400">
-              Caps reset with your billing period. Free stays open for small purchasing under monthly
-              limits; Growth unlocks seats and higher volume.
+              Usage meters reflect your current plan caps. Monthly counters reset on the calendar month;
+              Stripe subscriptions also show the billing period above when applicable.
             </div>
           </div>
         </div>
@@ -534,100 +553,13 @@ export default function AccountPage() {
           <p className="mb-3 text-[12px] text-slate-400">
             {`${seatsUsed} / ${seatsLimit} seats on ${shortPlanLabel(activePlan)}.`}
             {team ? ` Your role: ${roleLabel(team.role)}.` : ''}
-            {activePlan === 'free' ? ' Upgrade or ask us to enable a pilot plan before inviting teammates.' : ''}
+            {!canInvite && activePlan === 'free'
+              ? ' Upgrade or ask us to enable a pilot plan before inviting teammates.'
+              : !canInvite && seatsUsed >= seatsLimit
+                ? ' All seats are in use — revoke a pending invite or upgrade to add teammates.'
+                : ''}
           </p>
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-            {canManage ? (
-              <div className="border-b border-slate-100 px-5 py-5">
-                <p className="mb-1 text-[13px] font-medium" style={{ color: NAVY }}>
-                  Invite a teammate
-                </p>
-                <p className="mb-3 text-[12px] text-slate-400">
-                  We email an accept link when delivery is configured; otherwise copy the link below.
-                </p>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <input
-                    type="email"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    placeholder="colleague@company.com"
-                    className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-[13px] focus:border-[#0062ff] focus:outline-none focus:ring-2 focus:ring-[#0062ff]/20"
-                  />
-                  <select
-                    value={inviteRole}
-                    onChange={(e) => setInviteRole(e.target.value as Exclude<TeamRole, 'owner'>)}
-                    className="rounded-lg border border-slate-200 px-3 py-2 text-[13px] text-[#0f1b2d]"
-                  >
-                    <option value="read_only">Read only</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                  <button
-                    type="button"
-                    disabled={!inviteEmail.includes('@') || inviteBusy}
-                    onClick={async () => {
-                      setInviteBusy(true)
-                      setInviteError(null)
-                      setInviteNotice(null)
-                      setLastAcceptUrl(null)
-                      try {
-                        const invite = await createTeamInvite(inviteEmail.trim(), inviteRole)
-                        setInviteEmail('')
-                        if (invite.accept_url) {
-                          setLastAcceptUrl(invite.accept_url)
-                        }
-                        if (invite.email_sent) {
-                          setInviteNotice(`Invite sent to ${invite.email}.`)
-                        } else {
-                          setInviteNotice(
-                            'Invite created. Email delivery is not ready yet — copy the link below and share it manually.',
-                          )
-                        }
-                        await reloadTeam()
-                      } catch (err) {
-                        setInviteError(err instanceof Error ? err.message : 'Invite failed')
-                      } finally {
-                        setInviteBusy(false)
-                      }
-                    }}
-                    className="shrink-0 rounded-lg px-4 py-2 text-[13px] font-medium text-white transition-colors disabled:opacity-40"
-                    style={{ background: BLUE }}
-                  >
-                    {inviteBusy ? 'Sending…' : 'Invite'}
-                  </button>
-                </div>
-                {inviteNotice ? (
-                  <p className="mt-2 text-[12px] text-emerald-700">{inviteNotice}</p>
-                ) : null}
-                {inviteError ? (
-                  <p className="mt-2 text-[12px] text-red-600">{inviteError}</p>
-                ) : null}
-                {lastAcceptUrl ? (
-                  <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                    <p className="text-[11px] font-medium text-slate-500">Invite link</p>
-                    <a
-                      href={lastAcceptUrl}
-                      className="mt-1 block break-all text-[12px] font-medium text-[#0062ff] hover:underline"
-                    >
-                      {lastAcceptUrl}
-                    </a>
-                    <button
-                      type="button"
-                      className="mt-2 text-[11px] font-semibold text-slate-600 hover:text-[#0062ff]"
-                      onClick={async () => {
-                        try {
-                          await navigator.clipboard.writeText(lastAcceptUrl)
-                        } catch {
-                          /* ignore */
-                        }
-                      }}
-                    >
-                      Copy link
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-
             {(team?.members ?? []).map((member) => (
               <div
                 key={member.user_id}
@@ -759,6 +691,96 @@ export default function AccountPage() {
                 ) : null}
               </div>
             ))}
+
+            {canInvite ? (
+              <div className="border-t border-slate-100 bg-slate-50 px-5 py-5">
+                <p className="mb-1 text-[13px] font-medium" style={{ color: NAVY }}>
+                  Invite a teammate
+                </p>
+                <p className="mb-3 text-[12px] text-slate-400">
+                  We email an accept link via SNS when delivery is configured. Always copy the link as
+                  a fallback.
+                </p>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <input
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    placeholder="colleague@company.com"
+                    className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] focus:border-[#0062ff] focus:outline-none focus:ring-2 focus:ring-[#0062ff]/20"
+                  />
+                  <select
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value as Exclude<TeamRole, 'owner'>)}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-[#0f1b2d]"
+                  >
+                    <option value="read_only">Read only</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <button
+                    type="button"
+                    disabled={!inviteEmail.includes('@') || inviteBusy}
+                    onClick={async () => {
+                      setInviteBusy(true)
+                      setInviteError(null)
+                      setInviteNotice(null)
+                      setLastAcceptUrl(null)
+                      try {
+                        const invite = await createTeamInvite(inviteEmail.trim(), inviteRole)
+                        setInviteEmail('')
+                        if (invite.accept_url) {
+                          setLastAcceptUrl(invite.accept_url)
+                        }
+                        setInviteNotice(inviteDeliveryNotice(invite))
+                        await reloadTeam()
+                      } catch (err) {
+                        setInviteError(err instanceof Error ? err.message : 'Invite failed')
+                      } finally {
+                        setInviteBusy(false)
+                      }
+                    }}
+                    className="shrink-0 rounded-lg px-4 py-2 text-[13px] font-medium text-white transition-colors disabled:opacity-40"
+                    style={{ background: BLUE }}
+                  >
+                    {inviteBusy ? 'Sending…' : 'Invite'}
+                  </button>
+                </div>
+                {inviteNotice ? (
+                  <p className="mt-2 text-[12px] text-emerald-700">{inviteNotice}</p>
+                ) : null}
+                {inviteError ? (
+                  <p className="mt-2 text-[12px] text-red-600">{inviteError}</p>
+                ) : null}
+                {lastAcceptUrl ? (
+                  <div className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
+                    <p className="text-[11px] font-medium text-slate-500">Invite link</p>
+                    <a
+                      href={lastAcceptUrl}
+                      className="mt-1 block break-all text-[12px] font-medium text-[#0062ff] hover:underline"
+                    >
+                      {lastAcceptUrl}
+                    </a>
+                    <button
+                      type="button"
+                      className="mt-2 text-[11px] font-semibold text-slate-600 hover:text-[#0062ff]"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(lastAcceptUrl)
+                        } catch {
+                          /* ignore */
+                        }
+                      }}
+                    >
+                      Copy link
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : inviteError ? (
+              <div className="border-t border-slate-100 px-5 py-4">
+                <p className="text-[12px] text-red-600">{inviteError}</p>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
