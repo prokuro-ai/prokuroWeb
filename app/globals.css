@@ -1468,7 +1468,8 @@ body.nav-open {
 }
 
 .pricing-footnote {
-  margin-top: var(--space-xxl);
+  margin: 0;
+  padding-top: 72px;
   text-align: center;
   font-size: 0.8125rem;
   color: var(--color-ink-muted);
@@ -1789,7 +1790,7 @@ body.modal-open {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #9ec5ff;
+  color: #fff;
 }
 
 .early-access-card h3.early-access-card__title {
@@ -1804,7 +1805,7 @@ body.modal-open {
   margin: 0 0 var(--space-xl);
   font-size: 15px;
   line-height: 1.6;
-  color: #d4dce8;
+  color: #fff;
 }
 
 .early-access-card__metric {
@@ -1813,9 +1814,9 @@ body.modal-open {
   justify-content: space-between;
   gap: var(--space-md);
   padding: var(--space-md) 0;
-  border-top: 1px solid rgb(255 255 255 / 12%);
+  border-top: 1px solid rgb(255 255 255 / 18%);
   font-size: 14px;
-  color: #c5d0e0;
+  color: #fff;
 }
 
 .early-access-card__metric strong {
@@ -1825,7 +1826,7 @@ body.modal-open {
 }
 
 .early-access-card__metric--muted {
-  color: #a8b8cc;
+  color: #fff;
 }
 
 .problem-section .eyebrow {

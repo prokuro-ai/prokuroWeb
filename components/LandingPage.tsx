@@ -748,11 +748,9 @@ export default function LandingPage() {
                 </Reveal>
               ))}
             </div>
-            <Reveal delay={0.2}>
-              <p className="pricing-footnote">
-                Prefer a dedicated page? See full checkout on{' '}
-                <a href="/pricing">prokuro.ai/pricing</a>.
-              </p>
+            <Reveal delay={0.2} className="pricing-footnote">
+              Prefer a dedicated page? See full checkout on{' '}
+              <a href="/pricing">prokuro.ai/pricing</a>.
             </Reveal>
           </div>
         </section>
