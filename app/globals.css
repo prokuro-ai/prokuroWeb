@@ -1361,8 +1361,10 @@ body.nav-open {
 }
 
 .three-col,
+.four-col,
 .steps,
-.feature-grid {
+.feature-grid,
+.pricing-grid {
   display: grid;
   gap: var(--space-md);
 }
