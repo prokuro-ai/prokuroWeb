@@ -7,7 +7,6 @@ import { displayNameForUser, initialsForUser, updateProfile, signOut } from '@/l
 import {
   createTeamInvite,
   getBillingStatus,
-  listBoms,
   openBillingPortal,
   patchTeamMemberRole,
   removeTeamMember,
@@ -15,6 +14,7 @@ import {
   startCheckout,
   type BillingAccountStatus,
   type BillingStatus,
+  type PlanSource,
   type TeamInvite,
   type TeamRole,
 } from '@/lib/api'
@@ -64,7 +64,8 @@ function planLabel(plan: BillingAccountStatus['plan']) {
   return `${shortPlanLabel(plan)} Plan`
 }
 
-function billingStatusLabel(status: BillingStatus | undefined) {
+function billingStatusLabel(status: BillingStatus | undefined, planSource?: PlanSource) {
+  if (planSource === 'admin') return 'Admin-assigned plan'
   switch (status) {
     case 'active':
       return 'Active'
@@ -153,6 +154,7 @@ export default function AccountPage() {
   const [inviteRole, setInviteRole] = useState<Exclude<TeamRole, 'owner'>>('read_only')
   const [inviteBusy, setInviteBusy] = useState(false)
   const [inviteError, setInviteError] = useState<string | null>(null)
+  const [inviteNotice, setInviteNotice] = useState<string | null>(null)
   const [lastAcceptUrl, setLastAcceptUrl] = useState<string | null>(null)
   const [billing, setBilling] = useState<BillingAccountStatus | null>(null)
   const [billingBusy, setBillingBusy] = useState(false)
@@ -168,15 +170,16 @@ export default function AccountPage() {
   }, [user])
 
   useEffect(() => {
-    listBoms()
-      .then((page) => setBomCount(page.items.length))
-      .catch(() => {})
     getBillingStatus()
-      .then(setBilling)
+      .then((status) => {
+        setBilling(status)
+        setBomCount(status.usage?.active_boms_count ?? 0)
+      })
       .catch(() =>
         setBilling({
           plan: 'free',
           status: 'none',
+          plan_source: 'free',
           can_purchase: true,
         }),
       )
@@ -193,6 +196,7 @@ export default function AccountPage() {
       getBillingStatus()
         .then((status) => {
           setBilling(status)
+          setBomCount(status.usage?.active_boms_count ?? 0)
           setBillingNotice(`You're on the ${planLabel(status.plan)}.`)
         })
         .catch(() => {
@@ -296,7 +300,8 @@ export default function AccountPage() {
     ? 'Daily refresh'
     : 'Weekly refresh'
   const periodEnd = formatPeriodEnd(billing?.current_period_end)
-  const statusLabel = billingStatusLabel(billing?.status)
+  const statusLabel = billingStatusLabel(billing?.status, billing?.plan_source)
+  const bomUsed = usage?.active_boms_count ?? bomCount
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-50 font-sans text-[#0f1b2d]">
@@ -410,6 +415,11 @@ export default function AccountPage() {
                       Current period ends {periodEnd}
                     </p>
                   ) : null}
+                  {billing?.admin_expires_at ? (
+                    <p className="mt-1 text-[12px] text-slate-400">
+                      Admin plan expires {formatPeriodEnd(billing.admin_expires_at)}
+                    </p>
+                  ) : null}
                   <p className="mt-2 text-[12px] text-slate-400">
                     {seatsLimit} seat{seatsLimit === 1 ? '' : 's'} · up to {bomLimit} monitored BOM
                     {bomLimit === 1 ? '' : 's'} · {linesLimit.toLocaleString()} lines / month
@@ -489,7 +499,7 @@ export default function AccountPage() {
 
             <div className="grid gap-5 px-5 py-5 sm:grid-cols-2">
               <UsageMeter label="Team seats" used={seatsUsed} limit={seatsLimit} />
-              <UsageMeter label="Monitored BOMs" used={bomCount} limit={bomLimit} />
+              <UsageMeter label="Monitored BOMs" used={bomUsed} limit={bomLimit} />
               <UsageMeter
                 label="Analyses this month"
                 used={usage?.analyses_count ?? 0}
@@ -522,16 +532,18 @@ export default function AccountPage() {
         <div className="pb-16">
           <SectionLabel>Team</SectionLabel>
           <p className="mb-3 text-[12px] text-slate-400">
-            {team
-              ? `${team.seats.used} / ${team.seats.limit} seats used on ${shortPlanLabel(team.plan)}.`
-              : `Limits today: ${planLimits.seats} seat${planLimits.seats === 1 ? '' : 's'} on ${shortPlanLabel(activePlan)}.`}
+            {`${seatsUsed} / ${seatsLimit} seats on ${shortPlanLabel(activePlan)}.`}
             {team ? ` Your role: ${roleLabel(team.role)}.` : ''}
+            {activePlan === 'free' ? ' Upgrade or ask us to enable a pilot plan before inviting teammates.' : ''}
           </p>
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
             {canManage ? (
               <div className="border-b border-slate-100 px-5 py-5">
-                <p className="mb-3 text-[13px] font-medium" style={{ color: NAVY }}>
-                  Invite teammates
+                <p className="mb-1 text-[13px] font-medium" style={{ color: NAVY }}>
+                  Invite a teammate
+                </p>
+                <p className="mb-3 text-[12px] text-slate-400">
+                  We email an accept link when delivery is configured; otherwise copy the link below.
                 </p>
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <input
@@ -555,6 +567,7 @@ export default function AccountPage() {
                     onClick={async () => {
                       setInviteBusy(true)
                       setInviteError(null)
+                      setInviteNotice(null)
                       setLastAcceptUrl(null)
                       try {
                         const invite = await createTeamInvite(inviteEmail.trim(), inviteRole)
@@ -562,9 +575,11 @@ export default function AccountPage() {
                         if (invite.accept_url) {
                           setLastAcceptUrl(invite.accept_url)
                         }
-                        if (invite.email_sent === false) {
-                          setInviteError(
-                            'Invite created, but email could not be sent yet (SES not verified). Copy the link below and share it.',
+                        if (invite.email_sent) {
+                          setInviteNotice(`Invite sent to ${invite.email}.`)
+                        } else {
+                          setInviteNotice(
+                            'Invite created. Email delivery is not ready yet — copy the link below and share it manually.',
                           )
                         }
                         await reloadTeam()
@@ -580,8 +595,11 @@ export default function AccountPage() {
                     {inviteBusy ? 'Sending…' : 'Invite'}
                   </button>
                 </div>
+                {inviteNotice ? (
+                  <p className="mt-2 text-[12px] text-emerald-700">{inviteNotice}</p>
+                ) : null}
                 {inviteError ? (
-                  <p className="mt-2 text-[12px] text-amber-700">{inviteError}</p>
+                  <p className="mt-2 text-[12px] text-red-600">{inviteError}</p>
                 ) : null}
                 {lastAcceptUrl ? (
                   <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
@@ -704,7 +722,7 @@ export default function AccountPage() {
                   <p className="truncate text-[11px] text-slate-400">
                     Pending · {roleLabel(invite.role)} · expires{' '}
                     {new Date(invite.expires_at).toLocaleDateString()}
-                    {invite.accept_url ? ' · email not sent' : ''}
+                    {invite.accept_url ? ' · copy link if needed' : ''}
                   </p>
                   {invite.accept_url ? (
                     <button

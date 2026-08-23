@@ -324,16 +324,21 @@ export type PlanUsageApi = {
   lines_count: number
   purchasing_actions_count: number
   orders_count: number
+  active_boms_count?: number
 }
+
+export type PlanSource = 'stripe' | 'admin' | 'free'
 
 export type BillingAccountStatus = {
   plan: BillingPlan
   status: BillingStatus
+  plan_source?: PlanSource
   can_purchase: boolean
   limits?: PlanLimitsApi
   usage?: PlanUsageApi
   stripe_customer_id?: string | null
   current_period_end?: string | null
+  admin_expires_at?: string | null
 }
 
 export async function getBillingStatus(): Promise<BillingAccountStatus> {
