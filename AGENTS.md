@@ -26,12 +26,24 @@ Amplify rebuilds on push to `main` when the GitHub webhook is connected. If the 
 ```bash
 export AWS_PROFILE=prokuro
 aws amplify start-job \
-  --app-id d3n8wqfj728pqh \
+  --app-id d3oyz2jdskcpal \
   --branch-name main \
   --job-type RELEASE
 ```
 
 Product routes (dashboard, BOMs, account, export, etc.) ship via Amplify only — not GitHub Pages.
+
+If Amplify auto-build does not fire after push, look up the live app ID from CloudFormation output `AmplifyAppId` (or Amplify console) and run:
+
+```bash
+export AWS_PROFILE=prokuro
+aws amplify start-job \
+  --app-id <AmplifyAppId> \
+  --branch-name main \
+  --job-type RELEASE
+```
+
+See `prokuroInfrastructureCDK/docs/GO-LIVE.md` for SES / Stripe / domain blockers.
 
 ## Checklist before marking UI work done
 
