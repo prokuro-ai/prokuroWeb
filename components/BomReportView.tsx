@@ -5,6 +5,7 @@ import type { AnalyzeResult, AnalyzedLine, BomSummary } from '@/lib/types'
 import { formatUploadedAt } from '@/lib/format'
 import { Link } from '@/lib/navigation'
 import { ChevronLeft } from 'lucide-react'
+import BomExportMenu from '@/components/BomExportMenu'
 import BomPartsTable from '@/components/BomPartsTable'
 import EditableBomTable from '@/components/EditableBomTable'
 
@@ -116,14 +117,10 @@ export default function BomReportView({
                 {editing ? 'Done' : 'Edit'}
               </button>
             ) : null}
-            <button
-              type="button"
-              disabled
-              title="Export coming soon"
-              className="cursor-not-allowed rounded-lg border border-slate-200 bg-white px-5 py-2 text-sm font-medium text-slate-400 opacity-60 shadow-sm"
-            >
-              Export
-            </button>
+            <BomExportMenu
+              result={result}
+              triggerClassName="rounded-lg border border-slate-200 bg-white px-5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+            />
           </div>
         </div>
 

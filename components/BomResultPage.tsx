@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronLeft, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import BomExportMenu from '@/components/BomExportMenu'
 import BomPartsTable from '@/components/BomPartsTable'
 import EditableBomTable from '@/components/EditableBomTable'
 import { useAuth } from '@/components/AuthProvider'
@@ -17,8 +18,6 @@ const actionBtn =
   'border border-slate-200 px-4 py-2 font-mono text-[11px] font-medium uppercase tracking-[0.08em] transition-colors'
 const actionBtnIdle = `${actionBtn} text-slate-700 hover:border-slate-300 hover:bg-slate-50`
 const actionBtnActive = `${actionBtn} border-[#0062ff] bg-[#0062ff]/5 text-[#0062ff]`
-const actionBtnDisabled = `${actionBtn} cursor-not-allowed text-slate-400`
-
 const POLL_INTERVALS_MS = [2000, 5000, 10000, 30000]
 const POLL_CEILING_MS = 15 * 60 * 1000
 
@@ -248,14 +247,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
                     {editing ? 'Done' : 'Edit'}
                   </button>
                 ) : null}
-                <button
-                  type="button"
-                  disabled
-                  title="Export coming soon"
-                  className={actionBtnDisabled}
-                >
-                  Export
-                </button>
+                <BomExportMenu result={result} triggerClassName={actionBtnIdle} />
               </div>
             </div>
 
