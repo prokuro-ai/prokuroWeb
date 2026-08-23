@@ -1424,13 +1424,14 @@ body.nav-open {
 }
 
 .pricing-card__price small {
-  color: var(--color-muted, #64748b);
+  color: var(--color-ink-subtle);
   font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .pricing-card__blurb {
   margin: 0;
-  color: var(--color-muted, #64748b);
+  color: var(--color-ink-muted);
   font-size: 0.875rem;
   line-height: 1.45;
 }
@@ -1467,10 +1468,10 @@ body.nav-open {
 }
 
 .pricing-footnote {
-  margin-top: var(--space-lg);
+  margin-top: var(--space-xxl);
   text-align: center;
   font-size: 0.8125rem;
-  color: var(--color-muted, #64748b);
+  color: var(--color-ink-muted);
 }
 
 .pricing-footnote a {
@@ -1788,13 +1789,14 @@ body.modal-open {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #7eb0ff;
+  color: #9ec5ff;
 }
 
-.early-access-card__title {
+.early-access-card h3.early-access-card__title {
   margin: 0 0 var(--space-md);
   font-size: 22px;
   line-height: 1.35;
+  font-weight: 500;
   color: #fff;
 }
 
@@ -1802,7 +1804,7 @@ body.modal-open {
   margin: 0 0 var(--space-xl);
   font-size: 15px;
   line-height: 1.6;
-  color: #b9c3d4;
+  color: #d4dce8;
 }
 
 .early-access-card__metric {
@@ -1813,7 +1815,7 @@ body.modal-open {
   padding: var(--space-md) 0;
   border-top: 1px solid rgb(255 255 255 / 12%);
   font-size: 14px;
-  color: #b9c3d4;
+  color: #c5d0e0;
 }
 
 .early-access-card__metric strong {
@@ -1823,7 +1825,7 @@ body.modal-open {
 }
 
 .early-access-card__metric--muted {
-  color: #8fa0b8;
+  color: #a8b8cc;
 }
 
 .problem-section .eyebrow {

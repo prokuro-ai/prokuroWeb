@@ -757,7 +757,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="contact" className="section section--surface">
+        <section id="company" className="section section--surface">
           <div className="container">
             <div className="split-panel">
               <Reveal>
@@ -820,7 +820,7 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <footer id="company" className="footer">
+      <footer className="footer">
         <div className="container footer__inner">
           <div className="footer__top">
             <div className="footer__brand">

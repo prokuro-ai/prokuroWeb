@@ -28,7 +28,7 @@ function NavLinks({
 
 function MarketingFooter() {
   return (
-    <footer id="company" className="footer">
+    <footer className="footer">
       <div className="container footer__inner">
         <div className="footer__top">
           <div className="footer__brand">
