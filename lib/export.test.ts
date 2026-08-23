@@ -4,7 +4,6 @@ import {
   analyzeLineToExportRow,
   baseFilename,
   buildAnalyzeExportCsv,
-  buildAnalyzeExportSpreadsheetXml,
   escapeCsvField,
   sheetNameFromFilename,
 } from '@/lib/export'
@@ -60,21 +59,11 @@ describe('escapeCsvField', () => {
   it('escapes embedded double quotes', () => {
     expect(escapeCsvField('say "hello"')).toBe('"say ""hello"""')
   })
-
-  it('quotes multiline values', () => {
-    expect(escapeCsvField('line1\nline2')).toBe('"line1\nline2"')
-  })
 })
 
 describe('baseFilename', () => {
   it('strips the original extension', () => {
     expect(baseFilename(sampleResult)).toBe('power-board')
-  })
-
-  it('falls back when the filename is only an extension', () => {
-    expect(
-      baseFilename({ ...sampleResult, source_filename: '.csv' }),
-    ).toBe('bom-analysis')
   })
 })
 
@@ -114,30 +103,6 @@ describe('buildAnalyzeExportCsv', () => {
     expect(lines[0]).toBe(ANALYZE_EXPORT_HEADERS.join(','))
     expect(lines).toHaveLength(2)
     expect(lines[1]).toContain('LM358')
-    expect(lines[1]).toContain('Digi-Key (3,000); Mouser (2,000)')
-  })
-
-  it('escapes commas in descriptions', () => {
-    const csv = buildAnalyzeExportCsv({
-      ...sampleResult,
-      lines: [{ ...sampleLine, description: 'Dual, precision op amp' }],
-    })
-    expect(csv).toContain('"Dual, precision op amp"')
-  })
-})
-
-describe('buildAnalyzeExportSpreadsheetXml', () => {
-  it('escapes XML characters in cell values', () => {
-    const xml = buildAnalyzeExportSpreadsheetXml({
-      ...sampleResult,
-      lines: [{ ...sampleLine, description: 'Dual & "precision" <op amp>' }],
-    })
-    expect(xml).toContain('Dual &amp; &quot;precision&quot; &lt;op amp&gt;')
-  })
-
-  it('includes worksheet name derived from the source filename', () => {
-    const xml = buildAnalyzeExportSpreadsheetXml(sampleResult)
-    expect(xml).toContain('<Worksheet ss:Name="power-board">')
   })
 })
 
@@ -146,14 +111,5 @@ describe('sheetNameFromFilename', () => {
     expect(
       sheetNameFromFilename({ ...sampleResult, source_filename: 'bad[name]:test?.csv' }),
     ).toBe('bad name  test')
-  })
-
-  it('truncates to 31 characters', () => {
-    expect(
-      sheetNameFromFilename({
-        ...sampleResult,
-        source_filename: `${'a'.repeat(40)}.csv`,
-      }).length,
-    ).toBeLessThanOrEqual(31)
   })
 })

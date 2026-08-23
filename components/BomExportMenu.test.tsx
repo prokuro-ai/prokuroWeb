@@ -6,13 +6,15 @@ import type { AnalyzeResult } from '@/lib/types'
 
 const exportMocks = vi.hoisted(() => ({
   csv: vi.fn(),
-  excel: vi.fn(),
+  xlsx: vi.fn(),
+  pdf: vi.fn(),
   json: vi.fn(),
 }))
 
 vi.mock('@/lib/export', () => ({
   exportAnalyzeResultCsv: exportMocks.csv,
-  exportAnalyzeResultExcel: exportMocks.excel,
+  exportAnalyzeResultXlsx: exportMocks.xlsx,
+  exportAnalyzeResultPdf: exportMocks.pdf,
   exportAnalyzeResultJson: exportMocks.json,
 }))
 
@@ -42,7 +44,8 @@ describe('BomExportMenu', () => {
 
   beforeEach(() => {
     exportMocks.csv.mockReset()
-    exportMocks.excel.mockReset()
+    exportMocks.xlsx.mockReset()
+    exportMocks.pdf.mockReset()
     exportMocks.json.mockReset()
   })
 
@@ -56,13 +59,13 @@ describe('BomExportMenu', () => {
     expect(exportMocks.csv).toHaveBeenCalledWith(sampleResult)
   })
 
-  it('calls the Excel exporter when Download Excel is selected', async () => {
+  it('calls the PDF exporter when Download PDF is selected', async () => {
     const user = userEvent.setup()
     render(<BomExportMenu result={sampleResult} />)
 
     await user.click(screen.getByRole('button', { name: /export/i }))
-    await user.click(screen.getByRole('menuitem', { name: /download excel/i }))
+    await user.click(screen.getByRole('menuitem', { name: /download pdf/i }))
 
-    expect(exportMocks.excel).toHaveBeenCalledWith(sampleResult)
+    expect(exportMocks.pdf).toHaveBeenCalledWith(sampleResult)
   })
 })

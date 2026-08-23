@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { ChevronDown, Search, Sparkles } from 'lucide-react'
 import type { AnalyzedLine, RiskLevel } from '@/lib/types'
+import { buildLineDecision } from '@/lib/decision'
 import {
   RISK_PRESENTATION,
   isAtRisk,
@@ -29,19 +30,21 @@ function Pending() {
   return <span className="animate-pulse text-[12px] text-slate-400">Looking up…</span>
 }
 
-function ComingSoon({ title, body }: { title: string; body: string }) {
+function DecisionBlock({ title, body, accent }: { title: string; body: string; accent?: string }) {
   return (
-    <div className="border border-dashed border-slate-300 bg-white/70 p-4">
+    <div className="border border-slate-200 bg-white p-4">
       <div className="mb-1.5 flex items-center gap-1.5">
         <Sparkles className="h-3.5 w-3.5 text-[#0062ff]" aria-hidden />
         <span className="font-mono text-[11px] font-medium uppercase tracking-[0.09em] text-slate-500">
           {title}
         </span>
-        <span className="bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wide text-slate-500">
-          Coming soon
-        </span>
+        {accent ? (
+          <span className="bg-[#0062ff]/10 px-1.5 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wide text-[#0062ff]">
+            {accent}
+          </span>
+        ) : null}
       </div>
-      <p className="text-[13px] leading-relaxed text-slate-500">{body}</p>
+      <p className="text-[13px] leading-relaxed text-slate-600">{body}</p>
     </div>
   )
 }
@@ -67,6 +70,7 @@ function LineDetail({ line }: { line: AnalyzedLine }) {
   const pending = isPendingLine(line)
   const weeks = leadTimeWeeks(line)
   const lineLabel = String(line.row_index).padStart(4, '0')
+  const decision = buildLineDecision(line)
 
   return (
     <div className="border-t border-slate-200 bg-[#f4f6f9] px-4 py-4 sm:px-6 sm:py-5">
@@ -75,16 +79,14 @@ function LineDetail({ line }: { line: AnalyzedLine }) {
           <p className={`font-mono text-[11px] uppercase tracking-[0.09em] ${risk.text}`}>
             Line {lineLabel}: why {risk.label.toLowerCase()}
           </p>
+          <p className="mt-2 max-w-[72ch] text-[14px] leading-relaxed text-slate-700 sm:text-[15px]">
+            {decision.summary}
+          </p>
           {line.description ? (
-            <p className="mt-2 max-w-[72ch] text-[14px] leading-relaxed text-slate-600 sm:text-[15px]">
+            <p className="mt-2 max-w-[72ch] text-[13px] leading-relaxed text-slate-500">
               {line.description}
             </p>
-          ) : (
-            <p className="mt-2 max-w-[72ch] text-[14px] leading-relaxed text-slate-400 sm:text-[15px]">
-              Decision detail for this line is coming soon. Lifecycle, stock, tariff, and alternate
-              recommendations will land here once the analyst pipeline is live.
-            </p>
-          )}
+          ) : null}
         </div>
 
         <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-slate-200 pt-4 sm:gap-x-6 sm:gap-y-4 md:grid-cols-3 lg:grid-cols-6">
@@ -133,20 +135,18 @@ function LineDetail({ line }: { line: AnalyzedLine }) {
               <p className="text-[13px] text-slate-400">No approved alternate listed on this line.</p>
             )}
           </div>
-          <ComingSoon
+          <DecisionBlock
             title="Recommended alternate"
-            body="Prokuro will cross-check parametric drop-ins against lifecycle, stock, tariff exposure, and your AML, then rank them with a confidence score and the engineering sign-off each swap needs."
+            accent={decision.recommendedAlternate ?? undefined}
+            body={decision.recommendedAlternateNote}
           />
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <ComingSoon
-            title="Why this score"
-            body="A plain-language explanation of the lifecycle, supply, and trade signals driving this line's risk, written the way your procurement analyst would brief you."
-          />
-          <ComingSoon
+          <DecisionBlock title="Why this score" body={decision.whyScore} />
+          <DecisionBlock
             title="Cost & next action"
-            body="Estimated tariff and re-spin cost at your build volume, plus the one action to take this week and who needs to approve it."
+            body={`${decision.costNote} ${decision.nextAction}`}
           />
         </div>
 

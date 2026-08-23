@@ -126,11 +126,34 @@ export interface AnalyzeResult {
 }
 
 export type PurchaseProviderId = 'digikey' | 'mouser'
-export type PurchaseStatus = 'not_implemented'
+
+export type PurchaseStatus =
+  | 'quoted'
+  | 'partial'
+  | 'unavailable'
+  | 'submitted'
+  | 'not_configured'
+  | 'requires_distributor_credit'
+  | 'requires_subscription'
+  | 'cap_exceeded'
+  | 'error'
 
 export interface PurchaseLine {
   mpn: string
   quantity: number
+  manufacturer?: string
+}
+
+export interface QuoteLineResult {
+  mpn: string
+  quantity: number
+  provider_part_id?: string | null
+  matched_mpn?: string | null
+  unit_price?: number | null
+  extended_price?: number | null
+  currency?: string | null
+  available_quantity?: number | null
+  error?: string | null
 }
 
 export interface QuoteRequest {
@@ -141,14 +164,21 @@ export interface QuoteRequest {
 export interface QuoteResponse {
   provider: PurchaseProviderId
   status: PurchaseStatus
+  lines?: QuoteLineResult[]
+  currency?: string | null
+  subtotal?: number | null
+  message?: string | null
 }
 
 export interface PlaceOrderRequest {
   provider: PurchaseProviderId
   lines: PurchaseLine[]
+  purchase_order_number?: string
 }
 
 export interface PlaceOrderResponse {
   provider: PurchaseProviderId
   status: PurchaseStatus
+  distributor_order_id?: string | null
+  message?: string | null
 }

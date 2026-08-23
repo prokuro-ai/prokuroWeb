@@ -1,3 +1,4 @@
+import { buildLineDecision } from '@/lib/decision'
 import { leadTimeWeeks, lineRiskLevel } from '@/lib/risk'
 import type { AnalyzeResult, AnalyzedLine, SellerOffer } from './types'
 
@@ -77,14 +78,6 @@ export function escapeCsvField(value: string): string {
   return value
 }
 
-function escapeXml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
-
 export function buildAnalyzeExportCsv(result: AnalyzeResult): string {
   const rows = [
     ANALYZE_EXPORT_HEADERS.join(','),
@@ -93,29 +86,6 @@ export function buildAnalyzeExportCsv(result: AnalyzeResult): string {
     ),
   ]
   return rows.join('\n')
-}
-
-export function buildAnalyzeExportSpreadsheetXml(result: AnalyzeResult): string {
-  const rows = [ANALYZE_EXPORT_HEADERS, ...result.lines.map(analyzeLineToExportRow)]
-  const xmlRows = rows
-    .map(
-      (row) =>
-        `<Row>${row
-          .map((cell) => `<Cell><Data ss:Type="String">${escapeXml(cell)}</Data></Cell>`)
-          .join('')}</Row>`,
-    )
-    .join('')
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:o="urn:schemas-microsoft-com:office:office"
- xmlns:x="urn:schemas-microsoft-com:office:excel"
- xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
- <Worksheet ss:Name="${escapeXml(sheetNameFromFilename(result))}">
-  <Table>${xmlRows}</Table>
- </Worksheet>
-</Workbook>`
 }
 
 export function sheetNameFromFilename(result: AnalyzeResult): string {
@@ -134,9 +104,125 @@ export function exportAnalyzeResultCsv(result: AnalyzeResult) {
   downloadBlob(blob, `${baseFilename(result)}-analysis.csv`)
 }
 
-export function exportAnalyzeResultExcel(result: AnalyzeResult) {
-  const blob = new Blob([buildAnalyzeExportSpreadsheetXml(result)], {
-    type: 'application/vnd.ms-excel',
+export async function exportAnalyzeResultXlsx(result: AnalyzeResult) {
+  const ExcelJS = (await import('exceljs')).default
+  const workbook = new ExcelJS.Workbook()
+  workbook.creator = 'Prokuro'
+  workbook.created = new Date()
+  const sheet = workbook.addWorksheet(sheetNameFromFilename(result), {
+    views: [{ state: 'frozen', ySplit: 1 }],
   })
-  downloadBlob(blob, `${baseFilename(result)}-analysis.xls`)
+  sheet.addRow([...ANALYZE_EXPORT_HEADERS])
+  sheet.getRow(1).font = { bold: true }
+  for (const line of result.lines) {
+    sheet.addRow(analyzeLineToExportRow(line))
+  }
+  sheet.columns.forEach((column) => {
+    let max = 10
+    column.eachCell?.({ includeEmpty: true }, (cell) => {
+      const len = String(cell.value ?? '').length
+      if (len > max) max = Math.min(len, 40)
+    })
+    column.width = max + 2
+  })
+  const buffer = await workbook.xlsx.writeBuffer()
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  })
+  downloadBlob(blob, `${baseFilename(result)}-analysis.xlsx`)
+}
+
+/** @deprecated Prefer exportAnalyzeResultXlsx */
+export async function exportAnalyzeResultExcel(result: AnalyzeResult) {
+  return exportAnalyzeResultXlsx(result)
+}
+
+export async function exportAnalyzeResultPdf(result: AnalyzeResult) {
+  const [{ jsPDF }, autoTableMod] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable'),
+  ])
+  const autoTable = autoTableMod.default
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'letter' })
+  const title = baseFilename(result)
+  const flagged =
+    (result.summary.red_count ?? 0) + (result.summary.yellow_count ?? 0)
+  const atRisk = result.lines.filter((line) => {
+    const level = lineRiskLevel(line)
+    return level === 'red' || level === 'yellow'
+  })
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(16)
+  doc.text('Prokuro BOM decision report', 40, 40)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(10)
+  doc.setTextColor(80)
+  doc.text(`${title} · ${result.lines.length} lines · ${flagged} flagged · ${result.analyzed_at}`, 40, 58)
+  doc.setTextColor(0)
+
+  autoTable(doc, {
+    startY: 72,
+    head: [['MPN', 'Mfr', 'Qty', 'Risk', 'Lifecycle', 'Stock', 'Lead (w)', 'Duty', 'Alternate', 'Next action']],
+    body: result.lines.map((line) => {
+      const decision = buildLineDecision(line)
+      const weeks = leadTimeWeeks(line)
+      return [
+        line.mpn ?? '—',
+        line.manufacturer ?? '—',
+        line.quantity?.toString() ?? '—',
+        lineRiskLevel(line),
+        line.lifecycle_status,
+        line.total_avail.toLocaleString(),
+        weeks?.toString() ?? '—',
+        line.total_duty_pct != null && line.total_duty_pct > 0
+          ? `${line.total_duty_pct}%`
+          : '—',
+        decision.recommendedAlternate ?? '—',
+        decision.nextAction,
+      ]
+    }),
+    styles: { fontSize: 7, cellPadding: 3, overflow: 'linebreak' },
+    headStyles: { fillColor: [15, 27, 45], textColor: 255, fontStyle: 'bold' },
+    columnStyles: {
+      0: { cellWidth: 72 },
+      9: { cellWidth: 140 },
+    },
+    margin: { left: 40, right: 40 },
+  })
+
+  if (atRisk.length > 0) {
+    doc.addPage()
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(14)
+    doc.setTextColor(0)
+    doc.text('At-risk decision cards', 40, 40)
+    let y = 60
+    for (const line of atRisk.slice(0, 12)) {
+      const decision = buildLineDecision(line)
+      if (y > 520) {
+        doc.addPage()
+        y = 40
+      }
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(10)
+      doc.text(`${line.mpn ?? 'Unknown MPN'} · ${lineRiskLevel(line).toUpperCase()}`, 40, y)
+      y += 14
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8)
+      const blocks = [
+        decision.summary,
+        `Why: ${decision.whyScore}`,
+        `Action: ${decision.nextAction}`,
+      ]
+      for (const block of blocks) {
+        const wrapped = doc.splitTextToSize(block, 720)
+        doc.text(wrapped, 40, y)
+        y += wrapped.length * 11 + 4
+      }
+      y += 10
+    }
+  }
+
+  doc.save(`${baseFilename(result)}-analysis.pdf`)
 }

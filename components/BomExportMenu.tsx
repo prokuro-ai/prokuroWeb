@@ -10,7 +10,8 @@ import {
 import {
   exportAnalyzeResultCsv,
   exportAnalyzeResultJson,
-  exportAnalyzeResultExcel,
+  exportAnalyzeResultPdf,
+  exportAnalyzeResultXlsx,
 } from '@/lib/export'
 import type { AnalyzeResult } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -26,22 +27,30 @@ export default function BomExportMenu({ result, triggerClassName }: BomExportMen
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className={cn(
-            'inline-flex items-center gap-1.5',
-            triggerClassName,
-          )}
+          className={cn('inline-flex items-center gap-1.5', triggerClassName)}
           aria-haspopup="menu"
         >
           Export
           <ChevronDown className="h-3.5 w-3.5 opacity-60" aria-hidden />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-[10rem]">
+      <DropdownMenuContent align="end" className="min-w-[11rem]">
         <DropdownMenuItem onSelect={() => exportAnalyzeResultCsv(result)}>
           Download CSV
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => exportAnalyzeResultExcel(result)}>
-          Download Excel
+        <DropdownMenuItem
+          onSelect={() => {
+            void exportAnalyzeResultXlsx(result)
+          }}
+        >
+          Download XLSX
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={() => {
+            void exportAnalyzeResultPdf(result)
+          }}
+        >
+          Download PDF
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => exportAnalyzeResultJson(result)}>
           Download JSON

@@ -57,7 +57,7 @@ const HOW_IT_WORKS = [
     copy: 'Every at-risk line comes back as a decision card: why it is risky, the recommended alternate, a confidence score, and what to do about it this week.',
     specs: [
       { label: 'Returns', values: ['One decision card per at-risk line', 'Alternate, confidence, next action'] },
-      { label: 'Share', values: ['Export to XLSX or PDF'] },
+      { label: 'Share', values: ['Export to CSV, XLSX, or PDF'] },
     ],
   },
 ]
