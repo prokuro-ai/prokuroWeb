@@ -21,5 +21,6 @@ export const config = {
     '/bom/:path*',
     '/analyze/:path*',
     '/auth/:path*',
+    '/invite/:path*',
   ],
 }

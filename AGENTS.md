@@ -26,7 +26,7 @@ Amplify rebuilds on push to `main` when the GitHub webhook is connected. If the 
 ```bash
 export AWS_PROFILE=prokuro
 aws amplify start-job \
-  --app-id d3oyz2jdskcpal \
+  --app-id d14699xdpunzn \
   --branch-name main \
   --job-type RELEASE
 ```

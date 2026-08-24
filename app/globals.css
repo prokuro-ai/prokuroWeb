@@ -1790,13 +1790,22 @@ body.modal-open {
   box-shadow: 0 24px 48px -28px rgb(15 27 45 / 45%);
 }
 
+/* Beat .marketing-page p { color: ink-muted } (higher specificity). */
+.marketing-page .early-access-card,
+.marketing-page .early-access-card p,
+.marketing-page .early-access-card__eyebrow,
+.marketing-page .early-access-card__body,
+.marketing-page .early-access-card__metric,
+.marketing-page .early-access-card__metric strong {
+  color: #fff;
+}
+
 .early-access-card__eyebrow {
   margin: 0 0 var(--space-sm);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #fff;
 }
 
 .early-access-card h3.early-access-card__title {
@@ -1811,7 +1820,6 @@ body.modal-open {
   margin: 0 0 var(--space-xl);
   font-size: 15px;
   line-height: 1.6;
-  color: #fff;
 }
 
 .early-access-card__metric {
@@ -1822,11 +1830,9 @@ body.modal-open {
   padding: var(--space-md) 0;
   border-top: 1px solid rgb(255 255 255 / 18%);
   font-size: 14px;
-  color: #fff;
 }
 
 .early-access-card__metric strong {
-  color: #fff;
   font-size: 15px;
   text-align: right;
 }
@@ -1866,9 +1872,10 @@ body.modal-open {
   color: #fff;
 }
 
+.marketing-page .problem-stat__label,
 .problem-stat__label {
   margin: var(--space-xs) 0 0;
-  color: #b9c3d4;
+  color: #fff;
   font-size: 13.5px;
   line-height: 1.5;
 }
