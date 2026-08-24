@@ -143,7 +143,7 @@ function LineDetail({ line }: { line: AnalyzedLine }) {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <DecisionBlock title="Why this score" body={decision.whyScore} />
+          <DecisionBlock title="Why this score" body={line.agent_brief || decision.whyScore} />
           <DecisionBlock
             title="Cost & next action"
             body={`${decision.costNote} ${decision.nextAction}`}

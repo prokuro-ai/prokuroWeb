@@ -11,7 +11,7 @@ import { Link } from '@/lib/navigation'
 import { getBom } from '@/lib/api'
 import { useTeam } from '@/hooks/use-team'
 import { formatUploadedAt } from '@/lib/format'
-import { hasPendingLines, isPendingLine, portfolioBadgeFromSummary } from '@/lib/risk'
+import { isPendingLine, portfolioBadgeFromSummary, shouldPollBom } from '@/lib/risk'
 import type { AnalyzedLine, AnalyzeResult, BomSummary } from '@/lib/types'
 
 const actionBtn =
@@ -96,7 +96,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
     pollAttempt.current = 0
 
     const schedulePoll = (analyze: AnalyzeResult) => {
-      if (!hasPendingLines(analyze)) return
+      if (!shouldPollBom(analyze)) return
       const started = pollStartedAt.current ?? Date.now()
       pollStartedAt.current = started
       if (Date.now() - started >= POLL_CEILING_MS) return

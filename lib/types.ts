@@ -110,6 +110,7 @@ export interface AnalyzedLine {
   tariff_disclaimer?: string | null
   entity_list_match?: boolean | null
   entity_list_notes?: string | null
+  agent_brief?: string | null
 }
 
 export interface AnalyzeResult {
