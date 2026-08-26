@@ -133,8 +133,8 @@ export default function PurchasingPage() {
             Purchasing
           </h1>
           <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-slate-500">
-            Quote Digi-Key availability and pricing by MPN. Ordering stays gated until a distributor
-            credit account is enabled.
+            Quote Digi-Key and Mouser by MPN, then place orders when distributor credentials and
+            ordering are enabled on the purchasing service.
           </p>
         </div>
       </div>
@@ -144,8 +144,8 @@ export default function PurchasingPage() {
           <div className="border-b border-slate-200 px-5 py-4">
             <h2 className="text-[15px] font-semibold text-slate-900">Quote lines</h2>
             <p className="mt-1 text-[13px] text-slate-500">
-              Enter MPNs and quantities. Digi-Key ProductDetails powers quotes when credentials are
-              configured.
+              Enter MPNs and quantities. Digi-Key ProductDetails and Mouser Search power quotes when
+              credentials are configured.
             </p>
           </div>
 
@@ -347,8 +347,8 @@ export default function PurchasingPage() {
               <p className="mt-2 text-[13px] text-slate-600">{order.message}</p>
             ) : order.status === 'requires_distributor_credit' ? (
               <p className="mt-2 text-[13px] text-slate-600">
-                Digi-Key Ordering needs an active credit account. Quotes still work; place-order stays
-                disabled until ordering is enabled in the purchasing service.
+                Ordering is off for this distributor (missing credit account / Order API approval, or
+                DIGIKEY_ORDERING_ENABLED / MOUSER_ORDERING_ENABLED is false). Quotes still work.
               </p>
             ) : null}
           </div>
