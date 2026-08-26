@@ -30,11 +30,19 @@ function Pending() {
   return <span className="animate-pulse text-[12px] text-slate-400">Looking up…</span>
 }
 
-function DecisionBlock({ title, body, accent }: { title: string; body: string; accent?: string }) {
+function DecisionBlock({
+  title,
+  body,
+  accent,
+}: {
+  title: string
+  body: string
+  accent?: string
+}) {
   return (
-    <div className="border border-slate-200 bg-white p-4">
-      <div className="mb-1.5 flex items-center gap-1.5">
-        <Sparkles className="h-3.5 w-3.5 text-[#0062ff]" aria-hidden />
+    <div className="min-w-0 border border-slate-200 bg-white p-4">
+      <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+        <Sparkles className="h-3.5 w-3.5 shrink-0 text-[#0062ff]" aria-hidden />
         <span className="font-mono text-[11px] font-medium uppercase tracking-[0.09em] text-slate-500">
           {title}
         </span>
@@ -44,7 +52,9 @@ function DecisionBlock({ title, body, accent }: { title: string; body: string; a
           </span>
         ) : null}
       </div>
-      <p className="text-[13px] leading-relaxed text-slate-600">{body}</p>
+      <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-slate-600">
+        {body}
+      </p>
     </div>
   )
 }
@@ -75,16 +85,14 @@ function LineDetail({ line }: { line: AnalyzedLine }) {
   const briefPending = isAtRisk(line) && !pending && !brief
 
   return (
-    <div className="border-t border-slate-200 bg-[#f4f6f9] px-4 py-4 sm:px-6 sm:py-5">
-      <div className="space-y-4 sm:space-y-5">
+    <div className="min-w-0 border-t border-slate-200 bg-[#f4f6f9] px-4 py-4 sm:px-6 sm:py-5">
+      <div className="min-w-0 space-y-4 sm:space-y-5">
         <div>
           <p className={`font-mono text-[11px] uppercase tracking-[0.09em] ${risk.text}`}>
             Line {lineLabel}: why {risk.label.toLowerCase()}
           </p>
           <p className="mt-2 max-w-[72ch] text-[14px] leading-relaxed text-slate-700 sm:text-[15px]">
-            {briefPending
-              ? 'Prokuro is writing a procurement brief for this line. This updates when the analyst finishes.'
-              : decision.summary}
+            {decision.summary}
           </p>
           {line.description ? (
             <p className="mt-2 max-w-[72ch] text-[13px] leading-relaxed text-slate-500">
@@ -119,7 +127,7 @@ function LineDetail({ line }: { line: AnalyzedLine }) {
           </div>
         )}
 
-        <div className="grid gap-4 border-t border-slate-200 pt-4 lg:grid-cols-2">
+        <div className="grid min-w-0 gap-4 border-t border-slate-200 pt-4 lg:grid-cols-2">
           <div className="space-y-2">
             <p className="font-mono text-[10px] uppercase tracking-[0.09em] text-slate-400">
               Alternates from your AML
@@ -146,22 +154,21 @@ function LineDetail({ line }: { line: AnalyzedLine }) {
           />
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <DecisionBlock
-            title="Why this score"
-            accent={brief ? 'Analyst' : briefPending ? 'Generating' : undefined}
-            body={
-              brief ??
-              (briefPending
-                ? 'A plain-language explanation of lifecycle, stock, and trade signals is being written for this MPN.'
-                : decision.whyScore)
-            }
-          />
-          <DecisionBlock
-            title="Cost & next action"
-            body={`${decision.costNote} ${decision.nextAction}`}
-          />
-        </div>
+        <DecisionBlock
+          title="Why this score"
+          accent={brief ? 'Analyst' : briefPending ? 'Generating' : undefined}
+          body={
+            brief ??
+            (briefPending
+              ? 'A procurement brief is being written for this line. This updates when the analyst finishes.'
+              : decision.whyScore)
+          }
+        />
+
+        <DecisionBlock
+          title="Cost & next action"
+          body={`${decision.costNote} ${decision.nextAction}`}
+        />
 
         {(line.tariff_notes || line.entity_list_notes || line.tariff_disclaimer) && (
           <div className="space-y-1.5 border-t border-slate-200 pt-4 text-[12px] leading-relaxed text-slate-500">

@@ -127,10 +127,9 @@ export function buildLineDecision(line: AnalyzedLine): LineDecision {
     costNote = 'No duty flagged on this line. Re-spin cost only applies if you change the MPN.'
   }
 
-  const brief = analystBrief(line)
   return {
-    summary: brief ?? summary,
-    whyScore: brief ?? drivers.join(' '),
+    summary,
+    whyScore: drivers.join(' '),
     recommendedAlternate: alternate,
     recommendedAlternateNote: alternate
       ? `${alternate} is listed on your AML. Confirm footprint, firmware, and qualification status before swapping.`
