@@ -16,6 +16,11 @@ export type LineDecision = {
   costNote: string
 }
 
+export function analystBrief(line: AnalyzedLine): string | null {
+  const text = line.agent_brief?.trim()
+  return text ? text : null
+}
+
 function stockSentence(line: AnalyzedLine): string {
   const avail = line.availability_status?.toLowerCase() ?? ''
   if (avail === 'outofstock') return 'Distributor stock is out across tracked sellers.'

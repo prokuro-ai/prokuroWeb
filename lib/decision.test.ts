@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildLineDecision } from '@/lib/decision'
+import { analystBrief, buildLineDecision } from '@/lib/decision'
 import type { AnalyzedLine } from '@/lib/types'
 
 const base: AnalyzedLine = {
@@ -50,5 +50,17 @@ describe('buildLineDecision', () => {
     })
     expect(decision.summary.toLowerCase()).toContain('resolving')
     expect(decision.nextAction.toLowerCase()).toContain('enrichment')
+  })
+
+  it('keeps the short local summary when an analyst brief is present', () => {
+    const decision = buildLineDecision({
+      ...base,
+      risk_level: 'red',
+      availability_status: 'outofstock',
+      agent_brief: 'Nova: this MPN is OOS and needs a second source this week.',
+    })
+    expect(decision.summary).not.toContain('Nova:')
+    expect(decision.summary.toLowerCase()).toContain('critical')
+    expect(analystBrief({ ...base, agent_brief: '  Nova: brief  ' })).toBe('Nova: brief')
   })
 })

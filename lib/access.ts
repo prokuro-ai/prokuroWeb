@@ -1,8 +1,8 @@
 /**
- * When false, signup/login and the app are hidden; marketing only (Book a demo).
- * Flip to true when Bedrock/product is ready for public self-serve.
+ * Product login/dashboard is on Amplify SSR and local `next dev`.
+ * GitHub Pages (`NEXT_PUBLIC_STATIC_EXPORT=1`) stays marketing-only (Book a demo).
  */
-export const SELF_SERVE_ENABLED = false
+export const SELF_SERVE_ENABLED = process.env.NEXT_PUBLIC_STATIC_EXPORT !== '1'
 
 /** App routes blocked while self-serve is disabled. */
 export const APP_ROUTE_PREFIXES = [
