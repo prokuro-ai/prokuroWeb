@@ -51,4 +51,15 @@ describe('buildLineDecision', () => {
     expect(decision.summary.toLowerCase()).toContain('resolving')
     expect(decision.nextAction.toLowerCase()).toContain('enrichment')
   })
+
+  it('uses the gateway analyst brief when present', () => {
+    const decision = buildLineDecision({
+      ...base,
+      risk_level: 'red',
+      availability_status: 'outofstock',
+      agent_brief: 'Nova: this MPN is OOS and needs a second source this week.',
+    })
+    expect(decision.summary).toContain('Nova:')
+    expect(decision.whyScore).toContain('Nova:')
+  })
 })

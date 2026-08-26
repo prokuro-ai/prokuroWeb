@@ -16,6 +16,11 @@ export type LineDecision = {
   costNote: string
 }
 
+export function analystBrief(line: AnalyzedLine): string | null {
+  const text = line.agent_brief?.trim()
+  return text ? text : null
+}
+
 function stockSentence(line: AnalyzedLine): string {
   const avail = line.availability_status?.toLowerCase() ?? ''
   if (avail === 'outofstock') return 'Distributor stock is out across tracked sellers.'
@@ -122,9 +127,10 @@ export function buildLineDecision(line: AnalyzedLine): LineDecision {
     costNote = 'No duty flagged on this line. Re-spin cost only applies if you change the MPN.'
   }
 
+  const brief = analystBrief(line)
   return {
-    summary,
-    whyScore: drivers.join(' '),
+    summary: brief ?? summary,
+    whyScore: brief ?? drivers.join(' '),
     recommendedAlternate: alternate,
     recommendedAlternateNote: alternate
       ? `${alternate} is listed on your AML. Confirm footprint, firmware, and qualification status before swapping.`

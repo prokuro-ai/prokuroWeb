@@ -27,7 +27,7 @@ export function hasPendingLines(result: AnalyzeResult): boolean {
 
 /** Flagged rows still waiting for a persisted line brief. */
 export function hasMissingFlaggedBriefs(result: AnalyzeResult): boolean {
-  return result.lines.some((line) => isAtRisk(line) && !line.agent_brief)
+  return result.lines.some((line) => isAtRisk(line) && !line.agent_brief?.trim())
 }
 
 export function shouldPollBom(result: AnalyzeResult): boolean {

@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { ChevronDown, Search, Sparkles } from 'lucide-react'
 import type { AnalyzedLine, RiskLevel } from '@/lib/types'
-import { buildLineDecision } from '@/lib/decision'
+import { analystBrief, buildLineDecision } from '@/lib/decision'
 import {
   RISK_PRESENTATION,
   isAtRisk,
@@ -71,6 +71,8 @@ function LineDetail({ line }: { line: AnalyzedLine }) {
   const weeks = leadTimeWeeks(line)
   const lineLabel = String(line.row_index).padStart(4, '0')
   const decision = buildLineDecision(line)
+  const brief = analystBrief(line)
+  const briefPending = isAtRisk(line) && !pending && !brief
 
   return (
     <div className="border-t border-slate-200 bg-[#f4f6f9] px-4 py-4 sm:px-6 sm:py-5">
@@ -80,7 +82,9 @@ function LineDetail({ line }: { line: AnalyzedLine }) {
             Line {lineLabel}: why {risk.label.toLowerCase()}
           </p>
           <p className="mt-2 max-w-[72ch] text-[14px] leading-relaxed text-slate-700 sm:text-[15px]">
-            {decision.summary}
+            {briefPending
+              ? 'Prokuro is writing a procurement brief for this line. This updates when the analyst finishes.'
+              : decision.summary}
           </p>
           {line.description ? (
             <p className="mt-2 max-w-[72ch] text-[13px] leading-relaxed text-slate-500">
@@ -143,7 +147,16 @@ function LineDetail({ line }: { line: AnalyzedLine }) {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <DecisionBlock title="Why this score" body={line.agent_brief || decision.whyScore} />
+          <DecisionBlock
+            title="Why this score"
+            accent={brief ? 'Analyst' : briefPending ? 'Generating' : undefined}
+            body={
+              brief ??
+              (briefPending
+                ? 'A plain-language explanation of lifecycle, stock, and trade signals is being written for this MPN.'
+                : decision.whyScore)
+            }
+          />
           <DecisionBlock
             title="Cost & next action"
             body={`${decision.costNote} ${decision.nextAction}`}
