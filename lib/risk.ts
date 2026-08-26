@@ -30,8 +30,9 @@ export function hasMissingFlaggedBriefs(result: AnalyzeResult): boolean {
   return result.lines.some((line) => isAtRisk(line) && !line.agent_brief?.trim())
 }
 
+/** Poll while enrichment is pending. Briefs are filled by the gateway (heuristic/Bedrock). */
 export function shouldPollBom(result: AnalyzeResult): boolean {
-  return hasPendingLines(result) || hasMissingFlaggedBriefs(result)
+  return hasPendingLines(result)
 }
 
 type RiskPresentation = {
