@@ -10,7 +10,7 @@ GitHub Pages serves **static files only**. It cannot run Next.js API routes, mid
 
 | Mode | Command | Host | Calendly backend | Auth / BOM APIs |
 |------|---------|------|------------------|-----------------|
-| **SSR (default)** | `npm run build` + `npm start` | Amplify / Node | Next.js routes (`/api/calendly/*`) | Full (when `SELF_SERVE_ENABLED`) |
+| **SSR (default)** | `npm run build` + `npm start` | Amplify / Node | Next.js routes (`/api/calendly/*`) | Full |
 | **Static (Pages)** | `npm run pages:branch` | GitHub Pages | Cloudflare Worker (`worker/`) | Hidden / redirected to demo |
 
 The **same booking UI** (`components/schedule/BookDemo.tsx`) ships in both modes. Only the origin serving `/api/calendly/*` differs, controlled by `NEXT_PUBLIC_CALENDLY_API_BASE`.
