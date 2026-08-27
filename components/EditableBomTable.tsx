@@ -179,17 +179,40 @@ export default function EditableBomTable({
   const versionRef = useRef(version)
   const linesRef = useRef(lines)
   const saveQueueRef = useRef(Promise.resolve())
+  const inFlightRef = useRef(0)
+  const bomIdRef = useRef(bomId)
 
+  // Reset when switching BOMs; otherwise never sync version downward (stale poll),
+  // and skip prop→ref sync while a save is in flight so sibling patches keep fresh state.
   useEffect(() => {
-    versionRef.current = version
-  }, [version])
-
-  useEffect(() => {
-    linesRef.current = lines
-  }, [lines])
+    if (bomIdRef.current !== bomId) {
+      bomIdRef.current = bomId
+      versionRef.current = version
+      linesRef.current = lines
+      return
+    }
+    if (inFlightRef.current > 0) return
+    if (version >= versionRef.current) {
+      versionRef.current = version
+      linesRef.current = lines
+    }
+  }, [bomId, version, lines])
 
   function enqueueSave<T>(op: () => Promise<T>): Promise<T> {
-    const run = saveQueueRef.current.then(op, op)
+    const run = saveQueueRef.current.then(
+      () => {
+        inFlightRef.current += 1
+        return op().finally(() => {
+          inFlightRef.current = Math.max(0, inFlightRef.current - 1)
+        })
+      },
+      () => {
+        inFlightRef.current += 1
+        return op().finally(() => {
+          inFlightRef.current = Math.max(0, inFlightRef.current - 1)
+        })
+      },
+    )
     saveQueueRef.current = run.then(
       () => undefined,
       () => undefined,

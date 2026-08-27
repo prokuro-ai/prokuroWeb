@@ -167,4 +167,81 @@ describe('EditableBomTable save failure handling', () => {
       })
     })
   })
+
+  it('serializes sibling cell saves so the second uses the bumped version', async () => {
+    const user = userEvent.setup()
+    let releaseFirst!: (value: {
+      version: number
+      lineIndex: number
+      line: AnalyzedLine
+    }) => void
+    const firstGate = new Promise<{
+      version: number
+      lineIndex: number
+      line: AnalyzedLine
+    }>((resolve) => {
+      releaseFirst = resolve
+    })
+
+    const versionsSeen: number[] = []
+    vi.mocked(patchBomLine).mockImplementation(async (_bomId, lineIndex, patch) => {
+      versionsSeen.push(patch.version)
+      if (versionsSeen.length === 1) {
+        return firstGate
+      }
+      return {
+        version: patch.version + 1,
+        lineIndex,
+        line: {
+          ...sampleLine,
+          row_index: lineIndex,
+          mpn: lineIndex === 0 ? 'A2' : 'B2',
+          manufacturer: lineIndex === 1 ? 'TI' : sampleLine.manufacturer,
+        },
+      }
+    })
+
+    function VersionedTable() {
+      const [version, setVersion] = useState(1)
+      const [lines, setLines] = useState<AnalyzedLine[]>([
+        { ...sampleLine, row_index: 0, mpn: 'A1' },
+        { ...sampleLine, row_index: 1, mpn: 'B1', manufacturer: 'Murata' },
+      ])
+      return (
+        <EditableBomTable
+          bomId="bom-1"
+          version={version}
+          lines={lines}
+          onLinesChange={setLines}
+          onVersionChange={setVersion}
+          onConflict={vi.fn()}
+        />
+      )
+    }
+
+    render(<VersionedTable />)
+
+    await user.click(screen.getByRole('button', { name: 'A1' }))
+    fireEvent.change(screen.getByDisplayValue('A1'), { target: { value: 'A2' } })
+    fireEvent.keyDown(screen.getByDisplayValue('A2'), { key: 'Enter' })
+
+    await waitFor(() => expect(versionsSeen.length).toBe(1))
+
+    await user.click(screen.getByRole('button', { name: 'Murata' }))
+    fireEvent.change(screen.getByDisplayValue('Murata'), { target: { value: 'TI' } })
+    fireEvent.keyDown(screen.getByDisplayValue('TI'), { key: 'Enter' })
+
+    // Second save must wait until the first completes — still only one call so far.
+    expect(versionsSeen.length).toBe(1)
+
+    releaseFirst({
+      version: 2,
+      lineIndex: 0,
+      line: { ...sampleLine, row_index: 0, mpn: 'A2' },
+    })
+
+    await waitFor(() => {
+      expect(versionsSeen).toEqual([1, 2])
+    })
+  })
 })

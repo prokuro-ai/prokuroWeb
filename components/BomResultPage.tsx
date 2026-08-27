@@ -56,15 +56,23 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   const pollStartedAt = useRef<number | null>(null)
   const pollAttempt = useRef(0)
   const pollFailures = useRef(0)
+  /** Ignore GET/poll responses older than local edits (avoids version clobber → 409). */
+  const knownVersionRef = useRef(1)
 
   // Restart whenever enrichment becomes pending again (e.g. after MPN edits).
   const needsPoll = Boolean(result && shouldPollBom(result))
   const pendingKeyRef = useRef('')
 
   const applyRecord = useCallback((record: { summary: BomSummary; analyze: AnalyzeResult }) => {
+    const nextVersion = record.summary.version ?? 1
+    // Same version is OK (read-through enrichment does not bump). Older is stale.
+    if (nextVersion < knownVersionRef.current) {
+      return record.analyze
+    }
+    knownVersionRef.current = nextVersion
     setSummary(record.summary)
     setResult(record.analyze)
-    setVersion(record.summary.version ?? 1)
+    setVersion(nextVersion)
 
     const nextKey = record.analyze.lines
       .filter(isPendingLine)
@@ -127,6 +135,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
     pollAttempt.current = 0
     pollFailures.current = 0
     pendingKeyRef.current = ''
+    knownVersionRef.current = 0
 
     getBom(id)
       .then((record) => {
@@ -423,7 +432,10 @@ export default function BomResultPage({ id }: BomResultPageProps) {
               version={version}
               lines={result.lines}
               onLinesChange={handleLinesChange}
-              onVersionChange={setVersion}
+              onVersionChange={(next) => {
+                knownVersionRef.current = Math.max(knownVersionRef.current, next)
+                setVersion(next)
+              }}
               onConflict={() => setConflict(true)}
             />
           ) : (
