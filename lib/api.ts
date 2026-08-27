@@ -71,8 +71,16 @@ async function authHeaders(): Promise<HeadersInit> {
 
 async function readErrorMessage(res: Response, body: unknown): Promise<string> {
   if (typeof body === 'object' && body && 'error' in body && typeof body.error === 'string') {
-    const payload = body as { error: string; message?: string }
+    const payload = body as {
+      error: string
+      message?: string
+      retry_safe?: boolean
+      quota_consumed?: boolean
+    }
     if (payload.error === 'plan_cap_exceeded' && payload.message) {
+      return payload.message
+    }
+    if (typeof payload.message === 'string' && payload.message.trim()) {
       return payload.message
     }
     return payload.error
