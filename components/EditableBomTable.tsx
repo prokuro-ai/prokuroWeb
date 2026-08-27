@@ -32,6 +32,36 @@ function isLookupFailed(line: AnalyzedLine): boolean {
   return avail === 'pending' || match === 'pending'
 }
 
+function sameEditableFields(a: AnalyzedLine, b: AnalyzedLine): boolean {
+  return (
+    (a.mpn ?? '') === (b.mpn ?? '') &&
+    (a.manufacturer ?? '') === (b.manufacturer ?? '') &&
+    a.quantity === b.quantity &&
+    (a.refdes ?? '') === (b.refdes ?? '') &&
+    (a.description ?? '') === (b.description ?? '')
+  )
+}
+
+/** Prefer poll enrichment from props when local editable fields match; keep local edits otherwise. */
+function mergePropEnrichment(localLines: AnalyzedLine[], propLines: AnalyzedLine[]): AnalyzedLine[] {
+  if (propLines.length !== localLines.length) return [...localLines]
+  return localLines.map((local, i) => {
+    const prop = propLines[i]!
+    return sameEditableFields(local, prop) ? prop : local
+  })
+}
+
+function mergeLinesAfterEdit(
+  localLines: AnalyzedLine[],
+  propLines: AnalyzedLine[],
+  editedIndex: number,
+  editedLine: AnalyzedLine,
+): AnalyzedLine[] {
+  const merged = mergePropEnrichment(localLines, propLines)
+  merged[editedIndex] = editedLine
+  return merged
+}
+
 function riskLevelText(level: string | undefined) {
   if (level === 'red') return 'text-[#c62026]'
   if (level === 'yellow') return 'text-[#a25a05]'
@@ -162,9 +192,15 @@ export default function EditableBomTable({
   const [rowError, setRowError] = useState<string | null>(null)
   const versionRef = useRef(version)
   const linesRef = useRef(lines)
+  const propsLinesRef = useRef(lines)
   const saveQueueRef = useRef(Promise.resolve())
   const inFlightRef = useRef(0)
   const bomIdRef = useRef(bomId)
+
+  // Always track latest props for merge-on-save (poll enrichment), even while saving.
+  useEffect(() => {
+    propsLinesRef.current = lines
+  }, [lines])
 
   // Reset when switching BOMs; otherwise never sync version downward (stale poll),
   // and skip prop→ref sync while a save is in flight so sibling patches keep fresh state.
@@ -173,6 +209,7 @@ export default function EditableBomTable({
       bomIdRef.current = bomId
       versionRef.current = version
       linesRef.current = lines
+      propsLinesRef.current = lines
       return
     }
     if (inFlightRef.current > 0) return
@@ -217,8 +254,12 @@ export default function EditableBomTable({
 
       try {
         const result = await patchBomLine(bomId, lineIndex, patch)
-        const nextLines = [...linesRef.current]
-        nextLines[lineIndex] = result.line
+        const nextLines = mergeLinesAfterEdit(
+          linesRef.current,
+          propsLinesRef.current,
+          lineIndex,
+          result.line,
+        )
         linesRef.current = nextLines
         versionRef.current = result.version
         onLinesChange(nextLines)
@@ -241,7 +282,8 @@ export default function EditableBomTable({
     try {
       await enqueueSave(async () => {
         const result = await deleteBomLine(bomId, lineIndex, versionRef.current)
-        const nextLines = linesRef.current.filter((_, i) => i !== lineIndex)
+        const merged = mergePropEnrichment(linesRef.current, propsLinesRef.current)
+        const nextLines = merged.filter((_, i) => i !== lineIndex)
         linesRef.current = nextLines
         versionRef.current = result.version
         onLinesChange(nextLines)
@@ -274,7 +316,8 @@ export default function EditableBomTable({
           refdes: '',
           description: '',
         })
-        const nextLines = [...linesRef.current, result.line]
+        const merged = mergePropEnrichment(linesRef.current, propsLinesRef.current)
+        const nextLines = [...merged, result.line]
         linesRef.current = nextLines
         versionRef.current = result.version
         onLinesChange(nextLines)
