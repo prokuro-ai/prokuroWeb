@@ -42,7 +42,7 @@ type BomResultPageProps = {
 export default function BomResultPage({ id }: BomResultPageProps) {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
-  const { canWrite } = useTeam()
+  const { canWrite, error: teamError, reload: reloadTeam, loaded: teamLoaded, team } = useTeam()
   const [summary, setSummary] = useState<BomSummary | null>(null)
   const [result, setResult] = useState<AnalyzeResult | null>(null)
   const [version, setVersion] = useState(1)
@@ -185,10 +185,15 @@ export default function BomResultPage({ id }: BomResultPageProps) {
         if (cancelled) return
         getBom(id)
           .then((record) => {
+            const nextVersion = record.summary.version ?? 1
+            const wasStale = nextVersion < knownVersionRef.current
             // Always apply — do not drop in-flight results when the effect restarts.
             applyRecord(record)
             if (cancelled) return
-            if (shouldPollBom(record.analyze)) schedulePoll()
+            pollFailures.current = 0
+            // Stale GETs must not stop polling: continue when ignored, or when
+            // the applied payload still has pending lines.
+            if (wasStale || shouldPollBom(record.analyze)) schedulePoll()
           })
           .catch(() => {
             if (cancelled) return
@@ -301,6 +306,14 @@ export default function BomResultPage({ id }: BomResultPageProps) {
           </button>
         </div>
       )}
+      {teamLoaded && teamError && !team ? (
+        <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:px-6">
+          Team permissions unavailable ({teamError}). Editing is disabled until this loads.{' '}
+          <button type="button" className="font-semibold underline" onClick={() => reloadTeam()}>
+            Retry
+          </button>
+        </div>
+      ) : null}
       {pollStalled && pendingCount > 0 ? (
         <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:px-6">
           Live updates stalled.{' '}

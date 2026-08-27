@@ -192,7 +192,7 @@ export default function AccountPage() {
   const [billingBusy, setBillingBusy] = useState(false)
   const [billingError, setBillingError] = useState<string | null>(null)
   const [billingNotice, setBillingNotice] = useState<string | null>(null)
-  const { team, reload: reloadTeam, canManage, canInvite } = useTeam()
+  const { team, reload: reloadTeam, canManage, canInvite, error: teamError } = useTeam()
 
   useEffect(() => {
     if (!user) return
@@ -592,6 +592,29 @@ export default function AccountPage() {
 
         <div className="pb-16">
           <SectionLabel>Team</SectionLabel>
+          {teamError && !team ? (
+            <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
+              Could not load team ({teamError}). Invite and role controls may be hidden.{' '}
+              <button
+                type="button"
+                className="font-semibold underline"
+                onClick={() => reloadTeam()}
+              >
+                Retry
+              </button>
+            </div>
+          ) : teamError ? (
+            <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
+              Team refresh failed ({teamError}). Showing last known members.{' '}
+              <button
+                type="button"
+                className="font-semibold underline"
+                onClick={() => reloadTeam()}
+              >
+                Retry
+              </button>
+            </div>
+          ) : null}
           <p className="mb-3 text-[12px] text-slate-400">
             {billingReady && activePlan
               ? `${seatsUsed} / ${seatsLimit ?? '—'} seats on ${shortPlanLabel(activePlan)}.`

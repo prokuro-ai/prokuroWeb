@@ -47,7 +47,7 @@ function money(value: number | null | undefined, currency?: string | null): stri
 }
 
 export default function PurchasingPage() {
-  const { canWrite } = useTeam()
+  const { canWrite, error: teamError, reload: reloadTeam, loaded: teamLoaded, team } = useTeam()
   const [provider, setProvider] = useState<PurchaseProviderId>('digikey')
   const [lines, setLines] = useState<DraftLine[]>([{ mpn: '', quantity: '1' }])
   const [poNumber, setPoNumber] = useState('')
@@ -251,8 +251,23 @@ export default function PurchasingPage() {
               >
                 {busy === 'order' ? 'Submitting…' : 'Place order'}
               </button>
-              {!canWrite ? (
-                <p className="text-[12px] text-slate-400">Read-only members cannot quote or order.</p>
+              {teamLoaded && !canWrite ? (
+                <p className="text-[12px] text-slate-400">
+                  {!team && teamError ? (
+                    <>
+                      Team permissions unavailable ({teamError}).{' '}
+                      <button
+                        type="button"
+                        className="font-semibold text-[#0062ff] underline"
+                        onClick={() => reloadTeam()}
+                      >
+                        Retry
+                      </button>
+                    </>
+                  ) : (
+                    'Read-only members cannot quote or order.'
+                  )}
+                </p>
               ) : null}
             </div>
 
