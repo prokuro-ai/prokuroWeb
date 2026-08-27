@@ -1,15 +1,5 @@
 import type { AnalyzeResult, AnalyzedLine, RiskLevel } from '@/lib/types'
 
-export function hasTariffData(lines: AnalyzedLine[]): boolean {
-  return lines.some(
-    (line) =>
-      line.hts_code != null ||
-      line.tariff_confidence != null ||
-      line.total_duty_pct != null ||
-      line.tariff_disclaimer != null,
-  )
-}
-
 /** Still resolving against distributor data (poll until cleared). */
 export function isPendingLine(line: AnalyzedLine): boolean {
   return lineRiskLevel(line) === 'unknown' && isPendingStatus(line)
@@ -23,11 +13,6 @@ function isPendingStatus(line: AnalyzedLine): boolean {
 
 export function hasPendingLines(result: AnalyzeResult): boolean {
   return result.lines.some(isPendingLine)
-}
-
-/** Flagged rows still waiting for a persisted line brief. */
-export function hasMissingFlaggedBriefs(result: AnalyzeResult): boolean {
-  return result.lines.some((line) => isAtRisk(line) && !line.agent_brief?.trim())
 }
 
 /** Poll while enrichment is pending. Briefs are filled by the gateway (heuristic/Bedrock). */
@@ -162,15 +147,6 @@ export function bomRiskBand(bom: {
   }
   if ((bom.unknownCount ?? 0) > 0) return 'Unknown'
   return 'Clear'
-}
-
-export function bomRiskBadge(bom: {
-  riskBand?: string
-  overallRiskScore: number
-  atRiskCount: number
-  unknownCount?: number
-}) {
-  return PORTFOLIO_BADGE[bomRiskBand(bom)]
 }
 
 export function portfolioBadgeFromSummary(summary: {
