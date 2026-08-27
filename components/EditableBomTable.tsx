@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { AnalyzedLine } from '@/lib/types'
 import {
   BomConflictError,
@@ -176,31 +176,55 @@ export default function EditableBomTable({
 }: EditableBomTableProps) {
   const [busy, setBusy] = useState(false)
   const [rowError, setRowError] = useState<string | null>(null)
+  const versionRef = useRef(version)
+  const linesRef = useRef(lines)
+  const saveQueueRef = useRef(Promise.resolve())
+
+  useEffect(() => {
+    versionRef.current = version
+  }, [version])
+
+  useEffect(() => {
+    linesRef.current = lines
+  }, [lines])
+
+  function enqueueSave<T>(op: () => Promise<T>): Promise<T> {
+    const run = saveQueueRef.current.then(op, op)
+    saveQueueRef.current = run.then(
+      () => undefined,
+      () => undefined,
+    )
+    return run
+  }
 
   async function handleFieldCommit(lineIndex: number, field: EditableField, next: string) {
-    const patch: Parameters<typeof patchBomLine>[2] = { version }
-    if (field === 'quantity') {
-      const parsed = Number(next)
-      if (Number.isNaN(parsed)) throw new Error('Quantity must be a number')
-      patch.quantity = parsed
-    } else {
-      patch[field] = next
-    }
-
-    try {
-      const result = await patchBomLine(bomId, lineIndex, patch)
-      const nextLines = [...lines]
-      nextLines[lineIndex] = result.line
-      onLinesChange(nextLines)
-      onVersionChange(result.version)
-      setRowError(null)
-    } catch (err) {
-      if (err instanceof BomConflictError) {
-        onConflict()
+    return enqueueSave(async () => {
+      const patch: Parameters<typeof patchBomLine>[2] = { version: versionRef.current }
+      if (field === 'quantity') {
+        const parsed = Number(next)
+        if (Number.isNaN(parsed)) throw new Error('Quantity must be a number')
+        patch.quantity = parsed
+      } else {
+        patch[field] = next
       }
-      setRowError(messageForSaveError(err))
-      throw err
-    }
+
+      try {
+        const result = await patchBomLine(bomId, lineIndex, patch)
+        const nextLines = [...linesRef.current]
+        nextLines[lineIndex] = result.line
+        linesRef.current = nextLines
+        versionRef.current = result.version
+        onLinesChange(nextLines)
+        onVersionChange(result.version)
+        setRowError(null)
+      } catch (err) {
+        if (err instanceof BomConflictError) {
+          onConflict()
+        }
+        setRowError(messageForSaveError(err))
+        throw err
+      }
+    })
   }
 
   async function handleDelete(lineIndex: number) {
@@ -208,10 +232,14 @@ export default function EditableBomTable({
     setBusy(true)
     setRowError(null)
     try {
-      const result = await deleteBomLine(bomId, lineIndex, version)
-      const nextLines = lines.filter((_, i) => i !== lineIndex)
-      onLinesChange(nextLines)
-      onVersionChange(result.version)
+      await enqueueSave(async () => {
+        const result = await deleteBomLine(bomId, lineIndex, versionRef.current)
+        const nextLines = linesRef.current.filter((_, i) => i !== lineIndex)
+        linesRef.current = nextLines
+        versionRef.current = result.version
+        onLinesChange(nextLines)
+        onVersionChange(result.version)
+      })
     } catch (err) {
       if (err instanceof BomConflictError) onConflict()
       setRowError(messageForSaveError(err))
@@ -230,16 +258,21 @@ export default function EditableBomTable({
     setBusy(true)
     setRowError(null)
     try {
-      const result = await addBomLine(bomId, {
-        version,
-        mpn: mpn.trim(),
-        manufacturer: '',
-        quantity: 1,
-        refdes: '',
-        description: '',
+      await enqueueSave(async () => {
+        const result = await addBomLine(bomId, {
+          version: versionRef.current,
+          mpn: mpn.trim(),
+          manufacturer: '',
+          quantity: 1,
+          refdes: '',
+          description: '',
+        })
+        const nextLines = [...linesRef.current, result.line]
+        linesRef.current = nextLines
+        versionRef.current = result.version
+        onLinesChange(nextLines)
+        onVersionChange(result.version)
       })
-      onLinesChange([...lines, result.line])
-      onVersionChange(result.version)
     } catch (err) {
       if (err instanceof BomConflictError) onConflict()
       setRowError(messageForSaveError(err))
