@@ -6,7 +6,7 @@ import { Link } from '@/lib/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import { displayNameForUser, initialsForUser, signOut } from '@/lib/auth'
 import { getBillingStatus, listBoms, type BillingAccountStatus } from '@/lib/api'
-import { limitsFor, planLabel } from '@/lib/planLimits'
+import { planLabel } from '@/lib/planLimits'
 import {
   Bell,
   Files,
@@ -157,17 +157,24 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
   const initials = initialsForUser(user)
   const displayName = displayNameForUser(user)
-  const activePlan = billing?.plan ?? 'free'
-  const bomLimit = billing?.limits?.active_boms ?? limitsFor(activePlan).activeBoms
-  const bomPct = Math.min((bomCount / bomLimit) * 100, 100)
-  const badge = planLabel(activePlan)
-  const upgradeLabel =
-    activePlan === 'free'
+  const billingReady = billing != null
+  const activePlan = billing?.plan
+  const bomLimit = billing?.limits?.active_boms
+  const bomPct =
+    bomLimit != null && bomLimit > 0 ? Math.min((bomCount / bomLimit) * 100, 100) : 0
+  const badge = billingReady ? planLabel(activePlan!) : '…'
+  const upgradeLabel = !billingReady
+    ? 'Billing unavailable'
+    : activePlan === 'free'
       ? 'Upgrade to Growth'
       : activePlan === 'growth'
         ? 'Upgrade to Scale'
         : 'Manage billing'
-  const upgradeHref = activePlan === 'scale' ? '/account' : '/pricing'
+  const upgradeHref = !billingReady
+    ? '/account'
+    : activePlan === 'scale'
+      ? '/account'
+      : '/pricing'
   const settingsActive = pathname === '/account'
 
   return (
@@ -339,7 +346,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                         Active BOMs
                       </span>
                       <span className="font-mono text-[11px] tabular-nums text-slate-600">
-                        {bomCount} / {bomLimit}
+                        {bomLimit != null ? `${bomCount} / ${bomLimit}` : `${bomCount} / —`}
                       </span>
                     </div>
                     <div className="mb-3 h-1.5 overflow-hidden bg-slate-100">

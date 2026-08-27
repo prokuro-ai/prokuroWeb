@@ -117,8 +117,22 @@ function UsageMeter({
 }: {
   label: string
   used: number
-  limit: number
+  limit: number | null | undefined
 }) {
+  if (limit == null) {
+    return (
+      <div>
+        <div className="mb-1.5 flex items-center justify-between text-[12px]">
+          <span className="text-slate-500">{label}</span>
+          <span className="font-semibold" style={{ color: NAVY }}>
+            {used} / —
+          </span>
+        </div>
+        <div className="mb-1 h-2 overflow-hidden rounded-full bg-slate-100" />
+        <p className="text-[11px] text-slate-400">Billing status unavailable</p>
+      </div>
+    )
+  }
   const safeLimit = Math.max(limit, 1)
   const pct = Math.min((used / safeLimit) * 100, 100)
   const remaining = Math.max(limit - used, 0)
@@ -294,24 +308,30 @@ export default function AccountPage() {
 
   const initials = initialsForUser(user)
   const displayName = displayNameForUser(user)
-  const activePlan = billing?.plan ?? 'free'
-  const planLimits = limitsFor(activePlan)
+  const billingReady = billing != null
+  const activePlan = billing?.plan
+  const planLimits = activePlan ? limitsFor(activePlan) : null
   const apiLimits = billing?.limits
   const usage = billing?.usage
-  const bomLimit = apiLimits?.active_boms ?? planLimits.activeBoms
-  const analysesLimit = apiLimits?.analyses_per_month ?? planLimits.analysesPerMonth
-  const linesLimit = apiLimits?.lines_per_month ?? planLimits.linesPerMonth
+  const bomLimit = apiLimits?.active_boms ?? planLimits?.activeBoms
+  const analysesLimit = apiLimits?.analyses_per_month ?? planLimits?.analysesPerMonth
+  const linesLimit = apiLimits?.lines_per_month ?? planLimits?.linesPerMonth
   const purchasingLimit =
-    apiLimits?.purchasing_actions_per_month ?? planLimits.purchasingActionsPerMonth
-  const ordersLimit = apiLimits?.orders_per_month ?? planLimits.ordersPerMonth
-  const seatsLimit = team?.seats.limit ?? apiLimits?.seats ?? planLimits.seats
+    apiLimits?.purchasing_actions_per_month ?? planLimits?.purchasingActionsPerMonth
+  const ordersLimit = apiLimits?.orders_per_month ?? planLimits?.ordersPerMonth
+  const seatsLimit = team?.seats.limit ?? apiLimits?.seats ?? planLimits?.seats
   const seatsUsed = team?.seats.used ?? 1
-  const planName = planLabel(activePlan)
-  const refreshLabel = (apiLimits?.refresh ?? planLimits.refresh) === 'daily'
-    ? 'Daily refresh'
-    : 'Weekly refresh'
+  const planName = billingReady && activePlan ? planLabel(activePlan) : 'Billing unavailable'
+  const refreshLabel =
+    (apiLimits?.refresh ?? planLimits?.refresh) === 'daily'
+      ? 'Daily refresh'
+      : (apiLimits?.refresh ?? planLimits?.refresh) === 'weekly'
+        ? 'Weekly refresh'
+        : null
   const periodEnd = formatPeriodEnd(billing?.current_period_end)
-  const statusLabel = billingStatusLabel(billing?.status, billing?.plan_source)
+  const statusLabel = billingReady
+    ? billingStatusLabel(billing?.status, billing?.plan_source)
+    : null
   const bomUsed = usage?.active_boms_count ?? bomCount
 
   return (
@@ -414,8 +434,10 @@ export default function AccountPage() {
                     {planName}
                   </p>
                   <p className="mt-0.5 text-[12px] text-slate-500">
-                    {billing
-                      ? `${statusLabel} · ${refreshLabel}${
+                    {billingReady && statusLabel
+                      ? `${statusLabel}${
+                          refreshLabel ? ` · ${refreshLabel}` : ''
+                        }${
                           billing.can_purchase
                             ? ' · purchasing on (plan caps apply)'
                             : ' · purchasing locked until subscription is active'
@@ -432,14 +454,40 @@ export default function AccountPage() {
                       Admin plan expires {formatPeriodEnd(billing.admin_expires_at)}
                     </p>
                   ) : null}
-                  <p className="mt-2 text-[12px] text-slate-400">
-                    {seatsLimit} seat{seatsLimit === 1 ? '' : 's'} · up to {bomLimit} monitored BOM
-                    {bomLimit === 1 ? '' : 's'} · {linesLimit.toLocaleString()} lines / month ·{' '}
-                    {apiLimits?.max_lines_per_bom ?? planLimits.maxLinesPerBom} lines max per BOM
-                  </p>
+                  {billingReady && bomLimit != null && linesLimit != null ? (
+                    <p className="mt-2 text-[12px] text-slate-400">
+                      {seatsLimit ?? '—'} seat{(seatsLimit ?? 0) === 1 ? '' : 's'} · up to {bomLimit}{' '}
+                      monitored BOM
+                      {bomLimit === 1 ? '' : 's'} · {linesLimit.toLocaleString()} lines / month ·{' '}
+                      {apiLimits?.max_lines_per_bom ?? planLimits?.maxLinesPerBom ?? '—'} lines max
+                      per BOM
+                    </p>
+                  ) : null}
                 </div>
                 <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-                  {activePlan === 'free' ? (
+                  {!billingReady ? (
+                    <button
+                      type="button"
+                      disabled={billingBusy}
+                      onClick={() => {
+                        setBillingBusy(true)
+                        setBillingError(null)
+                        getBillingStatus()
+                          .then((status) => {
+                            setBilling(status)
+                            setBomCount(status.usage?.active_boms_count ?? 0)
+                          })
+                          .catch(() => {
+                            setBilling(null)
+                            setBillingError('Could not load billing status')
+                          })
+                          .finally(() => setBillingBusy(false))
+                      }}
+                      className="rounded-lg border border-slate-200 px-3.5 py-1.5 text-[12px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                    >
+                      {billingBusy ? 'Refreshing…' : 'Retry billing'}
+                    </button>
+                  ) : activePlan === 'free' ? (
                     <>
                       <button
                         type="button"
@@ -545,11 +593,13 @@ export default function AccountPage() {
         <div className="pb-16">
           <SectionLabel>Team</SectionLabel>
           <p className="mb-3 text-[12px] text-slate-400">
-            {`${seatsUsed} / ${seatsLimit} seats on ${shortPlanLabel(activePlan)}.`}
+            {billingReady && activePlan
+              ? `${seatsUsed} / ${seatsLimit ?? '—'} seats on ${shortPlanLabel(activePlan)}.`
+              : `${seatsUsed} seat${seatsUsed === 1 ? '' : 's'} · plan unavailable.`}
             {team ? ` Your role: ${roleLabel(team.role)}.` : ''}
             {!canInvite && activePlan === 'free'
               ? ' Upgrade or ask us to enable a pilot plan before inviting teammates.'
-              : !canInvite && seatsUsed >= seatsLimit
+              : !canInvite && seatsLimit != null && seatsUsed >= seatsLimit
                 ? ' All seats are in use — revoke a pending invite or upgrade to add teammates.'
                 : ''}
           </p>
