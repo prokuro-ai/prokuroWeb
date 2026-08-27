@@ -17,16 +17,6 @@ function detectedHeaderForCanonical(
   return match?.[0] ?? null
 }
 
-export function toColumnMappingRecord(mapping: ColumnMapping[]): Record<string, string> {
-  const result: Record<string, string> = {}
-  for (const col of mapping) {
-    if (col.detectedFrom) {
-      result[col.detectedFrom] = col.canonical
-    }
-  }
-  return result
-}
-
 /** User overrides on top of auto-detect; preserves unedited mappings (e.g. distributor columns). */
 export function mergeColumnMappingRecord(
   autoMapping: ParseResult['column_mapping'],

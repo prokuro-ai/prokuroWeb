@@ -36,15 +36,6 @@
   text-align: center;
 }
 
-.content .eyebrow {
-  margin-bottom: var(--space-sm);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-  color: var(--color-primary);
-}
-
 .code {
   margin: 0 0 var(--space-sm);
   font-size: clamp(5rem, 16vw, 8.5rem);
