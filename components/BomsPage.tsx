@@ -154,9 +154,10 @@ function BomDossier({
   )
 }
 
-function BomsList({ boms, loading, canWrite, onViewBom, onDelete, onUpload }: {
+function BomsList({ boms, loading, error, canWrite, onViewBom, onDelete, onUpload }: {
   boms: BomSummary[]
   loading: boolean
+  error: string | null
   canWrite: boolean
   onViewBom: (id: string) => void
   onDelete: (id: string) => void
@@ -272,6 +273,20 @@ function BomsList({ boms, loading, canWrite, onViewBom, onDelete, onUpload }: {
 
         {loading ? (
           <BomDossierSkeleton />
+        ) : error ? (
+          <div className="border border-dashed border-amber-300 bg-amber-50 px-8 py-16 text-center">
+            <p className="text-[16px] font-medium text-amber-900">Could not load BOMs</p>
+            <p className="mx-auto mt-2 max-w-md text-[14px] leading-relaxed text-amber-800">
+              {error}
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-6 inline-flex items-center bg-[#0062ff] px-4 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-blue-700"
+            >
+              Retry
+            </button>
+          </div>
         ) : boms.length === 0 ? (
           <div className="border border-dashed border-slate-300 bg-white px-8 py-16 text-center">
             <p className="text-[16px] font-medium text-slate-800">Start with a real BOM</p>
@@ -316,7 +331,7 @@ function BomsList({ boms, loading, canWrite, onViewBom, onDelete, onUpload }: {
 
 export default function BomsPage() {
   const router = useRouter()
-  const { boms, setBoms, loading } = useBoms()
+  const { boms, setBoms, loading, error } = useBoms()
   const { canWrite } = useTeam()
   const [uploadOpen, setUploadOpen] = useState(false)
 
@@ -336,6 +351,7 @@ export default function BomsPage() {
       <BomsList
         boms={boms}
         loading={loading}
+        error={error}
         canWrite={canWrite}
         onViewBom={(id) => router.push(`/bom/${encodeURIComponent(id)}`)}
         onDelete={(id) => setBoms((prev) => prev.filter((b) => b.id !== id))}

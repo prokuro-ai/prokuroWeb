@@ -107,7 +107,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         if (!cancelled) setBilling(status)
       })
       .catch(() => {
-        if (!cancelled) setBilling({ plan: 'free', status: 'none', can_purchase: true })
+        if (!cancelled) setBilling(null)
       })
     return () => {
       cancelled = true

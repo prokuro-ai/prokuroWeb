@@ -17,8 +17,10 @@ function normalizeRole(role: unknown): TeamRole | null {
 export function useTeam() {
   const [team, setTeam] = useState<TeamSnapshot | null>(null)
   const [loaded, setLoaded] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const reload = useCallback(() => {
+    setError(null)
     getTeam()
       .then((snapshot) => {
         const role = normalizeRole(snapshot.role) ?? 'owner'
@@ -40,8 +42,12 @@ export function useTeam() {
                 : undefined),
           })),
         })
+        setError(null)
       })
-      .catch(() => {})
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Failed to load team')
+        // Keep last good snapshot; only fail closed when we never loaded a role.
+      })
       .finally(() => setLoaded(true))
   }, [])
 
@@ -50,7 +56,8 @@ export function useTeam() {
   }, [reload])
 
   const role = team?.role
-  const canManage = loaded && (role === 'owner' || role === 'admin')
+  const hasRole = role != null
+  const canManage = loaded && hasRole && (role === 'owner' || role === 'admin')
   const seatsUsed = team?.seats.used ?? 1
   const seatsLimit = team?.seats.limit ?? 1
   const canInvite =
@@ -59,8 +66,10 @@ export function useTeam() {
   return {
     team,
     loaded,
+    error,
     reload,
-    canWrite: loaded && role !== 'read_only',
+    // Fail closed until a role is known; keep write access across transient reload errors.
+    canWrite: loaded && hasRole && role !== 'read_only',
     canManage,
     canInvite,
     seatsUsed,
