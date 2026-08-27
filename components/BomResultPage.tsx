@@ -20,6 +20,7 @@ const actionBtnIdle = `${actionBtn} text-slate-700 hover:border-slate-300 hover:
 const actionBtnActive = `${actionBtn} border-[#0062ff] bg-[#0062ff]/5 text-[#0062ff]`
 const POLL_INTERVALS_MS = [2000, 5000, 10000, 30000]
 const POLL_CEILING_MS = 15 * 60 * 1000
+const POLL_MAX_FAILURES = 3
 
 function MetaStat({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
@@ -49,14 +50,43 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   const [error, setError] = useState<string | null>(null)
   const [conflict, setConflict] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [pollStalled, setPollStalled] = useState(false)
+  const [pollEpoch, setPollEpoch] = useState(0)
 
   const pollStartedAt = useRef<number | null>(null)
   const pollAttempt = useRef(0)
+  const pollFailures = useRef(0)
+
+  // Restart whenever enrichment becomes pending again (e.g. after MPN edits).
+  const needsPoll = Boolean(result && shouldPollBom(result))
+  const pendingKeyRef = useRef('')
 
   const applyRecord = useCallback((record: { summary: BomSummary; analyze: AnalyzeResult }) => {
     setSummary(record.summary)
     setResult(record.analyze)
     setVersion(record.summary.version ?? 1)
+
+    const nextKey = record.analyze.lines
+      .filter(isPendingLine)
+      .map((line) => `${line.row_index}:${line.mpn ?? ''}`)
+      .sort()
+      .join('|')
+    const prev = pendingKeyRef.current
+    const prevSet = new Set(prev.split('|').filter(Boolean))
+    const addedPending =
+      Boolean(nextKey) &&
+      (!prev ||
+        nextKey
+          .split('|')
+          .filter(Boolean)
+          .some((entry) => !prevSet.has(entry)))
+    pendingKeyRef.current = nextKey
+    if (addedPending) {
+      pollStartedAt.current = Date.now()
+      pollFailures.current = 0
+      setPollEpoch((n) => n + 1)
+    }
+
     return record.analyze
   }, [])
 
@@ -77,6 +107,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
       })
   }, [id, applyRecord])
 
+  // Initial auth + load
   useEffect(() => {
     if (authLoading) return
     if (!user) {
@@ -89,14 +120,50 @@ export default function BomResultPage({ id }: BomResultPageProps) {
     }
 
     let cancelled = false
-    let timer: ReturnType<typeof setTimeout> | undefined
     setError(null)
     setConflict(false)
+    setPollStalled(false)
     pollStartedAt.current = null
     pollAttempt.current = 0
+    pollFailures.current = 0
+    pendingKeyRef.current = ''
 
-    const schedulePoll = (analyze: AnalyzeResult) => {
-      if (!shouldPollBom(analyze)) return
+    getBom(id)
+      .then((record) => {
+        if (cancelled) return
+        applyRecord(record)
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load BOM')
+      })
+      .finally(() => {
+        if (!cancelled) setLoaded(true)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [authLoading, user, id, router, applyRecord])
+
+  useEffect(() => {
+    if (!user || !id || !needsPoll) {
+      if (!needsPoll) {
+        pollStartedAt.current = null
+        pollAttempt.current = 0
+        pollFailures.current = 0
+        pendingKeyRef.current = ''
+        setPollStalled(false)
+      }
+      return
+    }
+
+    let cancelled = false
+    let timer: ReturnType<typeof setTimeout> | undefined
+    pollStartedAt.current = pollStartedAt.current ?? Date.now()
+    pollAttempt.current = 0
+    setPollStalled(false)
+
+    const schedulePoll = () => {
       const started = pollStartedAt.current ?? Date.now()
       pollStartedAt.current = started
       if (Date.now() - started >= POLL_CEILING_MS) return
@@ -109,37 +176,57 @@ export default function BomResultPage({ id }: BomResultPageProps) {
         if (cancelled) return
         getBom(id)
           .then((record) => {
+            // Always apply — do not drop in-flight results when the effect restarts.
+            applyRecord(record)
             if (cancelled) return
-            schedulePoll(applyRecord(record))
+            if (shouldPollBom(record.analyze)) schedulePoll()
           })
           .catch(() => {
-            /* keep last good result; stop polling on hard errors */
+            if (cancelled) return
+            pollFailures.current += 1
+            if (pollFailures.current >= POLL_MAX_FAILURES) {
+              setPollStalled(true)
+              return
+            }
+            schedulePoll()
           })
       }, delay)
     }
 
-    getBom(id)
-      .then((record) => {
-        if (cancelled) return
-        schedulePoll(applyRecord(record))
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load BOM')
-      })
-      .finally(() => {
-        if (!cancelled) setLoaded(true)
-      })
+    schedulePoll()
 
     return () => {
       cancelled = true
       if (timer) clearTimeout(timer)
     }
-  }, [authLoading, user, id, router, applyRecord])
+  }, [user, id, needsPoll, pollEpoch, applyRecord])
 
   function handleLinesChange(lines: AnalyzedLine[]) {
-    setResult((prev) =>
-      prev ? { ...prev, lines, summary: { ...prev.summary, total: lines.length } } : prev,
-    )
+    setResult((prev) => {
+      if (!prev) return prev
+      const next = { ...prev, lines, summary: { ...prev.summary, total: lines.length } }
+      const nextKey = lines
+        .filter(isPendingLine)
+        .map((line) => `${line.row_index}:${line.mpn ?? ''}`)
+        .sort()
+        .join('|')
+      const prevKey = pendingKeyRef.current
+      const prevSet = new Set(prevKey.split('|').filter(Boolean))
+      const addedPending =
+        Boolean(nextKey) &&
+        (!prevKey ||
+          nextKey
+            .split('|')
+            .filter(Boolean)
+            .some((entry) => !prevSet.has(entry)))
+      pendingKeyRef.current = nextKey
+      if (addedPending) {
+        pollStartedAt.current = Date.now()
+        pollFailures.current = 0
+        setPollEpoch((n) => n + 1)
+      }
+      return next
+    })
   }
 
   if (!loaded) {
@@ -205,6 +292,25 @@ export default function BomResultPage({ id }: BomResultPageProps) {
           </button>
         </div>
       )}
+      {pollStalled && pendingCount > 0 ? (
+        <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:px-6">
+          Live updates stalled.{' '}
+          <button
+            type="button"
+            className="font-semibold underline"
+            onClick={() => {
+              setPollStalled(false)
+              pollFailures.current = 0
+              pollAttempt.current = 0
+              pollStartedAt.current = Date.now()
+              setPollEpoch((n) => n + 1)
+              void loadBom()
+            }}
+          >
+            Retry now
+          </button>
+        </div>
+      ) : null}
       <div className="flex-1 overflow-y-auto bg-white">
         <div className="border-b border-slate-200">
           <div className="mx-auto max-w-[1120px] px-4 pt-5 pb-0 sm:px-6 sm:pt-6">

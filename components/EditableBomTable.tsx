@@ -222,12 +222,17 @@ export default function EditableBomTable({
 
   async function handleAdd() {
     if (busy) return
+    const mpn = window.prompt('Manufacturer part number (MPN) for the new line')
+    if (!mpn?.trim()) {
+      setRowError('Enter an MPN to add a line.')
+      return
+    }
     setBusy(true)
     setRowError(null)
     try {
       const result = await addBomLine(bomId, {
         version,
-        mpn: '',
+        mpn: mpn.trim(),
         manufacturer: '',
         quantity: 1,
         refdes: '',

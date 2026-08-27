@@ -193,14 +193,7 @@ export default function AccountPage() {
         setBilling(status)
         setBomCount(status.usage?.active_boms_count ?? 0)
       })
-      .catch(() =>
-        setBilling({
-          plan: 'free',
-          status: 'none',
-          plan_source: 'free',
-          can_purchase: true,
-        }),
-      )
+      .catch(() => setBilling(null))
   }, [])
 
   useEffect(() => {
@@ -421,12 +414,13 @@ export default function AccountPage() {
                     {planName}
                   </p>
                   <p className="mt-0.5 text-[12px] text-slate-500">
-                    {statusLabel}
-                    {' · '}
-                    {refreshLabel}
-                    {billing?.can_purchase
-                      ? ' · purchasing on (plan caps apply)'
-                      : ' · purchasing locked until subscription is active'}
+                    {billing
+                      ? `${statusLabel} · ${refreshLabel}${
+                          billing.can_purchase
+                            ? ' · purchasing on (plan caps apply)'
+                            : ' · purchasing locked until subscription is active'
+                        }`
+                      : 'Billing status unavailable — try refreshing'}
                   </p>
                   {periodEnd ? (
                     <p className="mt-1 text-[12px] text-slate-400">

@@ -231,11 +231,13 @@ function RecentBomRow({ bom, onView }: { bom: BomSummary; onView: () => void }) 
 function OverviewView({
   boms,
   loading,
+  error,
   goToBoms,
   onViewBom,
 }: {
   boms: BomSummary[]
   loading: boolean
+  error: string | null
   goToBoms: () => void
   onViewBom: (id: string) => void
 }) {
@@ -301,6 +303,21 @@ function OverviewView({
               <div className="min-h-[320px] animate-pulse border border-slate-200 bg-white" />
               <div className="min-h-[320px] animate-pulse border border-slate-200 bg-white" />
             </div>
+          </div>
+        ) : error ? (
+          <div className="border border-dashed border-amber-300 bg-amber-50 px-8 py-20 text-center">
+            <p className="text-[16px] font-medium text-amber-900">Could not load portfolio</p>
+            <p className="mx-auto mt-2 max-w-md text-[14px] leading-relaxed text-amber-800">
+              {error}
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-6 inline-flex items-center gap-1.5 bg-[#0062ff] px-4 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-blue-700"
+            >
+              Retry
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </button>
           </div>
         ) : boms.length === 0 ? (
           <div className="border border-dashed border-slate-300 bg-white px-8 py-20 text-center">
@@ -449,7 +466,7 @@ function OverviewView({
 export default function OverviewPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { boms, loading } = useBoms()
+  const { boms, loading, error } = useBoms()
   const tab = searchParams.get('tab')
 
   useEffect(() => {
@@ -463,6 +480,7 @@ export default function OverviewPage() {
     <OverviewView
       boms={boms}
       loading={loading}
+      error={error}
       goToBoms={() => router.push('/boms')}
       onViewBom={(id) => router.push(`/bom/${encodeURIComponent(id)}`)}
     />

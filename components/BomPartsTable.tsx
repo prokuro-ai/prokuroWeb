@@ -82,7 +82,7 @@ function LineDetail({ line }: { line: AnalyzedLine }) {
   const lineLabel = String(line.row_index).padStart(4, '0')
   const decision = buildLineDecision(line)
   const brief = analystBrief(line)
-  const briefPending = isAtRisk(line) && !pending && !brief
+  // Briefs are filled on GET (heuristic/Bedrock). Never show an endless "Generating" state.
 
   return (
     <div className="min-w-0 border-t border-slate-200 bg-[#f4f6f9] px-4 py-4 sm:px-6 sm:py-5">
@@ -156,13 +156,8 @@ function LineDetail({ line }: { line: AnalyzedLine }) {
 
         <DecisionBlock
           title="Why this score"
-          accent={brief ? 'Analyst' : briefPending ? 'Generating' : undefined}
-          body={
-            brief ??
-            (briefPending
-              ? 'A procurement brief is being written for this line. This updates when the analyst finishes.'
-              : decision.whyScore)
-          }
+          accent={brief ? 'Analyst' : undefined}
+          body={brief ?? decision.whyScore}
         />
 
         <DecisionBlock
