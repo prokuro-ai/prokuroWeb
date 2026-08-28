@@ -6,11 +6,13 @@ export const SCHEDULE_DEMO_PATH = '/schedule'
 export const BOOK_DEMO_LABEL = 'Book a demo'
 
 /**
- * Product origin (Amplify). GitHub Pages links here for self-serve signup/pricing
- * because static export cannot host Cognito/API routes.
+ * Product origin for marketing deep-links (signup/pricing).
+ * Prefer Amplify default while app.prokuro.ai Amplify association is FAILED.
+ * Override with NEXT_PUBLIC_APP_ORIGIN=https://app.prokuro.ai once AVAILABLE.
  */
 export const APP_ORIGIN = (
-  process.env.NEXT_PUBLIC_APP_ORIGIN?.trim() || 'https://app.prokuro.ai'
+  process.env.NEXT_PUBLIC_APP_ORIGIN?.trim() ||
+  'https://main.d1pxsiz7gqk923.amplifyapp.com'
 ).replace(/\/$/, '')
 
 export const APP_SIGNUP_URL = `${APP_ORIGIN}/signup`
