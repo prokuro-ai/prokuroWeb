@@ -3,7 +3,12 @@
 import { Link } from '@/lib/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import { SELF_SERVE_ENABLED } from '@/lib/access'
-import { BOOK_DEMO_LABEL, SCHEDULE_DEMO_PATH } from '@/lib/sales'
+import {
+  APP_LOGIN_URL,
+  APP_SIGNUP_URL,
+  BOOK_DEMO_LABEL,
+  SCHEDULE_DEMO_PATH,
+} from '@/lib/sales'
 
 export function MarketingAuthActions() {
   const { user, loading } = useAuth()
@@ -24,9 +29,18 @@ export function MarketingAuthActions() {
     )
   }
 
+  // GitHub Pages cannot host Cognito — keep our nav chrome, deep-link to Amplify.
   return (
-    <Link className="mk-btn mk-btn--primary" href={SCHEDULE_DEMO_PATH}>
-      {BOOK_DEMO_LABEL}
-    </Link>
+    <div className="flex items-center gap-3">
+      <a href={APP_LOGIN_URL} className="mk-nav-link hidden sm:inline">
+        Login
+      </a>
+      <a className="mk-btn mk-btn--primary" href={APP_SIGNUP_URL}>
+        Try Prokuro
+      </a>
+      <Link className="mk-nav-link hidden sm:inline" href={SCHEDULE_DEMO_PATH}>
+        {BOOK_DEMO_LABEL}
+      </Link>
+    </div>
   )
 }

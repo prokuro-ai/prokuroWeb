@@ -6,7 +6,7 @@ import { useAuth } from '@/components/AuthProvider'
 import { startCheckout } from '@/lib/api'
 import { PUBLIC_PLANS } from '@/lib/publicPlans'
 import MarketingShell from '@/components/MarketingShell'
-import { SCHEDULE_DEMO_PATH } from '@/lib/sales'
+import { APP_PRICING_URL, APP_SIGNUP_URL, SCHEDULE_DEMO_PATH } from '@/lib/sales'
 import { SELF_SERVE_ENABLED } from '@/lib/access'
 
 export default function PricingPage() {
@@ -16,7 +16,7 @@ export default function PricingPage() {
 
   const handleCheckout = async (plan: 'growth' | 'scale') => {
     if (!SELF_SERVE_ENABLED) {
-      window.location.href = SCHEDULE_DEMO_PATH
+      window.location.href = APP_PRICING_URL
       return
     }
     if (!user) {
@@ -41,7 +41,7 @@ export default function PricingPage() {
 
   const handleFree = () => {
     if (!SELF_SERVE_ENABLED) {
-      window.location.href = SCHEDULE_DEMO_PATH
+      window.location.href = APP_SIGNUP_URL
       return
     }
     window.location.href = user ? '/dashboard' : `/login?next=${encodeURIComponent('/dashboard')}`
