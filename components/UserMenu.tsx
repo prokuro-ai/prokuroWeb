@@ -3,7 +3,12 @@
 import { Link } from '@/lib/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import { SELF_SERVE_ENABLED } from '@/lib/access'
-import { BOOK_DEMO_LABEL, SCHEDULE_DEMO_PATH } from '@/lib/sales'
+import {
+  APP_LOGIN_URL,
+  APP_SIGNUP_URL,
+  BOOK_DEMO_LABEL,
+  SCHEDULE_DEMO_PATH,
+} from '@/lib/sales'
 
 export function MarketingAuthActions() {
   const { user, loading } = useAuth()
@@ -24,9 +29,18 @@ export function MarketingAuthActions() {
     )
   }
 
+  // GitHub Pages: send self-serve traffic to the Amplify product origin.
   return (
-    <Link className="btn btn--primary btn--nav" href={SCHEDULE_DEMO_PATH}>
-      {BOOK_DEMO_LABEL}
-    </Link>
+    <div className="nav-actions">
+      <a href={APP_LOGIN_URL} className="nav-text-link">
+        Login
+      </a>
+      <a className="btn btn--primary btn--nav" href={APP_SIGNUP_URL}>
+        Try Prokuro
+      </a>
+      <Link className="nav-text-link" href={SCHEDULE_DEMO_PATH}>
+        {BOOK_DEMO_LABEL}
+      </Link>
+    </div>
   )
 }

@@ -70,6 +70,7 @@ function build() {
     ...process.env,
     STATIC_EXPORT: '1',
     NEXT_PUBLIC_STATIC_EXPORT: '1',
+    NEXT_PUBLIC_APP_ORIGIN: process.env.NEXT_PUBLIC_APP_ORIGIN || 'https://app.prokuro.ai',
   }
   const result = spawnSync('npx', ['next', 'build'], {
     cwd: root,

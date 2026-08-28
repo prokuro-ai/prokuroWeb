@@ -1,6 +1,7 @@
 /**
  * Product login/dashboard is on Amplify SSR and local `next dev`.
- * GitHub Pages (`NEXT_PUBLIC_STATIC_EXPORT=1`) stays marketing-only (Book a demo).
+ * GitHub Pages (`NEXT_PUBLIC_STATIC_EXPORT=1`) cannot host Cognito/API routes —
+ * marketing CTAs deep-link to APP_ORIGIN (app.prokuro.ai) instead.
  */
 export const SELF_SERVE_ENABLED = process.env.NEXT_PUBLIC_STATIC_EXPORT !== '1'
 

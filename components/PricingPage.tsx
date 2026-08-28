@@ -7,7 +7,7 @@ import { useAuth } from '@/components/AuthProvider'
 import { startCheckout } from '@/lib/api'
 import { PUBLIC_PLANS } from '@/lib/publicPlans'
 import ProkuroBrandLink from '@/components/ProkuroBrandLink'
-import { SCHEDULE_DEMO_PATH } from '@/lib/sales'
+import { SCHEDULE_DEMO_PATH, APP_PRICING_URL, APP_SIGNUP_URL, APP_LOGIN_URL } from '@/lib/sales'
 import { SELF_SERVE_ENABLED } from '@/lib/access'
 
 const BLUE = '#0062ff'
@@ -20,7 +20,7 @@ export default function PricingPage() {
 
   const handleCheckout = async (plan: 'growth' | 'scale') => {
     if (!SELF_SERVE_ENABLED) {
-      window.location.href = SCHEDULE_DEMO_PATH
+      window.location.href = `${APP_PRICING_URL}`
       return
     }
     if (!user) {
@@ -45,7 +45,7 @@ export default function PricingPage() {
 
   const handleFree = () => {
     if (!SELF_SERVE_ENABLED) {
-      window.location.href = SCHEDULE_DEMO_PATH
+      window.location.href = APP_SIGNUP_URL
       return
     }
     window.location.href = user ? '/dashboard' : `/login?next=${encodeURIComponent('/dashboard')}`
@@ -67,7 +67,11 @@ export default function PricingPage() {
               <Link href={user ? '/account' : '/login'} className="font-semibold text-[#0062ff]">
                 {user ? 'Account' : 'Sign in'}
               </Link>
-            ) : null}
+            ) : (
+              <a href={APP_LOGIN_URL} className="font-semibold text-[#0062ff]">
+                Sign in
+              </a>
+            )}
           </div>
         </div>
       </header>

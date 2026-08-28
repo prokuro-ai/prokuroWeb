@@ -5,7 +5,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { Globe2, ShieldCheck, Landmark, ArrowRight, Check } from 'lucide-react'
 import { MarketingAuthActions } from '@/components/UserMenu'
 import ProkuroBrandLink from '@/components/ProkuroBrandLink'
-import { BOOK_DEMO_LABEL, SCHEDULE_DEMO_PATH } from '@/lib/sales'
+import { BOOK_DEMO_LABEL, SCHEDULE_DEMO_PATH, APP_SIGNUP_URL, APP_PRICING_URL } from '@/lib/sales'
 import { PRIVACY_PATH, TERMS_PATH } from '@/lib/legal'
 import { PUBLIC_PLANS } from '@/lib/publicPlans'
 import { SELF_SERVE_ENABLED } from '@/lib/access'
@@ -357,9 +357,15 @@ export default function LandingPage() {
                   Prokuro reads your BOM, cross-references lifecycle, availability, and tariff exposure, then hands you a decision, not a dashboard. Every at-risk line gets a recommended alternate, confidence score, and what to do this week.
                 </p>
                 <div className="hero__cta">
-                  <a className="btn btn--primary" href={SCHEDULE_DEMO_PATH}>
-                    Book a demo
+                  <a
+                    className="btn btn--primary"
+                    href={SELF_SERVE_ENABLED ? '/signup' : APP_SIGNUP_URL}
+                  >
+                    Try Prokuro
                     <ArrowRight size={14} aria-hidden="true" />
+                  </a>
+                  <a className="btn btn--ghost" href={SCHEDULE_DEMO_PATH}>
+                    {BOOK_DEMO_LABEL}
                   </a>
                 </div>
               </motion.div>
@@ -724,11 +730,15 @@ export default function LandingPage() {
                     <a
                       className={`btn ${plan.highlighted ? 'btn--primary' : 'btn--ghost'}`}
                       href={
-                        plan.salesLed || !SELF_SERVE_ENABLED
+                        plan.salesLed
                           ? SCHEDULE_DEMO_PATH
-                          : plan.id === 'free'
-                            ? '/login?next=%2Fdashboard'
-                            : `/pricing`
+                          : !SELF_SERVE_ENABLED
+                            ? plan.id === 'free'
+                              ? APP_SIGNUP_URL
+                              : APP_PRICING_URL
+                            : plan.id === 'free'
+                              ? '/login?next=%2Fdashboard'
+                              : `/pricing`
                       }
                     >
                       {plan.cta}
