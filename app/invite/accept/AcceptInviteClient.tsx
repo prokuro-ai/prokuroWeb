@@ -24,7 +24,7 @@ export default function AcceptInvitePage() {
     if (!user) {
       const next = safeNextPath(`/invite/accept?token=${encodeURIComponent(token)}`, '/invite/accept')
       rememberNextPath(next)
-      router.replace(`/login?next=${encodeURIComponent(next)}`)
+      router.replace(`/signup?next=${encodeURIComponent(next)}`)
       return
     }
     if (status !== 'idle') return

@@ -5,7 +5,12 @@ import { Link } from '@/lib/navigation'
 import { ArrowRight } from 'lucide-react'
 import { PRIVACY_PATH, TERMS_PATH } from '@/lib/legal'
 import GoogleSignInButton from '@/components/GoogleSignInButton'
-import { startEmailVerification, completeEmailVerification, type EmailVerificationFlow } from '@/lib/auth'
+import {
+  startEmailVerification,
+  completeEmailVerification,
+  updateProfile,
+  type EmailVerificationFlow,
+} from '@/lib/auth'
 import { mapAuthError } from '@/lib/auth-errors'
 import { AuthFormField } from '@/components/auth/AuthFormField'
 import AuthConfirm from '@/components/auth/AuthConfirm'
@@ -21,34 +26,41 @@ export default function SignupPage() {
 
   const [view, setView] = useState<View>('form')
   const [confirmFlow, setConfirmFlow] = useState<EmailVerificationFlow>('signUp')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [emailError, setEmailError] = useState<string | null>(null)
+  const [nameError, setNameError] = useState<string | null>(null)
   const [codeError, setCodeError] = useState<string | null>(null)
-
-  const finishAuth = async () => {
-    await refresh()
-  }
 
   const resetToForm = () => {
     setView('form')
     setConfirmFlow('signUp')
     setCode('')
     setEmailError(null)
+    setNameError(null)
     setCodeError(null)
   }
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const first = firstName.trim()
+    const last = lastName.trim()
+    if (!first || !last) {
+      setNameError('First and last name are required.')
+      return
+    }
     if (!email.trim()) {
       setEmailError('This field is required.')
       return
     }
     setLoading(true)
     setEmailError(null)
+    setNameError(null)
     try {
-      const flow = await startEmailVerification(email)
+      const flow = await startEmailVerification(email, { firstName: first, lastName: last })
       setConfirmFlow(flow)
       setView('confirm')
     } catch (err) {
@@ -68,7 +80,13 @@ export default function SignupPage() {
     setCodeError(null)
     try {
       await completeEmailVerification(email, code, confirmFlow)
-      await finishAuth()
+      if (confirmFlow === 'signUp') {
+        await updateProfile({
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+        })
+      }
+      await refresh()
     } catch (err) {
       if (err instanceof AuthError) {
         setCodeError(mapAuthError(err, 'signUp'))
@@ -110,6 +128,35 @@ export default function SignupPage() {
           <AuthOrDivider />
 
           <form onSubmit={(e) => void handleEmailSubmit(e)} noValidate className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <AuthFormField
+                id="signup-first-name"
+                label="First name"
+                value={firstName}
+                onChange={(value) => {
+                  setFirstName(value)
+                  if (nameError) setNameError(null)
+                }}
+                placeholder="Ada"
+                autoComplete="given-name"
+              />
+              <AuthFormField
+                id="signup-last-name"
+                label="Last name"
+                value={lastName}
+                onChange={(value) => {
+                  setLastName(value)
+                  if (nameError) setNameError(null)
+                }}
+                placeholder="Lovelace"
+                autoComplete="family-name"
+              />
+            </div>
+            {nameError ? (
+              <p role="alert" className="mk-small -mt-2 text-mk-red">
+                {nameError}
+              </p>
+            ) : null}
             <AuthFormField
               id="signup-email"
               label="Work email"

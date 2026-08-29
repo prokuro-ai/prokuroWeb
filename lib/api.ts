@@ -434,6 +434,8 @@ export type TeamRole = 'owner' | 'admin' | 'read_only'
 export type TeamMember = {
   user_id: string
   email?: string | null
+  first_name?: string | null
+  last_name?: string | null
   role: TeamRole
   created_at: string
 }

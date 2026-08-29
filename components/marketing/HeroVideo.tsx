@@ -2,16 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react'
 
-/**
- * Hero background plate — crossfades through every clip in `public/hero/`.
- *
- * Videos must mount as soon as the component is allowed to play. Gating the
- * markup on `onLoadedData` never fires that event, so the stack stays empty.
- *
- * Skipped under `prefers-reduced-motion`. Shown on all viewport sizes so a
- * split-pane desktop window still gets the plate.
- */
-
 const HERO_VIDEO_SOURCES = [
   '/hero/hero-01.mp4',
   '/hero/hero-02.mp4',
@@ -33,7 +23,7 @@ export default function HeroVideo({
   const [hydrated, setHydrated] = useState(false)
   const [active, setActive] = useState(0)
   const [failed, setFailed] = useState<Set<number>>(() => new Set())
-  const refs = useRef<(HTMLVideoElement | null)[]>([])
+  const refs = useRef<Map<number, HTMLVideoElement>>(new Map())
   const wrapRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -47,6 +37,8 @@ export default function HeroVideo({
 
   const live = sources.map((_, index) => index).filter((index) => !failed.has(index))
   const visible = live.length > 0 ? live[active % live.length] : 0
+  const prefetch = live.length > 1 ? live[(active + 1) % live.length] : null
+  const mounted = prefetch == null ? [visible] : [visible, prefetch]
 
   useEffect(() => {
     if (!hydrated || reduce || live.length < 2) return
@@ -58,12 +50,13 @@ export default function HeroVideo({
 
   useEffect(() => {
     if (!hydrated || reduce) return
-    refs.current.forEach((el, index) => {
-      if (!el) return
+    for (const index of mounted) {
+      const el = refs.current.get(index)
+      if (!el) continue
       if (index === visible) void el.play().catch(() => {})
       else el.pause()
-    })
-  }, [hydrated, reduce, visible])
+    }
+  }, [hydrated, reduce, visible, prefetch])
 
   useEffect(() => {
     if (!hydrated || reduce) return
@@ -71,28 +64,32 @@ export default function HeroVideo({
     if (!wrap) return
     const observer = new IntersectionObserver(
       ([entry]) => {
-        refs.current.forEach((el, index) => {
-          if (!el) return
+        for (const index of mounted) {
+          const el = refs.current.get(index)
+          if (!el) continue
           if (entry.isIntersecting && index === visible) void el.play().catch(() => {})
           else el.pause()
-        })
+        }
       },
       { threshold: 0 },
     )
     observer.observe(wrap)
     return () => observer.disconnect()
-  }, [hydrated, reduce, visible])
+  }, [hydrated, reduce, visible, prefetch])
 
   if (!hydrated || reduce || live.length === 0) return null
 
   return (
     <div ref={wrapRef} className="absolute inset-0 overflow-hidden" aria-hidden="true">
-      {sources.map((src, index) =>
-        failed.has(index) ? null : (
+      {mounted.map((index) => {
+        const src = sources[index]
+        if (!src) return null
+        return (
           <video
             key={src}
             ref={(el) => {
-              refs.current[index] = el
+              if (el) refs.current.set(index, el)
+              else refs.current.delete(index)
             }}
             className="absolute inset-0 h-full w-full object-cover transition-opacity ease-out"
             style={{
@@ -103,19 +100,19 @@ export default function HeroVideo({
             muted
             loop
             playsInline
-            preload={index === 0 ? 'auto' : 'metadata'}
+            preload={index === visible ? 'auto' : 'metadata'}
             src={src}
             onError={() => {
               setFailed((prev) => {
                 if (prev.has(index)) return prev
-                const next = new Set(prev)
-                next.add(index)
-                return next
+                const nextFailed = new Set(prev)
+                nextFailed.add(index)
+                return nextFailed
               })
             }}
           />
-        ),
-      )}
+        )
+      })}
     </div>
   )
 }
