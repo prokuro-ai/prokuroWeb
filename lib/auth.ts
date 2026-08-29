@@ -39,6 +39,11 @@ export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase()
 }
 
+function cleanAttrName(value: string | undefined): string {
+  const trimmed = value?.trim() ?? ''
+  return trimmed === '-' ? '' : trimmed
+}
+
 export async function getAuthUser(): Promise<AuthUser | null> {
   ensureConfigured()
   try {
@@ -47,8 +52,8 @@ export async function getAuthUser(): Promise<AuthUser | null> {
     return {
       userId: current.userId,
       email: attributes.email ?? '',
-      firstName: attributes.given_name ?? '',
-      lastName: attributes.family_name ?? '',
+      firstName: cleanAttrName(attributes.given_name),
+      lastName: cleanAttrName(attributes.family_name),
       company: attributes['custom:company'] ?? '',
     }
   } catch {
@@ -56,9 +61,14 @@ export async function getAuthUser(): Promise<AuthUser | null> {
   }
 }
 
-export async function startEmailVerification(email: string): Promise<EmailVerificationFlow> {
+export async function startEmailVerification(
+  email: string,
+  names?: { firstName: string; lastName: string },
+): Promise<EmailVerificationFlow> {
   ensureConfigured()
   const username = normalizeEmail(email)
+  const given = cleanAttrName(names?.firstName)
+  const family = cleanAttrName(names?.lastName)
 
   try {
     await amplifySignUp({
@@ -66,8 +76,9 @@ export async function startEmailVerification(email: string): Promise<EmailVerifi
       options: {
         userAttributes: {
           email: username,
-          given_name: '-',
-          family_name: '-',
+          // Cognito requires given_name/family_name; prefer real names.
+          given_name: given || '-',
+          family_name: family || '-',
         },
         autoSignIn: {
           authFlowType: 'USER_AUTH',
@@ -167,16 +178,20 @@ export async function updateProfile(input: {
   if (input.company !== undefined) attributes['custom:company'] = input.company
   if (Object.keys(attributes).length === 0) return
   await updateUserAttributes({ userAttributes: attributes })
+  const { fetchAuthSession } = await import('aws-amplify/auth')
+  await fetchAuthSession({ forceRefresh: true })
 }
 
 export function displayNameForUser(user: AuthUser): string {
-  const full = [user.firstName.trim(), user.lastName.trim()].filter(Boolean).join(' ')
+  const full = [cleanAttrName(user.firstName), cleanAttrName(user.lastName)]
+    .filter(Boolean)
+    .join(' ')
   return full || user.email
 }
 
 export function initialsForUser(user: AuthUser): string {
-  const first = user.firstName.trim()
-  const last = user.lastName.trim()
+  const first = cleanAttrName(user.firstName)
+  const last = cleanAttrName(user.lastName)
   if (first || last) {
     const initials = [first[0], last[0]].filter(Boolean).map((char) => char.toUpperCase())
     if (initials.length > 0) return initials.join('')

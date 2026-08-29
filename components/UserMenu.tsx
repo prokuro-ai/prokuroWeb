@@ -18,27 +18,27 @@ export function MarketingAuthActions() {
   if (SELF_SERVE_ENABLED) {
     const signedInTarget = user ? '/dashboard' : null
     return (
-      <div className="flex items-center gap-3">
-        <Link href={signedInTarget ?? '/login'} className="mk-nav-link hidden sm:inline">
+      <div className="nav-actions">
+        <Link href={signedInTarget ?? '/login'} className="nav-text-link">
           Login
         </Link>
-        <Link className="mk-btn mk-btn--primary" href={signedInTarget ?? '/signup'}>
+        <Link className="btn btn--primary btn--nav" href={signedInTarget ?? '/signup'}>
           Try Prokuro
         </Link>
       </div>
     )
   }
 
-  // GitHub Pages cannot host Cognito — keep our nav chrome, deep-link to Amplify.
+  // GitHub Pages: send self-serve traffic to the Amplify product origin.
   return (
-    <div className="flex items-center gap-3">
-      <a href={APP_LOGIN_URL} className="mk-nav-link hidden sm:inline">
+    <div className="nav-actions">
+      <a href={APP_LOGIN_URL} className="nav-text-link">
         Login
       </a>
-      <a className="mk-btn mk-btn--primary" href={APP_SIGNUP_URL}>
+      <a className="btn btn--primary btn--nav" href={APP_SIGNUP_URL}>
         Try Prokuro
       </a>
-      <Link className="mk-nav-link hidden sm:inline" href={SCHEDULE_DEMO_PATH}>
+      <Link className="nav-text-link" href={SCHEDULE_DEMO_PATH}>
         {BOOK_DEMO_LABEL}
       </Link>
     </div>

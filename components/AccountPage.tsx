@@ -82,7 +82,31 @@ function roleLabel(role: TeamRole) {
   return String(role)
 }
 
-function initialsForEmail(value: string) {
+function memberDisplayName(member: {
+  first_name?: string | null
+  last_name?: string | null
+  email?: string | null
+  user_id: string
+}) {
+  const full = [member.first_name, member.last_name]
+    .map((part) => part?.trim())
+    .filter((part): part is string => Boolean(part) && part !== '-')
+    .join(' ')
+  return full || member.email || member.user_id
+}
+
+function memberInitials(member: {
+  first_name?: string | null
+  last_name?: string | null
+  email?: string | null
+  user_id: string
+}) {
+  const first = member.first_name?.trim()
+  const last = member.last_name?.trim()
+  if ((first && first !== '-') || (last && last !== '-')) {
+    return [first?.[0], last?.[0]].filter(Boolean).join('').toUpperCase() || '?'
+  }
+  const value = member.email ?? member.user_id
   const local = value.split('@')[0] ?? value
   const parts = local.split(/[.\s_-]+/).filter(Boolean)
   if (parts.length >= 2) return `${parts[0]![0] ?? ''}${parts[1]![0] ?? ''}`.toUpperCase()
@@ -345,14 +369,16 @@ export default function AccountPage() {
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
                   style={{ background: BLUE }}
                 >
-                  {initialsForEmail(member.email ?? member.user_id)}
+                  {memberInitials(member)}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13px] font-medium" style={{ color: NAVY }}>
-                    {member.email || member.user_id}
+                    {memberDisplayName(member)}
                     {member.user_id === team?.user_id ? ' (you)' : ''}
                   </p>
-                  <p className="truncate text-[11px] text-slate-400">{member.user_id}</p>
+                  <p className="truncate text-[11px] text-slate-400">
+                    {member.email || member.user_id}
+                  </p>
                 </div>
                 {canManage && member.role !== 'owner' ? (
                   <select
