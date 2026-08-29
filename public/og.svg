@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <rect width="1200" height="630" fill="#070b11"/>
+  <g opacity="0.35" stroke="#6f8cff" stroke-width="1.2">
+    <path d="M0 180 H220 L340 60 H1200"/>
+    <path d="M0 310 H280 L420 170 H1200"/>
+    <path d="M0 430 H160 L300 290 H1200" stroke="#f4676d"/>
+    <path d="M0 520 H360 L480 400 H1200" stroke="#eda94e"/>
+  </g>
+  <text x="72" y="250" fill="#eaf0f8" font-family="Georgia, serif" font-size="64">Prokuro</text>
+  <text x="72" y="320" fill="#93a2b8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="28">
+    Which parts in your BOM are about to become a problem.
+  </text>
+  <text x="72" y="540" fill="#64748b" font-family="ui-monospace, monospace" font-size="16" letter-spacing="3">
+    PROKURO.AI  ·  BOM INTELLIGENCE
+  </text>
+</svg>

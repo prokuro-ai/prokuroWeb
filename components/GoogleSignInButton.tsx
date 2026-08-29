@@ -36,13 +36,13 @@ export default function GoogleSignInButton() {
         type="button"
         disabled={loading}
         onClick={() => void handleClick()}
-        className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-md border border-[#d6deea] bg-white hover:bg-slate-50 text-[15px] font-medium text-[#0f1b2d] transition-colors shadow-sm mb-5 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+        className="mk-btn mk-btn--ghost mb-5 w-full disabled:cursor-not-allowed disabled:opacity-60"
       >
         <GoogleIcon />
-        {loading ? 'Connecting to Google...' : 'Continue with Google'}
+        {loading ? 'Connecting to Google…' : 'Continue with Google'}
       </button>
       {error ? (
-        <p role="alert" className="-mt-2 mb-4 text-center text-[13px] text-red-600">
+        <p role="alert" className="mk-small -mt-2 mb-4 text-center text-mk-red">
           {error}
         </p>
       ) : null}

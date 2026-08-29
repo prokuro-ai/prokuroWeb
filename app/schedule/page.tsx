@@ -4,7 +4,7 @@ import { calendlyApiBase } from '@/lib/calendly/config'
 import { isStaticExport } from '@/lib/static-export'
 
 export const metadata: Metadata = {
-  title: 'Book a demo | Prokuro.ai',
+  title: 'Book a demo',
   description: 'Book a 30-minute walkthrough of Prokuro, your AI procurement analyst for BOM risk.',
 }
 

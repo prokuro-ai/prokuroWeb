@@ -3,9 +3,6 @@
 import { CircleAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const INPUT_CLASS =
-  'w-full px-3 py-2.5 rounded-md border border-[#d6deea] bg-white text-[15px] text-[#0f1b2d] placeholder:text-[#98a3b6] focus:outline-none focus:ring-2 focus:ring-[#0062ff]/20 focus:border-[#0062ff] transition-all'
-
 interface AuthFormFieldProps {
   id: string
   label: string
@@ -33,13 +30,7 @@ export function AuthFormField({
 
   return (
     <div>
-      <label
-        htmlFor={id}
-        className={cn(
-          'mb-1.5 block text-[13px] font-medium',
-          hasError ? 'text-red-600' : 'text-[#0f1b2d]',
-        )}
-      >
+      <label htmlFor={id} className={cn('mk-eyebrow mb-2 block', hasError && 'text-mk-red')}>
         {label}
       </label>
       <input
@@ -53,12 +44,14 @@ export function AuthFormField({
         aria-invalid={hasError}
         aria-describedby={hasError ? `${id}-error` : undefined}
         className={cn(
-          INPUT_CLASS,
-          hasError && 'border-red-400 focus:border-red-500 focus:ring-red-500/20',
+          'w-full rounded-lg border bg-mk-canvas px-3 py-2.5 font-mk-sans text-[length:var(--mk-text-base)] text-mk-ink placeholder:text-mk-ink-subtle focus:outline-none',
+          hasError
+            ? 'border-mk-red focus:border-mk-red focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--mk-red)_16%,transparent)]'
+            : 'border-mk-line focus:border-mk-accent focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--mk-accent)_16%,transparent)]',
         )}
       />
       {hasError ? (
-        <p id={`${id}-error`} className="mt-1.5 flex items-center gap-1.5 text-[13px] text-red-600">
+        <p id={`${id}-error`} className="mk-small mt-2 flex items-center gap-1.5 text-mk-red">
           <CircleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden />
           {error}
         </p>

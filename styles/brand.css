@@ -1,0 +1,489 @@
+/**
+ * Prokuro marketing brand tokens.
+ *
+ * Two surfaces: `dark` (the bench) and `light` (the datasheet). Sections opt in
+ * with `data-surface`, and every token below resolves relative to that, so a
+ * component never needs to know which surface it is rendered on.
+ *
+ * Names are `mk-` prefixed because `app/globals.css` already registers `canvas`,
+ * `ink`, `surface-1`, and `hairline` in its own theme block.
+ *
+ * The `.dark` class belongs to the shadcn product theme. Marketing uses the
+ * orthogonal `surface-dark` variant so the two can never collide.
+ *
+ * `@theme inline` is load-bearing and must not be changed to a plain `@theme`.
+ * Without `inline`, Tailwind emits `:root { --color-mk-ink: var(--mk-ink) }` and
+ * a utility that reads `var(--color-mk-ink)`. A custom property's computed value
+ * has its `var()` substituted where it is *declared*, so `--mk-ink` would resolve
+ * once against `:root` — the light palette — and then inherit that fixed colour
+ * into every dark section. With `inline`, the utility carries `var(--mk-ink)`
+ * itself and resolves per element, which is what lets `data-surface` cascade.
+ */
+
+@custom-variant surface-dark (&:is([data-surface='dark'] *));
+
+@theme inline {
+  --color-mk-canvas: var(--mk-canvas);
+  --color-mk-raised: var(--mk-raised);
+  --color-mk-raised-2: var(--mk-raised-2);
+  --color-mk-ink: var(--mk-ink);
+  --color-mk-ink-muted: var(--mk-ink-muted);
+  --color-mk-ink-subtle: var(--mk-ink-subtle);
+  --color-mk-line: var(--mk-line);
+  --color-mk-line-strong: var(--mk-line-strong);
+  --color-mk-accent: var(--mk-accent);
+  --color-mk-accent-hover: var(--mk-accent-hover);
+  --color-mk-on-accent: var(--mk-on-accent);
+
+  --color-mk-red: var(--mk-red);
+  --color-mk-amber: var(--mk-amber);
+  --color-mk-green: var(--mk-green);
+  --color-mk-slate: var(--mk-slate);
+
+  --font-mk-display: var(--font-instrument-serif), 'Iowan Old Style', Georgia, serif;
+  --font-mk-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mk-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --ease-mk-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-mk-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/**
+ * Light surface — the datasheet.
+ * Ink and hairline values match the product app so a BOM row looks identical
+ * whether it is on the marketing site or in the dashboard.
+ */
+:root,
+[data-surface='light'] {
+  --mk-canvas: #ffffff;
+  --mk-raised: #f5f7fa;
+  --mk-raised-2: #e9edf3;
+  --mk-ink: #0f1b2d;
+  --mk-ink-muted: #4f5d73;
+  --mk-ink-subtle: #7a8598;
+  --mk-line: #dde4ee;
+  --mk-line-strong: #b9c5d6;
+  --mk-accent: #2b4fff;
+  --mk-accent-hover: #1e3fe0;
+  --mk-on-accent: #ffffff;
+
+  /* Matches RISK_PRESENTATION in lib/risk.ts exactly. Do not drift. */
+  --mk-red: #c62026;
+  --mk-amber: #a25a05;
+  --mk-green: #167c48;
+  --mk-slate: #64748b;
+
+  --mk-shadow: 0 1px 2px rgb(15 27 45 / 5%), 0 8px 24px rgb(15 27 45 / 6%);
+  color-scheme: light;
+}
+
+/**
+ * Dark surface — the bench.
+ * Risk hues are lifted in luminance and pulled down in saturation. The light
+ * values are far too dark to read here: #a25a05 in particular is a brown that
+ * effectively disappears, and #c62026 vibrates against near-black.
+ */
+[data-surface='dark'] {
+  --mk-canvas: #070b11;
+  --mk-raised: #0d141e;
+  --mk-raised-2: #141d2a;
+  /* Lifted well above the light-surface values: #64748b only reaches ~3.9:1
+     against #070b11, which fails AA for the small mono labels that use it. */
+  --mk-ink: #eef3fa;
+  --mk-ink-muted: #aab8cb;
+  --mk-ink-subtle: #8291a6;
+  --mk-line: #1b2534;
+  --mk-line-strong: #2c3a4e;
+  --mk-accent: #6f8cff;
+  --mk-accent-hover: #8aa2ff;
+  --mk-on-accent: #070b11;
+
+  --mk-red: #f4676d;
+  --mk-amber: #eda94e;
+  --mk-green: #4ec98a;
+  --mk-slate: #8b9aad;
+
+  --mk-shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 16px 40px rgb(0 0 0 / 32%);
+  color-scheme: dark;
+}
+
+@layer base {
+  [data-surface] {
+    background-color: var(--mk-canvas);
+    color: var(--mk-ink);
+    /* So legacy schedule/legal CSS follows the new palette. */
+    --color-canvas: var(--mk-canvas);
+    --color-surface-1: var(--mk-raised);
+    --color-surface-2: var(--mk-raised-2);
+    --color-ink: var(--mk-ink);
+    --color-ink-muted: var(--mk-ink-muted);
+    --color-ink-subtle: var(--mk-ink-subtle);
+    --color-hairline: var(--mk-line);
+    --color-hairline-strong: var(--mk-line-strong);
+    --color-primary: var(--mk-accent);
+    --color-primary-hover: var(--mk-accent-hover);
+    --color-on-primary: var(--mk-on-accent);
+  }
+}
+
+/**
+ * Fluid type scale.
+ *
+ * One ramp for the whole marketing surface. Sections must use these rather than
+ * inventing per-section `clamp()` values, which is how six different heading
+ * sizes ended up on one page.
+ *
+ * Each step is `clamp(min, rem + vw, max)` rather than raw `vw`: the rem term
+ * keeps the size responsive to the reader's browser font size, which a pure
+ * viewport unit would override.
+ */
+:root {
+  --mk-text-xs: clamp(0.75rem, 0.72rem + 0.14vw, 0.8125rem);
+  --mk-text-sm: clamp(0.875rem, 0.845rem + 0.16vw, 0.9375rem);
+  --mk-text-base: clamp(1rem, 0.96rem + 0.22vw, 1.125rem);
+  --mk-text-lg: clamp(1.125rem, 1.05rem + 0.36vw, 1.375rem);
+  --mk-text-xl: clamp(1.3125rem, 1.18rem + 0.6vw, 1.75rem);
+  --mk-text-2xl: clamp(1.625rem, 1.36rem + 1.2vw, 2.5rem);
+  --mk-text-3xl: clamp(2.125rem, 1.62rem + 2.3vw, 3.75rem);
+  --mk-text-4xl: clamp(2.75rem, 1.85rem + 4.3vw, 6rem);
+}
+
+@layer components {
+  /* Shared page rhythm. Sections set their own surface; this only sets metrics. */
+  .mk-section {
+    padding-block: clamp(4rem, 9vw, 8rem);
+    /* Clears the fixed 3.5rem header on hash jumps. */
+    scroll-margin-top: 3.5rem;
+  }
+
+  .mk-container {
+    width: 100%;
+    max-width: 1280px;
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 4vw, 2rem);
+  }
+
+  /**
+   * Film grain. Sits above shader output to break up the banding that wide,
+   * low-frequency gradients produce on 8-bit panels, and gives the dark surface
+   * a printed texture instead of a flat digital wash.
+   */
+  .mk-grain {
+    opacity: 0.5;
+    mix-blend-mode: soft-light;
+    background-size: 180px 180px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.42'/%3E%3C/svg%3E");
+  }
+
+  /**
+   * Keeps hero copy legible over the video: solid behind the left-aligned
+   * text column, clearing to the right, plus a bottom fade into the next
+   * section.
+   */
+  .mk-hero-scrim {
+    background:
+      linear-gradient(
+        92deg,
+        rgb(7 11 17 / 88%) 0%,
+        rgb(7 11 17 / 72%) 32%,
+        rgb(7 11 17 / 38%) 52%,
+        rgb(7 11 17 / 12%) 72%,
+        rgb(7 11 17 / 0%) 100%
+      ),
+      linear-gradient(to top, var(--mk-canvas) 0%, rgb(7 11 17 / 0%) 22%);
+  }
+
+  @media (max-width: 900px) {
+    .mk-hero-scrim {
+      background:
+        linear-gradient(to right, rgb(7 11 17 / 82%) 0%, rgb(7 11 17 / 48%) 100%),
+        linear-gradient(to top, var(--mk-canvas) 0%, rgb(7 11 17 / 0%) 30%);
+    }
+  }
+
+  .mk-eyebrow {
+    font-family: var(--font-mk-mono);
+    font-size: var(--mk-text-xs);
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--mk-ink-subtle);
+  }
+
+  /* Headings. Tracking tightens as size grows so the serif stays optically even. */
+  .mk-h1 {
+    font-family: var(--font-mk-display);
+    font-weight: 400;
+    font-size: var(--mk-text-4xl);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+  }
+
+  .mk-h2 {
+    font-family: var(--font-mk-display);
+    font-weight: 400;
+    font-size: var(--mk-text-3xl);
+    line-height: 1.06;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+
+  .mk-h3 {
+    font-family: var(--font-mk-display);
+    font-weight: 400;
+    font-size: var(--mk-text-2xl);
+    line-height: 1.14;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  .mk-lead {
+    font-size: var(--mk-text-xl);
+    line-height: 1.45;
+    letter-spacing: -0.01em;
+    text-wrap: pretty;
+  }
+
+  .mk-body {
+    font-size: var(--mk-text-base);
+    line-height: 1.65;
+    text-wrap: pretty;
+  }
+
+  .mk-small {
+    font-size: var(--mk-text-sm);
+    line-height: 1.6;
+  }
+
+  .mk-mono {
+    font-family: var(--font-mk-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  /* Mono used as tabular data inside cards and tables. */
+  .mk-data {
+    font-family: var(--font-mk-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+    font-size: var(--mk-text-sm);
+  }
+
+  .mk-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0.65rem 1.15rem;
+    border-radius: 8px;
+    font-family: var(--font-mk-sans);
+    font-size: var(--mk-text-sm);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1;
+    text-decoration: none;
+    transition:
+      background-color 160ms var(--ease-mk-out),
+      color 160ms var(--ease-mk-out),
+      border-color 160ms var(--ease-mk-out),
+      transform 160ms var(--ease-mk-out);
+  }
+
+  .mk-btn:active {
+    transform: scale(0.98);
+  }
+
+  .mk-btn--primary {
+    background: var(--mk-accent);
+    color: var(--mk-on-accent);
+    border: 1px solid transparent;
+  }
+
+  .mk-btn--primary:hover {
+    background: var(--mk-accent-hover);
+  }
+
+  .mk-btn--ghost {
+    background: transparent;
+    color: var(--mk-ink);
+    border: 1px solid var(--mk-line-strong);
+  }
+
+  .mk-btn--ghost:hover {
+    border-color: var(--mk-ink);
+  }
+
+  /**
+   * Inverted button: reads as white on the dark surface and near-black on the
+   * light one, so a single class gives maximum contrast on either.
+   */
+  .mk-btn--contrast {
+    background: var(--mk-ink);
+    color: var(--mk-canvas);
+    border: 1px solid transparent;
+  }
+
+  .mk-btn--contrast:hover {
+    background: color-mix(in srgb, var(--mk-ink) 88%, var(--mk-accent));
+  }
+
+  /* Full ink, not muted: at 13px over a translucent header, muted grey does not
+     hold up on either surface. */
+  .mk-nav-link {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--mk-ink);
+    text-decoration: none;
+    letter-spacing: -0.01em;
+    transition: color 160ms var(--ease-mk-out);
+  }
+
+  .mk-inline-link {
+    color: var(--mk-ink);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--mk-line-strong);
+    transition: text-decoration-color 160ms var(--ease-mk-out);
+  }
+
+  .mk-inline-link:hover {
+    text-decoration-color: var(--mk-ink);
+  }
+
+  .mk-nav-link:hover {
+    color: var(--mk-accent);
+  }
+
+  /* The footer runs a denser link list where full ink is too loud. */
+  .mk-footer-link {
+    color: var(--mk-ink-muted);
+  }
+
+  .mk-footer-link:hover {
+    color: var(--mk-ink);
+  }
+
+  /* Long-form legal pages. Keeps policy copy on the type scale without
+     classing every paragraph. */
+  .mk-legal-section {
+    padding-block: 2.5rem;
+    border-top: 1px solid var(--mk-line);
+    scroll-margin-top: 4.5rem;
+  }
+
+  .mk-legal-section h2 {
+    font-family: var(--font-mk-display);
+    font-weight: 400;
+    font-size: var(--mk-text-2xl);
+    line-height: 1.14;
+    letter-spacing: -0.02em;
+    color: var(--mk-ink);
+    margin: 0.4rem 0 1.15rem;
+  }
+
+  .mk-legal-section p,
+  .mk-legal-section li {
+    font-size: var(--mk-text-base);
+    line-height: 1.7;
+    color: var(--mk-ink-muted);
+  }
+
+  .mk-legal-section p + p,
+  .mk-legal-section ul,
+  .mk-legal-section .mk-legal-note,
+  .mk-legal-section .overflow-x-auto {
+    margin-top: 1rem;
+  }
+
+  .mk-legal-section ul {
+    padding-left: 1.15rem;
+    list-style: disc;
+  }
+
+  .mk-legal-section li + li {
+    margin-top: 0.45rem;
+  }
+
+  .mk-legal-section strong {
+    color: var(--mk-ink);
+    font-weight: 500;
+  }
+
+  .mk-legal-section a {
+    color: var(--mk-ink);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--mk-line-strong);
+  }
+
+  .mk-legal-section a:hover {
+    text-decoration-color: var(--mk-ink);
+  }
+
+  .mk-legal-glance a {
+    color: var(--mk-ink);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--mk-line-strong);
+  }
+
+  .mk-legal-glance a:hover {
+    text-decoration-color: var(--mk-ink);
+  }
+
+  .mk-legal-note {
+    border: 1px solid var(--mk-line);
+    background: var(--mk-raised);
+    padding: 1rem 1.15rem;
+  }
+
+  .mk-legal-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--mk-text-sm);
+  }
+
+  .mk-legal-table thead th {
+    font-family: var(--font-mk-mono);
+    font-size: var(--mk-text-xs);
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--mk-ink-subtle);
+    text-align: left;
+    padding: 0.7rem 0.85rem;
+    border-bottom: 1px solid var(--mk-line);
+  }
+
+  .mk-legal-table tbody th,
+  .mk-legal-table tbody td {
+    padding: 0.85rem;
+    border-bottom: 1px solid var(--mk-line);
+    vertical-align: top;
+    text-align: left;
+    line-height: 1.55;
+  }
+
+  .mk-legal-table tbody th {
+    font-weight: 500;
+    color: var(--mk-ink);
+    white-space: nowrap;
+  }
+
+  .mk-legal-table tbody td {
+    color: var(--mk-ink-muted);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
