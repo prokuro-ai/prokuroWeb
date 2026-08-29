@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Hub } from 'aws-amplify/utils'
 import { useAuth } from '@/components/AuthProvider'
 import { configureAmplify } from '@/lib/amplify-config'
-import { consumeNextPath } from '@/lib/navigation'
+import { consumeNextPath, Link } from '@/lib/navigation'
+import { ProkuroWordmark } from '@/components/brand/ProkuroLogo'
 
 export default function AuthCallbackPage() {
   const router = useRouter()
@@ -35,21 +36,25 @@ export default function AuthCallbackPage() {
   }, [refresh, router])
 
   return (
-    <main className="min-h-screen bg-[#f5f7fa] flex items-center justify-center p-6">
-      <div className="text-center">
-        <p className="text-[15px] font-medium text-[#0f1b2d]">
-          {failed ? 'Google sign-in could not be completed.' : 'Completing sign-in...'}
+    <div data-surface="light" className="font-mk-sans flex min-h-screen flex-col items-center justify-center bg-mk-raised p-6 text-mk-ink antialiased">
+      <Link href="/" className="mb-8 inline-flex text-mk-ink">
+        <ProkuroWordmark size={22} />
+      </Link>
+      <div className="w-full max-w-[400px] border border-mk-line bg-mk-canvas p-8 text-center">
+        <h2 className="mk-h3">{failed ? 'Sign-in did not complete' : 'Completing sign-in'}</h2>
+        <p className="mk-body mt-3 text-mk-ink-muted">
+          {failed
+            ? 'Google could not finish the handoff. You can try again from the login page.'
+            : 'Hang on while we confirm the session.'}
         </p>
         {failed ? (
-          <button
-            type="button"
-            onClick={() => router.replace('/login')}
-            className="mt-4 text-[14px] font-semibold text-[#0062ff] hover:underline"
-          >
+          <button type="button" onClick={() => router.replace('/login')} className="mk-btn mk-btn--primary mt-8">
             Return to login
           </button>
-        ) : null}
+        ) : (
+          <p className="mk-eyebrow mt-8">Connecting…</p>
+        )}
       </div>
-    </main>
+    </div>
   )
 }

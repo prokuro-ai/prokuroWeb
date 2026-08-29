@@ -42,7 +42,7 @@ const QUICK_LINKS = [
 export default function NotFoundPage() {
   return (
     <MarketingShell>
-      <main className={styles.page}>
+      <main className={styles.page} data-surface="light">
         <div className={styles.glow} aria-hidden="true" />
         <div className="container">
           <div className={styles.content}>

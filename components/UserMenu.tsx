@@ -97,35 +97,6 @@ export default function UserMenu() {
   )
 }
 
-export function AuthHeaderActions() {
-  const { user, loading } = useAuth()
-
-  if (loading) return null
-
-  if (user && SELF_SERVE_ENABLED) {
-    return <UserMenu />
-  }
-
-  if (SELF_SERVE_ENABLED) {
-    return (
-      <div className="nav-actions">
-        <Link href="/login" className="nav-text-link">
-          Login
-        </Link>
-        <Link className="btn btn--primary btn--nav" href="/signup">
-          Try Prokuro
-        </Link>
-      </div>
-    )
-  }
-
-  return (
-    <Link className="btn btn--primary btn--nav" href={SCHEDULE_DEMO_PATH}>
-      {BOOK_DEMO_LABEL}
-    </Link>
-  )
-}
-
 export function MarketingAuthActions() {
   const { user, loading } = useAuth()
 
@@ -134,11 +105,11 @@ export function MarketingAuthActions() {
   if (SELF_SERVE_ENABLED) {
     const signedInTarget = user ? '/dashboard' : null
     return (
-      <div className="nav-actions">
-        <Link href={signedInTarget ?? '/login'} className="nav-text-link">
+      <div className="flex items-center gap-3">
+        <Link href={signedInTarget ?? '/login'} className="mk-nav-link hidden sm:inline">
           Login
         </Link>
-        <Link className="btn btn--primary btn--nav" href={signedInTarget ?? '/signup'}>
+        <Link className="mk-btn mk-btn--primary" href={signedInTarget ?? '/signup'}>
           Try Prokuro
         </Link>
       </div>
@@ -146,7 +117,7 @@ export function MarketingAuthActions() {
   }
 
   return (
-    <Link className="btn btn--primary btn--nav" href={SCHEDULE_DEMO_PATH}>
+    <Link className="mk-btn mk-btn--primary" href={SCHEDULE_DEMO_PATH}>
       {BOOK_DEMO_LABEL}
     </Link>
   )

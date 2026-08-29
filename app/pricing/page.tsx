@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import PricingPage from '@/components/PricingPage'
 
 export const metadata: Metadata = {
-  title: 'Pricing | Prokuro.ai',
+  title: 'Pricing',
   description: 'Free, Growth ($149), and Scale ($399) plans for BOM risk analysis and purchasing.',
 }
 
