@@ -7,19 +7,15 @@ import { displayNameForUser, initialsForUser, updateProfile, signOut } from '@/l
 import {
   createTeamInvite,
   getBillingStatus,
-  openBillingPortal,
   patchTeamMemberRole,
   removeTeamMember,
   revokeTeamInvite,
-  startCheckout,
   type BillingAccountStatus,
-  type BillingStatus,
-  type PlanSource,
   type TeamInvite,
   type TeamRole,
 } from '@/lib/api'
 import { useTeam } from '@/hooks/use-team'
-import { limitsFor, planLabel as shortPlanLabel } from '@/lib/planLimits'
+import { planLabel as shortPlanLabel } from '@/lib/planLimits'
 import { ArrowLeft, LogOut } from 'lucide-react'
 
 const BLUE = '#0062ff'
@@ -64,37 +60,6 @@ function planLabel(plan: BillingAccountStatus['plan']) {
   return `${shortPlanLabel(plan)} Plan`
 }
 
-function billingStatusLabel(status: BillingStatus | undefined, planSource?: PlanSource) {
-  if (planSource === 'admin') return 'Admin-assigned plan'
-  switch (status) {
-    case 'active':
-      return 'Active'
-    case 'trialing':
-      return 'Trial'
-    case 'past_due':
-      return 'Past due'
-    case 'canceled':
-      return 'Canceled'
-    case 'none':
-    default:
-      return 'No subscription'
-  }
-}
-
-function formatPeriodEnd(value: string | null | undefined) {
-  if (!value) return null
-  const asNumber = Number(value)
-  const date = Number.isFinite(asNumber) && value.trim() !== ''
-    ? new Date(asNumber * 1000)
-    : new Date(value)
-  if (Number.isNaN(date.getTime())) return null
-  return date.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
-
 function inviteDeliveryNotice(invite: { email: string; email_delivery?: string; email_error?: string | null }) {
   switch (invite.email_delivery) {
     case 'sent':
@@ -108,53 +73,6 @@ function inviteDeliveryNotice(invite: { email: string; email_delivery?: string; 
     default:
       return 'Invite created. Copy the link below and share it with your teammate.'
   }
-}
-
-function UsageMeter({
-  label,
-  used,
-  limit,
-}: {
-  label: string
-  used: number
-  limit: number | null | undefined
-}) {
-  if (limit == null) {
-    return (
-      <div>
-        <div className="mb-1.5 flex items-center justify-between text-[12px]">
-          <span className="text-slate-500">{label}</span>
-          <span className="font-semibold" style={{ color: NAVY }}>
-            {used} / —
-          </span>
-        </div>
-        <div className="mb-1 h-2 overflow-hidden rounded-full bg-slate-100" />
-        <p className="text-[11px] text-slate-400">Billing status unavailable</p>
-      </div>
-    )
-  }
-  const safeLimit = Math.max(limit, 1)
-  const pct = Math.min((used / safeLimit) * 100, 100)
-  const remaining = Math.max(limit - used, 0)
-  return (
-    <div>
-      <div className="mb-1.5 flex items-center justify-between text-[12px]">
-        <span className="text-slate-500">{label}</span>
-        <span className="font-semibold" style={{ color: NAVY }}>
-          {used} / {limit}
-        </span>
-      </div>
-      <div className="mb-1 h-2 overflow-hidden rounded-full bg-slate-100">
-        <div
-          className="h-full rounded-full transition-all"
-          style={{ width: `${pct}%`, background: BLUE }}
-        />
-      </div>
-      <p className="text-[11px] text-slate-400">
-        {remaining} remaining this period
-      </p>
-    </div>
-  )
 }
 
 function roleLabel(role: TeamRole) {
@@ -181,7 +99,6 @@ export default function AccountPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  const [bomCount, setBomCount] = useState(0)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState<Exclude<TeamRole, 'owner'>>('read_only')
   const [inviteBusy, setInviteBusy] = useState(false)
@@ -189,9 +106,6 @@ export default function AccountPage() {
   const [inviteNotice, setInviteNotice] = useState<string | null>(null)
   const [lastAcceptUrl, setLastAcceptUrl] = useState<string | null>(null)
   const [billing, setBilling] = useState<BillingAccountStatus | null>(null)
-  const [billingBusy, setBillingBusy] = useState(false)
-  const [billingError, setBillingError] = useState<string | null>(null)
-  const [billingNotice, setBillingNotice] = useState<string | null>(null)
   const { team, reload: reloadTeam, canManage, canInvite, error: teamError } = useTeam()
 
   useEffect(() => {
@@ -203,37 +117,8 @@ export default function AccountPage() {
 
   useEffect(() => {
     getBillingStatus()
-      .then((status) => {
-        setBilling(status)
-        setBomCount(status.usage?.active_boms_count ?? 0)
-      })
+      .then(setBilling)
       .catch(() => setBilling(null))
-  }, [])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const params = new URLSearchParams(window.location.search)
-    const billingParam = params.get('billing')
-    if (!billingParam) return
-
-    if (billingParam === 'success') {
-      setBillingNotice('Payment received. Refreshing your plan…')
-      getBillingStatus()
-        .then((status) => {
-          setBilling(status)
-          setBomCount(status.usage?.active_boms_count ?? 0)
-          setBillingNotice(`You're on the ${planLabel(status.plan)}.`)
-        })
-        .catch(() => {
-          setBillingNotice('Payment received. Your plan will update shortly.')
-        })
-    } else if (billingParam === 'cancel') {
-      setBillingNotice('Checkout canceled — no changes were made.')
-    }
-
-    params.delete('billing')
-    const next = `${window.location.pathname}${params.toString() ? `?${params}` : ''}`
-    window.history.replaceState({}, '', next)
   }, [])
 
   const handleSave = async () => {
@@ -261,35 +146,6 @@ export default function AccountPage() {
     setCompany(user.company)
   }
 
-  const handleUpgrade = async (plan: 'growth' | 'scale') => {
-    setBillingBusy(true)
-    setBillingError(null)
-    try {
-      const origin = window.location.origin
-      const url = await startCheckout(
-        plan,
-        `${origin}/account?billing=success`,
-        `${origin}/account?billing=cancel`,
-      )
-      window.location.href = url
-    } catch (err) {
-      setBillingError(err instanceof Error ? err.message : 'Checkout failed')
-      setBillingBusy(false)
-    }
-  }
-
-  const handleManageBilling = async () => {
-    setBillingBusy(true)
-    setBillingError(null)
-    try {
-      const url = await openBillingPortal(`${window.location.origin}/account`)
-      window.location.href = url
-    } catch (err) {
-      setBillingError(err instanceof Error ? err.message : 'Billing portal unavailable')
-      setBillingBusy(false)
-    }
-  }
-
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-50 font-sans text-[13px] text-slate-400">
@@ -310,29 +166,9 @@ export default function AccountPage() {
   const displayName = displayNameForUser(user)
   const billingReady = billing != null
   const activePlan = billing?.plan
-  const planLimits = activePlan ? limitsFor(activePlan) : null
-  const apiLimits = billing?.limits
-  const usage = billing?.usage
-  const bomLimit = apiLimits?.active_boms ?? planLimits?.activeBoms
-  const analysesLimit = apiLimits?.analyses_per_month ?? planLimits?.analysesPerMonth
-  const linesLimit = apiLimits?.lines_per_month ?? planLimits?.linesPerMonth
-  const purchasingLimit =
-    apiLimits?.purchasing_actions_per_month ?? planLimits?.purchasingActionsPerMonth
-  const ordersLimit = apiLimits?.orders_per_month ?? planLimits?.ordersPerMonth
-  const seatsLimit = team?.seats.limit ?? apiLimits?.seats ?? planLimits?.seats
-  const seatsUsed = team?.seats.used ?? 1
+  const seatsLimit = team?.seats.limit ?? billing?.limits.seats
+  const seatsUsed = team?.seats.used
   const planName = billingReady && activePlan ? planLabel(activePlan) : 'Billing unavailable'
-  const refreshLabel =
-    (apiLimits?.refresh ?? planLimits?.refresh) === 'daily'
-      ? 'Daily refresh'
-      : (apiLimits?.refresh ?? planLimits?.refresh) === 'weekly'
-        ? 'Weekly refresh'
-        : null
-  const periodEnd = formatPeriodEnd(billing?.current_period_end)
-  const statusLabel = billingReady
-    ? billingStatusLabel(billing?.status, billing?.plan_source)
-    : null
-  const bomUsed = usage?.active_boms_count ?? bomCount
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-50 font-sans text-[#0f1b2d]">
@@ -426,166 +262,37 @@ export default function AccountPage() {
 
         <div>
           <SectionLabel>Billing</SectionLabel>
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-            <div className="border-b border-slate-100 px-5 py-5">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-[14px] font-semibold" style={{ color: NAVY }}>
-                    {planName}
-                  </p>
-                  <p className="mt-0.5 text-[12px] text-slate-500">
-                    {billingReady && statusLabel
-                      ? `${statusLabel}${
-                          refreshLabel ? ` · ${refreshLabel}` : ''
-                        }${
-                          billing.can_purchase
-                            ? ' · purchasing on (plan caps apply)'
-                            : ' · purchasing locked until subscription is active'
-                        }`
-                      : 'Billing status unavailable — try refreshing'}
-                  </p>
-                  {periodEnd ? (
-                    <p className="mt-1 text-[12px] text-slate-400">
-                      Current period ends {periodEnd}
-                    </p>
-                  ) : null}
-                  {billing?.admin_expires_at ? (
-                    <p className="mt-1 text-[12px] text-slate-400">
-                      Admin plan expires {formatPeriodEnd(billing.admin_expires_at)}
-                    </p>
-                  ) : null}
-                  {billingReady && bomLimit != null && linesLimit != null ? (
-                    <p className="mt-2 text-[12px] text-slate-400">
-                      {seatsLimit ?? '—'} seat{(seatsLimit ?? 0) === 1 ? '' : 's'} · up to {bomLimit}{' '}
-                      monitored BOM
-                      {bomLimit === 1 ? '' : 's'} · {linesLimit.toLocaleString()} lines / month ·{' '}
-                      {apiLimits?.max_lines_per_bom ?? planLimits?.maxLinesPerBom ?? '—'} lines max
-                      per BOM
-                    </p>
-                  ) : null}
-                </div>
-                <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-                  {!billingReady ? (
-                    <button
-                      type="button"
-                      disabled={billingBusy}
-                      onClick={() => {
-                        setBillingBusy(true)
-                        setBillingError(null)
-                        getBillingStatus()
-                          .then((status) => {
-                            setBilling(status)
-                            setBomCount(status.usage?.active_boms_count ?? 0)
-                          })
-                          .catch(() => {
-                            setBilling(null)
-                            setBillingError('Could not load billing status')
-                          })
-                          .finally(() => setBillingBusy(false))
-                      }}
-                      className="rounded-lg border border-slate-200 px-3.5 py-1.5 text-[12px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-                    >
-                      {billingBusy ? 'Refreshing…' : 'Retry billing'}
-                    </button>
-                  ) : activePlan === 'free' ? (
-                    <>
-                      <button
-                        type="button"
-                        disabled={billingBusy}
-                        onClick={() => handleUpgrade('growth')}
-                        className="rounded-lg px-3.5 py-1.5 text-[12px] font-semibold text-white disabled:opacity-60"
-                        style={{ background: BLUE }}
-                      >
-                        {billingBusy ? 'Opening…' : 'Upgrade to Growth'}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={billingBusy}
-                        onClick={() => navigate('/pricing')}
-                        className="rounded-lg border px-3.5 py-1.5 text-[12px] font-semibold transition-colors hover:bg-blue-50"
-                        style={{ color: BLUE, borderColor: '#bfdbfe' }}
-                      >
-                        View plans
-                      </button>
-                      {billing?.stripe_customer_id ? (
-                        <button
-                          type="button"
-                          disabled={billingBusy}
-                          onClick={handleManageBilling}
-                          className="rounded-lg border border-slate-200 px-3.5 py-1.5 text-[12px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-                        >
-                          {billingBusy ? 'Opening…' : 'Manage billing'}
-                        </button>
-                      ) : null}
-                    </>
-                  ) : (
-                    <>
-                      {activePlan !== 'scale' ? (
-                        <button
-                          type="button"
-                          disabled={billingBusy}
-                          onClick={() => handleUpgrade('scale')}
-                          className="rounded-lg border px-3.5 py-1.5 text-[12px] font-semibold transition-colors hover:bg-blue-50 disabled:opacity-60"
-                          style={{ color: BLUE, borderColor: '#bfdbfe' }}
-                        >
-                          {billingBusy ? 'Opening…' : 'Upgrade to Scale'}
-                        </button>
-                      ) : null}
-                      <button
-                        type="button"
-                        disabled={billingBusy || !billing?.stripe_customer_id}
-                        onClick={handleManageBilling}
-                        className="rounded-lg border border-slate-200 px-3.5 py-1.5 text-[12px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-                        title={
-                          billing?.stripe_customer_id
-                            ? undefined
-                            : 'Complete checkout once to unlock the Stripe customer portal'
-                        }
-                      >
-                        {billingBusy ? 'Opening…' : 'Manage billing'}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-              {billingNotice ? (
-                <p className="mt-3 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-[12px] text-[#0062ff]">
-                  {billingNotice}
-                </p>
-              ) : null}
-              {billingError ? (
-                <p className="mt-3 text-[12px] text-red-600">{billingError}</p>
-              ) : null}
+          <div className="flex items-start justify-between gap-4 overflow-hidden rounded-xl border border-slate-200 bg-white px-5 py-5">
+            <div className="min-w-0">
+              <p className="text-[14px] font-semibold" style={{ color: NAVY }}>
+                {planName}
+              </p>
+              <p className="mt-1 text-[12px] text-slate-500">
+                {seatsUsed != null ? `${seatsUsed} / ${seatsLimit ?? '—'} seats` : 'Seats loading…'}
+                {billing?.usage.active_boms_count != null && billing.limits.active_boms != null
+                  ? ` · ${billing.usage.active_boms_count} / ${billing.limits.active_boms} BOMs`
+                  : ''}
+                {' '}
+                from the team and billing APIs. Full meters live on the billing page.
+              </p>
             </div>
-
-            <div className="grid gap-5 px-5 py-5 sm:grid-cols-2">
-              <UsageMeter label="Team seats" used={seatsUsed} limit={seatsLimit} />
-              <UsageMeter label="Monitored BOMs" used={bomUsed} limit={bomLimit} />
-              <UsageMeter
-                label="Analyses this month"
-                used={usage?.analyses_count ?? 0}
-                limit={analysesLimit}
-              />
-              <UsageMeter
-                label="Lines analyzed this month"
-                used={usage?.lines_count ?? 0}
-                limit={linesLimit}
-              />
-              <UsageMeter
-                label="Purchasing actions"
-                used={usage?.purchasing_actions_count ?? 0}
-                limit={purchasingLimit}
-              />
-              <UsageMeter
-                label="Orders this month"
-                used={usage?.orders_count ?? 0}
-                limit={ordersLimit}
-              />
-            </div>
-
-            <div className="border-t border-slate-100 bg-slate-50 px-5 py-3 text-[11px] text-slate-400">
-              Usage meters reflect your current plan caps. Monthly counters reset on the calendar month;
-              Stripe subscriptions also show the billing period above when applicable.
+            <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => navigate('/billing')}
+                className="rounded-lg px-3.5 py-1.5 text-[12px] font-semibold text-white"
+                style={{ background: BLUE }}
+              >
+                Open billing
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/billing?plans=1')}
+                className="rounded-lg border px-3.5 py-1.5 text-[12px] font-semibold"
+                style={{ color: BLUE, borderColor: '#bfdbfe' }}
+              >
+                Compare plans
+              </button>
             </div>
           </div>
         </div>
@@ -616,13 +323,15 @@ export default function AccountPage() {
             </div>
           ) : null}
           <p className="mb-3 text-[12px] text-slate-400">
-            {billingReady && activePlan
-              ? `${seatsUsed} / ${seatsLimit ?? '—'} seats on ${shortPlanLabel(activePlan)}.`
-              : `${seatsUsed} seat${seatsUsed === 1 ? '' : 's'} · plan unavailable.`}
+            {seatsUsed != null
+              ? `${seatsUsed} / ${seatsLimit ?? '—'} seats${
+                  billingReady && activePlan ? ` on ${shortPlanLabel(activePlan)}` : ''
+                }.`
+              : 'Team seats loading…'}
             {team ? ` Your role: ${roleLabel(team.role)}.` : ''}
             {!canInvite && activePlan === 'free'
-              ? ' Upgrade or ask us to enable a pilot plan before inviting teammates.'
-              : !canInvite && seatsLimit != null && seatsUsed >= seatsLimit
+              ? ' Upgrade before inviting teammates.'
+              : !canInvite && seatsLimit != null && seatsUsed != null && seatsUsed >= seatsLimit
                 ? ' All seats are in use — revoke a pending invite or upgrade to add teammates.'
                 : ''}
           </p>

@@ -18,6 +18,7 @@ export const config = {
     '/boms/:path*',
     '/purchasing/:path*',
     '/account/:path*',
+    '/billing/:path*',
     '/bom/:path*',
     '/analyze/:path*',
     '/auth/:path*',

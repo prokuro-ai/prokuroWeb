@@ -29,8 +29,8 @@ export default function PricingPage() {
       const origin = window.location.origin
       const url = await startCheckout(
         plan,
-        `${origin}/account?billing=success`,
-        `${origin}/account?billing=cancel`,
+        `${origin}/billing?billing=success`,
+        `${origin}/billing?billing=cancel`,
       )
       window.location.href = url
     } catch (err) {

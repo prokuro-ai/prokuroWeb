@@ -11,6 +11,7 @@ export const APP_ROUTE_PREFIXES = [
   '/boms',
   '/purchasing',
   '/account',
+  '/billing',
   '/invite',
   '/bom',
   '/analyze',

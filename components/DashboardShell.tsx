@@ -9,6 +9,7 @@ import { getBillingStatus, listBoms, type BillingAccountStatus } from '@/lib/api
 import { planLabel } from '@/lib/planLimits'
 import {
   Bell,
+  CreditCard,
   Files,
   LayoutDashboard,
   LogOut,
@@ -47,6 +48,12 @@ const PRIMARY_NAV: NavItem[] = [
     label: 'Purchasing',
     icon: ShoppingCart,
     match: (pathname) => pathname === '/purchasing',
+  },
+  {
+    href: '/billing',
+    label: 'Billing',
+    icon: CreditCard,
+    match: (pathname) => pathname === '/billing',
   },
 ]
 
@@ -159,9 +166,10 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const displayName = displayNameForUser(user)
   const billingReady = billing != null
   const activePlan = billing?.plan
-  const bomLimit = billing?.limits?.active_boms
+  const bomLimit = billing?.limits.active_boms
+  const bomUsed = billing?.usage.active_boms_count ?? bomCount
   const bomPct =
-    bomLimit != null && bomLimit > 0 ? Math.min((bomCount / bomLimit) * 100, 100) : 0
+    bomLimit != null && bomLimit > 0 ? Math.min((bomUsed / bomLimit) * 100, 100) : 0
   const badge = billingReady ? planLabel(activePlan!) : '…'
   const upgradeLabel = !billingReady
     ? 'Billing unavailable'
@@ -171,10 +179,10 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         ? 'Upgrade to Scale'
         : 'Manage billing'
   const upgradeHref = !billingReady
-    ? '/account'
+    ? '/billing'
     : activePlan === 'scale'
-      ? '/account'
-      : '/pricing'
+      ? '/billing'
+      : '/billing?plans=1'
   const settingsActive = pathname === '/account'
 
   return (
@@ -346,7 +354,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                         Active BOMs
                       </span>
                       <span className="font-mono text-[11px] tabular-nums text-slate-600">
-                        {bomLimit != null ? `${bomCount} / ${bomLimit}` : `${bomCount} / —`}
+                        {bomLimit != null ? `${bomUsed} / ${bomLimit}` : `${bomUsed} / —`}
                       </span>
                     </div>
                     <div className="mb-3 h-1.5 overflow-hidden bg-slate-100">
@@ -374,6 +382,17 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                   >
                     <Settings className="h-4 w-4 shrink-0 text-slate-400" />
                     <span className="text-[13px] font-medium text-slate-800">Account settings</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      router.push('/billing')
+                      setProfileOpen(false)
+                    }}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[#f4f6f9]"
+                  >
+                    <CreditCard className="h-4 w-4 shrink-0 text-slate-400" />
+                    <span className="text-[13px] font-medium text-slate-800">Billing</span>
                   </button>
 
                   <div className="border-t border-slate-200">

@@ -385,8 +385,8 @@ export type BillingAccountStatus = {
   status: BillingStatus
   plan_source?: PlanSource
   can_purchase: boolean
-  limits?: PlanLimitsApi
-  usage?: PlanUsageApi
+  limits: PlanLimitsApi
+  usage: PlanUsageApi
   stripe_customer_id?: string | null
   current_period_end?: string | null
   admin_expires_at?: string | null

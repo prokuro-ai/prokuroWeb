@@ -5,7 +5,6 @@ import { ArrowRight, CheckCircle, FileText, Loader2, XCircle } from 'lucide-reac
 import { AppModal, ModalNotice } from '@/components/AppModal'
 import BomColumnMappingStep from '@/components/BomColumnMappingStep'
 import { analyzeFile, getBillingStatus, parseFile, saveBom } from '@/lib/api'
-import { limitsFor } from '@/lib/planLimits'
 import {
   buildColumnMappings,
   extractHeaders,
@@ -72,15 +71,15 @@ export default function BomBulkUploadModal({
   const [mapping, setMapping] = useState<ColumnMapping[]>([])
   const [headers, setHeaders] = useState<string[]>([])
   const [preview, setPreview] = useState<string[][]>([])
-  const [maxFiles, setMaxFiles] = useState(limitsFor('free').activeBoms)
+  const [maxFiles, setMaxFiles] = useState<number | null>(null)
 
   useEffect(() => {
     if (!open) return
     getBillingStatus()
       .then((status) => {
-        setMaxFiles(status.limits?.active_boms ?? limitsFor(status.plan).activeBoms)
+        setMaxFiles(status.limits.active_boms)
       })
-      .catch(() => setMaxFiles(limitsFor('free').activeBoms))
+      .catch(() => setMaxFiles(null))
   }, [open])
 
   const reset = useCallback(() => {
@@ -110,6 +109,11 @@ export default function BomBulkUploadModal({
     setPickError(null)
     const incoming = Array.from(files)
     if (incoming.length === 0) return
+
+    if (maxFiles == null) {
+      setPickError('Could not load your BOM cap from billing status. Close and try again.')
+      return
+    }
 
     const slotsLeft = maxFiles - existingBomCount - items.length
     if (slotsLeft <= 0) {
@@ -325,7 +329,12 @@ export default function BomBulkUploadModal({
       footer={footer}
     >
       {pickError && (step === 'select' || step === 'mapping') ? (
-        <ModalNotice tone="warn">{pickError}</ModalNotice>
+        <ModalNotice tone="warn">
+          {pickError}{' '}
+          <a href="/billing?plans=1" className="font-semibold text-[#0062ff] underline">
+            Compare plans
+          </a>
+        </ModalNotice>
       ) : null}
 
       {step === 'select' ? (
