@@ -6,7 +6,8 @@ import { Check } from 'lucide-react'
 import { useAuth } from '@/components/AuthProvider'
 import { startCheckout } from '@/lib/api'
 import { PUBLIC_PLANS } from '@/lib/publicPlans'
-import ProkuroBrandLink from '@/components/ProkuroBrandLink'
+import { ProkuroWordmark } from '@/components/brand/ProkuroLogo'
+import EmbeddedCheckoutDialog from '@/components/billing/EmbeddedCheckoutDialog'
 import { SCHEDULE_DEMO_PATH, APP_PRICING_URL, APP_SIGNUP_URL, APP_LOGIN_URL } from '@/lib/sales'
 import { SELF_SERVE_ENABLED } from '@/lib/access'
 
@@ -17,6 +18,8 @@ export default function PricingPage() {
   const { user } = useAuth()
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [checkoutSecret, setCheckoutSecret] = useState<string | null>(null)
+  const [checkoutOpen, setCheckoutOpen] = useState(false)
 
   const handleCheckout = async (plan: 'growth' | 'scale') => {
     if (!SELF_SERVE_ENABLED) {
@@ -29,16 +32,18 @@ export default function PricingPage() {
     }
     setBusy(plan)
     setError(null)
+    setCheckoutSecret(null)
     try {
       const origin = window.location.origin
-      const url = await startCheckout(
+      const clientSecret = await startCheckout(
         plan,
-        `${origin}/billing?billing=success`,
-        `${origin}/billing?billing=cancel`,
+        `${origin}/billing?billing=success&session_id={CHECKOUT_SESSION_ID}`,
       )
-      window.location.href = url
+      setCheckoutSecret(clientSecret)
+      setCheckoutOpen(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Checkout failed')
+    } finally {
       setBusy(null)
     }
   }
@@ -55,7 +60,9 @@ export default function PricingPage() {
     <div className="min-h-screen bg-slate-50 font-sans text-[#0f1b2d]">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
-          <ProkuroBrandLink />
+          <Link href="/" className="inline-flex text-[#0f1b2d]">
+            <ProkuroWordmark size={20} />
+          </Link>
           <div className="flex items-center gap-4 text-[13px]">
             <Link href="/#pricing" className="text-slate-500 hover:text-slate-800">
               Home
@@ -143,7 +150,7 @@ export default function PricingPage() {
                     handleFree()
                     return
                   }
-                  handleCheckout(plan.id as 'growth' | 'scale')
+                  void handleCheckout(plan.id as 'growth' | 'scale')
                 }}
                 className={`mt-6 w-full rounded-lg px-4 py-2.5 text-[13px] font-semibold transition-opacity disabled:opacity-60 ${
                   plan.highlighted
@@ -152,12 +159,22 @@ export default function PricingPage() {
                 }`}
                 style={plan.highlighted ? { background: BLUE } : undefined}
               >
-                {busy === plan.id ? 'Redirecting…' : plan.cta}
+                {busy === plan.id ? 'Opening…' : plan.cta}
               </button>
             </div>
           ))}
         </div>
       </main>
+
+      <EmbeddedCheckoutDialog
+        open={checkoutOpen}
+        clientSecret={checkoutSecret}
+        error={error}
+        onClose={() => {
+          setCheckoutOpen(false)
+          setCheckoutSecret(null)
+        }}
+      />
     </div>
   )
 }

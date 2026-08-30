@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { RefreshCw } from 'lucide-react'
 import { useAuth } from '@/components/AuthProvider'
 import { PricingModal } from '@/components/billing/PricingModal'
+import EmbeddedCheckoutDialog from '@/components/billing/EmbeddedCheckoutDialog'
 import { UsageMeter } from '@/components/billing/UsageMeter'
 import { useTeam } from '@/hooks/use-team'
 import {
@@ -39,6 +40,8 @@ export default function BillingPage() {
   const [billingError, setBillingError] = useState<string | null>(null)
   const [billingNotice, setBillingNotice] = useState<string | null>(null)
   const [plansOpen, setPlansOpen] = useState(false)
+  const [checkoutSecret, setCheckoutSecret] = useState<string | null>(null)
+  const [checkoutOpen, setCheckoutOpen] = useState(false)
 
   const loadBilling = async () => {
     const status = await getBillingStatus()
@@ -85,16 +88,19 @@ export default function BillingPage() {
   const handleUpgrade = async (plan: 'growth' | 'scale') => {
     setBillingBusy(true)
     setBillingError(null)
+    setCheckoutSecret(null)
     try {
       const origin = window.location.origin
-      const url = await startCheckout(
+      const clientSecret = await startCheckout(
         plan,
-        `${origin}/billing?billing=success`,
-        `${origin}/billing?billing=cancel`,
+        `${origin}/billing?billing=success&session_id={CHECKOUT_SESSION_ID}`,
       )
-      window.location.href = url
+      setCheckoutSecret(clientSecret)
+      setCheckoutOpen(true)
+      setPlansOpen(false)
     } catch (err) {
       setBillingError(err instanceof Error ? err.message : 'Checkout failed')
+    } finally {
       setBillingBusy(false)
     }
   }
@@ -361,6 +367,15 @@ export default function BillingPage() {
         busy={billingBusy}
         error={billingError}
         onSelect={handleSelectPlan}
+      />
+      <EmbeddedCheckoutDialog
+        open={checkoutOpen}
+        clientSecret={checkoutSecret}
+        error={billingError}
+        onClose={() => {
+          setCheckoutOpen(false)
+          setCheckoutSecret(null)
+        }}
       />
     </div>
   )
