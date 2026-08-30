@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { placeOrder, quotePurchase } from '@/lib/api'
 import { useTeam } from '@/hooks/use-team'
+import BomPartPicker from '@/components/purchasing/BomPartPicker'
+import { mergeDraftLines, type DraftLine, type SourcedPart } from '@/lib/purchasing'
 import type {
   PlaceOrderResponse,
   PurchaseProviderId,
@@ -10,8 +12,6 @@ import type {
   QuoteLineResult,
   QuoteResponse,
 } from '@/lib/types'
-
-type DraftLine = { mpn: string; quantity: string }
 
 function statusLabel(status: PurchaseStatus): string {
   switch (status) {
@@ -55,6 +55,20 @@ export default function PurchasingPage() {
   const [quote, setQuote] = useState<QuoteResponse | null>(null)
   const [order, setOrder] = useState<PlaceOrderResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
+
+  function addParts(parts: SourcedPart[]) {
+    const result = mergeDraftLines(lines, parts)
+    setLines(result.lines)
+    setError(null)
+    setNotice(
+      result.added === 0
+        ? 'Those parts are already on the quote.'
+        : `Added ${result.added} part${result.added === 1 ? '' : 's'}${
+            result.skipped > 0 ? ` (${result.skipped} already on the quote)` : ''
+          }.`,
+    )
+  }
 
   function updateLine(index: number, patch: Partial<DraftLine>) {
     setLines((current) => current.map((line, i) => (i === index ? { ...line, ...patch } : line)))
@@ -85,6 +99,7 @@ export default function PurchasingPage() {
     }
     setBusy('quote')
     setError(null)
+    setNotice(null)
     setOrder(null)
     try {
       const response = await quotePurchase({ provider, lines: requestLines })
@@ -105,6 +120,7 @@ export default function PurchasingPage() {
     }
     setBusy('order')
     setError(null)
+    setNotice(null)
     try {
       const response = await placeOrder({
         provider,
@@ -133,19 +149,21 @@ export default function PurchasingPage() {
             Purchasing
           </h1>
           <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-slate-500">
-            Quote Digi-Key and Mouser by MPN, then place orders when distributor credentials and
-            ordering are enabled on the purchasing service.
+            Pull in-stock parts straight from your BOMs, quote Digi-Key and Mouser, then place
+            orders when distributor credentials and ordering are enabled on the purchasing service.
           </p>
         </div>
       </div>
 
       <div className="mx-auto max-w-[1180px] space-y-4 px-6 py-8">
+        <BomPartPicker onAdd={addParts} disabled={busy !== null || !canWrite} />
+
         <div className="border border-slate-200 bg-white">
           <div className="border-b border-slate-200 px-5 py-4">
             <h2 className="text-[15px] font-semibold text-slate-900">Quote lines</h2>
             <p className="mt-1 text-[13px] text-slate-500">
-              Enter MPNs and quantities. Digi-Key ProductDetails and Mouser Search power quotes when
-              credentials are configured.
+              Add parts from a BOM above or enter MPNs by hand. Digi-Key ProductDetails and Mouser
+              Search power quotes when credentials are configured.
             </p>
           </div>
 
@@ -273,6 +291,8 @@ export default function PurchasingPage() {
 
             {error ? (
               <p className="font-mono text-[12px] text-[#c62026]">{error}</p>
+            ) : notice ? (
+              <p className="text-[12px] text-slate-500">{notice}</p>
             ) : null}
           </div>
         </div>
