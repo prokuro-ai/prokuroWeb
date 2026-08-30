@@ -4,6 +4,10 @@ import type {
   AnalyzedLine,
   AnalyzeResult,
   BomSummary,
+  CrmAccount,
+  CrmAccountSearchResponse,
+  CrmStatus,
+  CrmSyncResponse,
   ParseResult,
   PlaceOrderRequest,
   PlaceOrderResponse,
@@ -426,6 +430,32 @@ export async function openBillingPortal(returnUrl: string): Promise<string> {
   const url = (body as { url?: string }).url
   if (!url) throw new Error('Portal URL missing')
   return url
+}
+
+export async function getCrmStatus(): Promise<CrmStatus> {
+  const res = await fetch('/api/crm/status', { headers: await authHeaders() })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  return body as CrmStatus
+}
+
+export async function searchCrmAccounts(query: string): Promise<CrmAccount[]> {
+  const qs = new URLSearchParams({ query })
+  const res = await fetch(`/api/crm/accounts?${qs}`, { headers: await authHeaders() })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  return (body as CrmAccountSearchResponse).accounts ?? []
+}
+
+export async function syncBomToCrm(bomId: string, accountId: string): Promise<CrmSyncResponse> {
+  const res = await fetch(`/api/crm/boms/${encodeURIComponent(bomId)}/sync`, {
+    method: 'POST',
+    headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ account_id: accountId }),
+  })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  return body as CrmSyncResponse
 }
 
 export type TeamRole = 'owner' | 'admin' | 'read_only'
