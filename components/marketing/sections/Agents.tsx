@@ -5,7 +5,7 @@ import Reveal from '@/components/marketing/motion/Reveal'
 
 const JOBS = [
   { name: 'Screening', role: 'Finds the parts that will fail.' },
-  { name: 'Sourcing', role: 'Finds the cheapest place to buy them.' },
+  { name: 'Sourcing', role: 'Finds parts that are actually in stock at distributors.' },
   { name: 'Cost', role: 'Cuts what the build actually costs.' },
   { name: 'Planning', role: 'Tells you when to place the order.' },
   { name: 'Compliance', role: 'Keeps tariffs and bans off the board.' },

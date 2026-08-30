@@ -55,7 +55,7 @@ export const metadata: Metadata = {
     template: '%s | Prokuro AI',
   },
   description:
-    'Prokuro deploys procurement agents against your BOM. They screen every line, source the cheapest compliant part across distributors, drive landed cost down, plan the buy against your build date, and clear trade exposure. You approve, they execute.',
+    'Prokuro deploys procurement agents against your BOM. They screen every line, source in-stock parts across distributors, drive landed cost down, plan the buy against your build date, and clear trade exposure. You approve, they execute.',
   icons: {
     icon: [{ url: '/brand/prokuro-mark.svg', type: 'image/svg+xml' }],
   },
@@ -67,14 +67,14 @@ export const metadata: Metadata = {
     siteName: 'Prokuro',
     title: 'Prokuro AI | Procurement Agents That Work Your BOM',
     description:
-      'Upload a BOM. Agents screen every line, source the cheapest compliant part, cut landed cost, plan the buy, and clear trade exposure.',
+      'Upload a BOM. Agents screen every line, source in-stock parts across distributors, cut landed cost, plan the buy, and clear trade exposure.',
     images: [{ url: '/og.svg', width: 1200, height: 630, alt: 'Prokuro' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Prokuro AI | Procurement Agents That Work Your BOM',
     description:
-      'Upload a BOM. Agents screen every line, source the cheapest compliant part, cut landed cost, plan the buy, and clear trade exposure.',
+      'Upload a BOM. Agents screen every line, source in-stock parts across distributors, cut landed cost, plan the buy, and clear trade exposure.',
     images: ['/og.svg'],
   },
 }
