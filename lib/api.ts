@@ -401,19 +401,18 @@ export async function getBillingStatus(): Promise<BillingAccountStatus> {
 
 export async function startCheckout(
   plan: Exclude<BillingPlan, 'free'>,
-  successUrl: string,
-  cancelUrl: string,
+  returnUrl: string,
 ): Promise<string> {
   const res = await fetch('/api/billing/checkout', {
     method: 'POST',
     headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ plan, success_url: successUrl, cancel_url: cancelUrl }),
+    body: JSON.stringify({ plan, return_url: returnUrl }),
   })
   const body: unknown = await readJsonBody(res)
   if (!res.ok) throw new Error(await readErrorMessage(res, body))
-  const url = (body as { url?: string }).url
-  if (!url) throw new Error('Checkout URL missing')
-  return url
+  const clientSecret = (body as { client_secret?: string }).client_secret
+  if (!clientSecret) throw new Error('Checkout client_secret missing')
+  return clientSecret
 }
 
 export async function openBillingPortal(returnUrl: string): Promise<string> {
