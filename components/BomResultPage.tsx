@@ -6,9 +6,10 @@ import { useRouter } from 'next/navigation'
 import BomExportMenu from '@/components/BomExportMenu'
 import BomPartsTable from '@/components/BomPartsTable'
 import EditableBomTable from '@/components/EditableBomTable'
+import CrmSyncDialog from '@/components/crm/CrmSyncDialog'
 import { useAuth } from '@/components/AuthProvider'
 import { Link } from '@/lib/navigation'
-import { getBom } from '@/lib/api'
+import { getBom, getCrmStatus } from '@/lib/api'
 import { useTeam } from '@/hooks/use-team'
 import { formatUploadedAt } from '@/lib/format'
 import { isPendingLine, portfolioBadgeFromSummary, shouldPollBom } from '@/lib/risk'
@@ -52,6 +53,8 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   const [editing, setEditing] = useState(false)
   const [pollStalled, setPollStalled] = useState(false)
   const [pollEpoch, setPollEpoch] = useState(0)
+  const [crmConfigured, setCrmConfigured] = useState(false)
+  const [crmOpen, setCrmOpen] = useState(false)
 
   const pollStartedAt = useRef<number | null>(null)
   const pollAttempt = useRef(0)
@@ -153,6 +156,21 @@ export default function BomResultPage({ id }: BomResultPageProps) {
       cancelled = true
     }
   }, [authLoading, user, id, router, applyRecord])
+
+  useEffect(() => {
+    if (!user) return
+    let cancelled = false
+    getCrmStatus()
+      .then((status) => {
+        if (!cancelled) setCrmConfigured(status.configured)
+      })
+      .catch(() => {
+        if (!cancelled) setCrmConfigured(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [user])
 
   useEffect(() => {
     if (!user || !id || !needsPoll) {
@@ -375,6 +393,11 @@ export default function BomResultPage({ id }: BomResultPageProps) {
                     {editing ? 'Done' : 'Edit'}
                   </button>
                 ) : null}
+                {canWrite && crmConfigured ? (
+                  <button type="button" onClick={() => setCrmOpen(true)} className={actionBtnIdle}>
+                    Log to CRM
+                  </button>
+                ) : null}
                 <BomExportMenu result={result} triggerClassName={actionBtnIdle} />
               </div>
             </div>
@@ -456,6 +479,13 @@ export default function BomResultPage({ id }: BomResultPageProps) {
           )}
         </div>
       </div>
+
+      <CrmSyncDialog
+        bomId={id}
+        bomName={displayName}
+        open={crmOpen}
+        onClose={() => setCrmOpen(false)}
+      />
     </div>
   )
 }

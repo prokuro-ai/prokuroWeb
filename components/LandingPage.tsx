@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Globe2, ShieldCheck, Landmark, ArrowRight, Check } from 'lucide-react'
+import { Link } from '@/lib/navigation'
 import { MarketingAuthActions } from '@/components/UserMenu'
-import ProkuroBrandLink from '@/components/ProkuroBrandLink'
 import { BOOK_DEMO_LABEL, SCHEDULE_DEMO_PATH, APP_SIGNUP_URL, APP_PRICING_URL } from '@/lib/sales'
 import { PRIVACY_PATH, TERMS_PATH } from '@/lib/legal'
 import { PUBLIC_PLANS } from '@/lib/publicPlans'
@@ -320,7 +320,10 @@ export default function LandingPage() {
               <span />
             </span>
           </button>
-          <ProkuroBrandLink variant="marketing" />
+          <Link className="brand" href="/">
+            <span className="brand__dot" aria-hidden="true" />
+            <span>Prokuro.ai</span>
+          </Link>
           <NavLinks className="nav-links nav-links--desktop" onNavigate={closeNav} />
           <div className="nav-actions">
             <MarketingAuthActions />

@@ -183,3 +183,30 @@ export interface PlaceOrderResponse {
   distributor_order_id?: string | null
   message?: string | null
 }
+
+export type CrmProviderId = 'hubspot'
+
+export interface CrmStatus {
+  configured: boolean
+  provider?: CrmProviderId | null
+}
+
+export interface CrmAccount {
+  id: string
+  name: string
+  domain?: string | null
+}
+
+export interface CrmAccountSearchResponse {
+  provider: CrmProviderId
+  accounts: CrmAccount[]
+}
+
+export interface CrmSyncResponse {
+  provider: CrmProviderId
+  account_id: string
+  note_id: string
+  synced_at: string
+  /** Exact text logged to the CRM. */
+  body: string
+}
