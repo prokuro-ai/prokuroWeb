@@ -1,0 +1,16 @@
+{
+  "name": "Prokuro",
+  "short_name": "Prokuro",
+  "description": "AI procurement analyst for BOM risk",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070b11",
+  "theme_color": "#070b11",
+  "icons": [
+    {
+      "src": "/brand/prokuro-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

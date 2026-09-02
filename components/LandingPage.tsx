@@ -5,7 +5,13 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { Globe2, ShieldCheck, Landmark, ArrowRight, Check } from 'lucide-react'
 import { MarketingAuthActions } from '@/components/UserMenu'
 import ProkuroBrandLink from '@/components/ProkuroBrandLink'
-import { BOOK_DEMO_LABEL, SCHEDULE_DEMO_PATH, APP_SIGNUP_URL, APP_PRICING_URL } from '@/lib/sales'
+import {
+  BOOK_DEMO_LABEL,
+  SCHEDULE_DEMO_PATH,
+  APP_SIGNUP_URL,
+  APP_PRICING_URL,
+  PRODUCT_CTA_ENABLED,
+} from '@/lib/sales'
 import { PRIVACY_PATH, TERMS_PATH } from '@/lib/legal'
 import { PUBLIC_PLANS } from '@/lib/publicPlans'
 import { SELF_SERVE_ENABLED } from '@/lib/access'
@@ -357,16 +363,25 @@ export default function LandingPage() {
                   Prokuro reads your BOM, cross-references lifecycle, availability, and tariff exposure, then hands you a decision, not a dashboard. Every at-risk line gets a recommended alternate, confidence score, and what to do this week.
                 </p>
                 <div className="hero__cta">
-                  <a
-                    className="btn btn--primary"
-                    href={SELF_SERVE_ENABLED ? '/signup' : APP_SIGNUP_URL}
-                  >
-                    Try Prokuro
-                    <ArrowRight size={14} aria-hidden="true" />
-                  </a>
-                  <a className="btn btn--ghost" href={SCHEDULE_DEMO_PATH}>
-                    {BOOK_DEMO_LABEL}
-                  </a>
+                  {PRODUCT_CTA_ENABLED ? (
+                    <>
+                      <a
+                        className="btn btn--primary"
+                        href={SELF_SERVE_ENABLED ? '/signup' : APP_SIGNUP_URL}
+                      >
+                        Try Prokuro
+                        <ArrowRight size={14} aria-hidden="true" />
+                      </a>
+                      <a className="btn btn--ghost" href={SCHEDULE_DEMO_PATH}>
+                        {BOOK_DEMO_LABEL}
+                      </a>
+                    </>
+                  ) : (
+                    <a className="btn btn--primary" href={SCHEDULE_DEMO_PATH}>
+                      {BOOK_DEMO_LABEL}
+                      <ArrowRight size={14} aria-hidden="true" />
+                    </a>
+                  )}
                 </div>
               </motion.div>
             </div>
@@ -741,7 +756,7 @@ export default function LandingPage() {
                               : `/pricing`
                       }
                     >
-                      {plan.cta}
+                      {PRODUCT_CTA_ENABLED || plan.salesLed ? plan.cta : BOOK_DEMO_LABEL}
                       <ArrowRight size={14} aria-hidden="true" />
                     </a>
                   </article>

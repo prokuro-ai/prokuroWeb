@@ -8,7 +8,14 @@ import { startCheckout } from '@/lib/api'
 import { PUBLIC_PLANS } from '@/lib/publicPlans'
 import { ProkuroWordmark } from '@/components/brand/ProkuroLogo'
 import EmbeddedCheckoutDialog from '@/components/billing/EmbeddedCheckoutDialog'
-import { SCHEDULE_DEMO_PATH, APP_PRICING_URL, APP_SIGNUP_URL, APP_LOGIN_URL } from '@/lib/sales'
+import {
+  SCHEDULE_DEMO_PATH,
+  APP_PRICING_URL,
+  APP_SIGNUP_URL,
+  APP_LOGIN_URL,
+  BOOK_DEMO_LABEL,
+  PRODUCT_CTA_ENABLED,
+} from '@/lib/sales'
 import { SELF_SERVE_ENABLED } from '@/lib/access'
 
 const BLUE = '#0062ff'
@@ -74,11 +81,11 @@ export default function PricingPage() {
               <Link href={user ? '/account' : '/login'} className="font-semibold text-[#0062ff]">
                 {user ? 'Account' : 'Sign in'}
               </Link>
-            ) : (
+            ) : PRODUCT_CTA_ENABLED ? (
               <a href={APP_LOGIN_URL} className="font-semibold text-[#0062ff]">
                 Sign in
               </a>
-            )}
+            ) : null}
           </div>
         </div>
       </header>
@@ -159,7 +166,11 @@ export default function PricingPage() {
                 }`}
                 style={plan.highlighted ? { background: BLUE } : undefined}
               >
-                {busy === plan.id ? 'Opening…' : plan.cta}
+                {busy === plan.id
+                  ? 'Opening…'
+                  : PRODUCT_CTA_ENABLED || plan.salesLed
+                    ? plan.cta
+                    : BOOK_DEMO_LABEL}
               </button>
             </div>
           ))}

@@ -4,6 +4,7 @@ import { Link } from '@/lib/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import { SELF_SERVE_ENABLED } from '@/lib/access'
 import {
+  APP_LINKS_ENABLED,
   APP_LOGIN_URL,
   APP_SIGNUP_URL,
   BOOK_DEMO_LABEL,
@@ -29,7 +30,17 @@ export function MarketingAuthActions() {
     )
   }
 
-  // GitHub Pages: send self-serve traffic to the Amplify product origin.
+  // GitHub Pages: demo booking only, unless a branded product origin is configured.
+  if (!APP_LINKS_ENABLED) {
+    return (
+      <div className="nav-actions">
+        <Link className="btn btn--primary btn--nav" href={SCHEDULE_DEMO_PATH}>
+          {BOOK_DEMO_LABEL}
+        </Link>
+      </div>
+    )
+  }
+
   return (
     <div className="nav-actions">
       <a href={APP_LOGIN_URL} className="nav-text-link">
