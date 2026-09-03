@@ -139,7 +139,7 @@ async function postFile(
       form.append(key, value)
     }
   }
-  return fetch(endpoint, { method: 'POST', body: form })
+  return fetch(endpoint, { method: 'POST', headers: await authHeaders(), body: form })
 }
 
 function isParseResult(body: unknown): body is ParseResult {

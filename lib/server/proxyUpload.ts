@@ -10,6 +10,11 @@ export async function proxyFileUpload(req: NextRequest, upstreamPath: string): P
     )
   }
 
+  const auth = req.headers.get('authorization')
+  if (!auth?.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const form = await req.formData()
   const file = form.get('file')
   if (!file || typeof file === 'string') {
@@ -27,6 +32,7 @@ export async function proxyFileUpload(req: NextRequest, upstreamPath: string): P
   try {
     const res = await fetch(targetUrl, {
       method: 'POST',
+      headers: { Authorization: auth },
       body: outbound,
     })
     const body = await res.text()

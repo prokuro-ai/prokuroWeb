@@ -51,7 +51,12 @@ function moveBack(from, to) {
 }
 
 function stash() {
-  rmSync(stashRoot, { recursive: true, force: true })
+  // An existing stash means a previous run was interrupted and it holds the only
+  // copy of these paths — put them back before stashing again.
+  if (existsSync(stashRoot)) {
+    console.log('[build-pages] Recovering paths from an interrupted run …')
+    restore()
+  }
   mkdirSync(stashRoot, { recursive: true })
   for (const { from, to } of MOVES) {
     moveAway(from, to)
@@ -63,6 +68,13 @@ function restore() {
     moveBack(from, to)
   }
   rmSync(stashRoot, { recursive: true, force: true })
+}
+
+let restored = false
+function restoreOnce() {
+  if (restored) return
+  restored = true
+  restore()
 }
 
 function build() {
@@ -103,6 +115,14 @@ function finalizeOut() {
   )
 }
 
+for (const signal of ['SIGINT', 'SIGTERM']) {
+  process.on(signal, () => {
+    console.log(`\n[build-pages] ${signal} received — restoring stashed paths …`)
+    restoreOnce()
+    process.exit(1)
+  })
+}
+
 try {
   console.log('[build-pages] Stashing server/product routes …')
   stash()
@@ -115,5 +135,5 @@ try {
   process.exitCode = 1
 } finally {
   console.log('[build-pages] Restoring stashed paths …')
-  restore()
+  restoreOnce()
 }
