@@ -6,7 +6,8 @@ import { DeleteBomButton } from '@/components/DeleteBomButton'
 import BomBulkUploadModal from '@/components/BomBulkUploadModal'
 import EmptyState from '@/components/app/EmptyState'
 import PageHeader from '@/components/app/PageHeader'
-import { appInput, appPage, appPrimaryBtn, appSection, appSheet } from '@/components/app/chrome'
+import PageLoading from '@/components/app/PageLoading'
+import { appColHead, appInput, appPage, appPrimaryBtn, appSection, appSheet, bomTableCols } from '@/components/app/chrome'
 import { useBoms } from '@/hooks/use-boms'
 import { useTeam } from '@/hooks/use-team'
 import { listBoms } from '@/lib/api'
@@ -140,11 +141,7 @@ export default function BomsPage() {
           ) : null}
 
           {loading ? (
-            <div className={appSheet}>
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="h-12 animate-pulse border-b border-mk-line last:border-b-0" />
-              ))}
-            </div>
+            <PageLoading />
           ) : error ? (
             <EmptyState
               title="Could not load BOMs"
@@ -173,13 +170,13 @@ export default function BomsPage() {
             <EmptyState title="Nothing matches this filter." />
           ) : (
             <div className={appSheet}>
-              <div className="hidden grid-cols-[minmax(0,1.4fr)_7rem_6rem_7rem_8rem_auto] gap-3 border-b border-mk-line px-5 py-2.5 mk:grid">
-                <span className="mk-eyebrow">BOM</span>
-                <span className="mk-eyebrow text-right">Parts</span>
-                <span className="mk-eyebrow text-right">Need a call</span>
-                <span className="mk-eyebrow">Status</span>
-                <span className="mk-eyebrow">Uploaded</span>
-                <span className="mk-eyebrow text-right"> </span>
+              <div className={`hidden grid-cols-1 gap-3 border-b border-mk-line px-5 py-2.5 mk:grid ${bomTableCols}`}>
+                <span className={appColHead}>BOM</span>
+                <span className={`${appColHead} text-right`}>Parts</span>
+                <span className={`${appColHead} text-right`}>Need a call</span>
+                <span className={appColHead}>Status</span>
+                <span className={appColHead}>Uploaded</span>
+                <span className={appColHead} />
               </div>
               {filtered.map((bom) => {
                 const band = bomRiskBand(bom)
@@ -187,7 +184,7 @@ export default function BomsPage() {
                 return (
                   <div
                     key={bom.id}
-                    className="relative grid grid-cols-1 items-center gap-2 border-b border-mk-line px-4 py-3 last:border-b-0 mk:grid-cols-[minmax(0,1.4fr)_7rem_6rem_7rem_8rem_auto] mk:gap-3 mk:px-5"
+                    className={`relative grid grid-cols-1 items-center gap-2 border-b border-mk-line px-4 py-3 last:border-b-0 mk:gap-3 mk:px-5 ${bomTableCols}`}
                   >
                     {rail ? (
                       <span className="absolute inset-y-0 left-0 w-0.5" style={{ background: rail }} aria-hidden />

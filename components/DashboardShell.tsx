@@ -8,6 +8,8 @@ import { ProkuroWordmark } from '@/components/brand/ProkuroLogo'
 import { displayNameForUser, initialsForUser, signOut } from '@/lib/auth'
 import { LogOut, Menu, X } from 'lucide-react'
 import { useMkDesktop } from '@/components/app/media'
+import { useSettings } from '@/components/settings/SettingsContext'
+import SettingsModal from '@/components/settings/SettingsModal'
 
 type NavItem = {
   href: string
@@ -51,6 +53,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const [profileOpen, setProfileOpen] = useState(false)
   const profileRef = useRef<HTMLDivElement>(null)
   const desktop = useMkDesktop()
+  const { open: settingsOpen, pane, openSettings, setPane, closeSettings } = useSettings()
 
   useEffect(() => {
     if (authLoading) return
@@ -125,13 +128,24 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       <button
         type="button"
         onClick={() => {
-          router.push('/account')
+          openSettings('profile')
           setProfileOpen(false)
         }}
         className="flex w-full items-center px-4 py-2.5 text-left text-[13px] font-medium text-mk-ink hover:bg-mk-raised"
       >
-        Account
+        Profile
       </button>
+      <button
+        type="button"
+        onClick={() => {
+          openSettings('team')
+          setProfileOpen(false)
+        }}
+        className="flex w-full items-center px-4 py-2.5 text-left text-[13px] font-medium text-mk-ink hover:bg-mk-raised"
+      >
+        Team
+      </button>
+      <div className="mx-3 my-1 h-px bg-mk-line" />
       <button
         type="button"
         onClick={handleSignOut}
@@ -172,7 +186,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             type="button"
             onClick={() => setProfileOpen((open) => !open)}
             className={`flex w-full items-center gap-3 rounded-[8px] px-3 py-2.5 text-left transition-colors ${
-              profileOpen || pathname === '/account' ? 'bg-mk-canvas' : 'hover:bg-mk-canvas/80'
+              profileOpen || settingsOpen ? 'bg-mk-canvas' : 'hover:bg-mk-canvas/80'
             }`}
             aria-label="Account menu"
           >
@@ -199,6 +213,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         </div>
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
       </div>
+      <SettingsModal open={settingsOpen} pane={pane} onPaneChange={setPane} onClose={closeSettings} />
     </div>
   )
 }

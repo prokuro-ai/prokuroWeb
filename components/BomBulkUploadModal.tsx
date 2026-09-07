@@ -410,7 +410,7 @@ export default function BomBulkUploadModal({
             </ul>
           ) : null}
 
-          <ModalNotice tone="info">
+          <ModalNotice tone="info" className="mt-5 mb-0">
             Each file gets a column-mapping step before analysis. Needs at least an{' '}
             <strong>MPN</strong> or <strong>Part Number</strong> column mapped.
           </ModalNotice>

@@ -161,7 +161,7 @@ export default function BillingPage() {
       <PageHeader
         title="Your plan"
         description="What you can upload, how often BOMs refresh, and who can join."
-        actions={
+          actions={
           <>
             <button
               type="button"
@@ -183,24 +183,6 @@ export default function BillingPage() {
               }
             >
               {billingBusy ? 'Opening…' : 'Manage billing'}
-            </button>
-            <button
-              type="button"
-              disabled={billingBusy}
-              onClick={() => {
-                setBillingBusy(true)
-                setBillingError(null)
-                loadBilling()
-                  .catch(() => {
-                    setBilling(null)
-                    setBillingError('Could not load billing status')
-                  })
-                  .finally(() => setBillingBusy(false))
-              }}
-              className={appGhostBtn}
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              Refresh
             </button>
           </>
         }
@@ -256,11 +238,32 @@ export default function BillingPage() {
         </section>
 
         <section>
-          <div className="mb-4">
-            <h2 className="mk-app-heading text-mk-ink">This month</h2>
-            <p className="mt-0.5 text-[13px] text-mk-ink-muted">
-              Uploads, people on the account, and buys. Counters reset on the calendar month.
-            </p>
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="mk-app-heading text-mk-ink">This month</h2>
+              <p className="mt-0.5 text-[13px] text-mk-ink-muted">
+                Uploads, people on the account, and buys. Counters reset on the calendar month.
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={billingBusy}
+              onClick={() => {
+                setBillingBusy(true)
+                setBillingError(null)
+                loadBilling()
+                  .catch(() => {
+                    setBilling(null)
+                    setBillingError('Could not load billing status')
+                  })
+                  .finally(() => setBillingBusy(false))
+              }}
+              className={appGhostBtn}
+              aria-label="Refresh plan usage"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Refresh
+            </button>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <UsageMeter

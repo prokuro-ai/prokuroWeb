@@ -3,10 +3,10 @@
 export const appRadius = 'rounded-[8px]'
 
 export const appPrimaryBtn =
-  'inline-flex items-center justify-center gap-1.5 rounded-[8px] bg-mk-accent px-4 py-2.5 text-[13px] font-medium text-mk-on-accent transition-colors hover:bg-mk-accent-hover disabled:cursor-not-allowed disabled:opacity-50'
+  'mk-btn mk-btn--primary disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-mk-accent'
 
 export const appGhostBtn =
-  'inline-flex items-center justify-center gap-1.5 rounded-[8px] border border-mk-line bg-mk-canvas px-4 py-2.5 text-[13px] font-medium text-mk-ink transition-colors hover:border-mk-line-strong hover:bg-mk-raised disabled:cursor-not-allowed disabled:opacity-50'
+  'mk-btn mk-btn--ghost disabled:cursor-not-allowed disabled:opacity-50'
 
 export const appTextBtn =
   'inline-flex items-center gap-1.5 text-[13px] font-medium text-mk-accent transition-colors hover:text-mk-accent-hover disabled:opacity-50'
@@ -29,3 +29,8 @@ export const appSection = 'mk-container max-w-[1180px] py-5 mk:py-8'
 
 export const appSheet =
   'overflow-hidden rounded-[8px] bg-mk-canvas shadow-[var(--mk-shadow)]'
+
+export const appColHead = 'text-[12px] font-medium text-mk-ink-subtle'
+
+export const bomTableCols =
+  'mk:grid-cols-[minmax(0,1.8fr)_4.75rem_7rem_5.75rem_7.25rem_3.75rem]'

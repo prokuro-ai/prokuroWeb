@@ -81,9 +81,11 @@ export function AppModal({
 export function ModalNotice({
   tone,
   children,
+  className = '',
 }: {
   tone: 'info' | 'warn' | 'error'
   children: ReactNode
+  className?: string
 }) {
   const styles =
     tone === 'error'
@@ -92,5 +94,9 @@ export function ModalNotice({
         ? 'border-mk-amber/30 bg-mk-amber/10 text-mk-amber'
         : 'border-mk-line bg-mk-raised text-mk-ink-muted'
 
-  return <div className={`mb-4 rounded-[8px] border px-4 py-3 text-[13px] leading-relaxed ${styles}`}>{children}</div>
+  return (
+    <div className={`mb-4 rounded-[8px] border px-4 py-3 text-[13px] leading-relaxed ${styles} ${className}`}>
+      {children}
+    </div>
+  )
 }

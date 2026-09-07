@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import DecisionRow from '@/components/app/DecisionRow'
 import EmptyState from '@/components/app/EmptyState'
 import PageHeader from '@/components/app/PageHeader'
+import PageLoading from '@/components/app/PageLoading'
 import { appPage, appPrimaryBtn, appSection, appSheet } from '@/components/app/chrome'
 import { useBoms } from '@/hooks/use-boms'
 import { useFlaggedLines } from '@/hooks/use-flagged-lines'
@@ -85,11 +86,7 @@ function OverviewView() {
 
       <div className={appSection}>
         {loading ? (
-          <div className={`${appSheet} space-y-0`}>
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="h-24 animate-pulse border-b border-mk-line last:border-b-0" />
-            ))}
-          </div>
+          <PageLoading />
         ) : error ? (
           <EmptyState
             title="Could not load this week’s calls"
