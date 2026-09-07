@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowRight, CheckCircle, FileText, Loader2, XCircle } from 'lucide-react'
 import { AppModal, ModalNotice } from '@/components/AppModal'
+import { appPrimaryBtn } from '@/components/app/chrome'
 import BomColumnMappingStep from '@/components/BomColumnMappingStep'
 import { analyzeFile, getBillingStatus, parseFile, saveBom } from '@/lib/api'
 import {
@@ -290,11 +291,7 @@ export default function BomBulkUploadModal({
         type="button"
         onClick={() => void handleContinue()}
         disabled={items.length === 0 || parsing}
-        className={`flex w-full items-center justify-center gap-2 py-2.5 text-[13px] font-semibold transition-colors ${
-          items.length > 0 && !parsing
-            ? 'bg-[#0062ff] text-white hover:bg-blue-700'
-            : 'cursor-not-allowed bg-slate-200 text-slate-400'
-        }`}
+        className={`${appPrimaryBtn} w-full`}
       >
         {parsing ? (
           <>
@@ -308,11 +305,7 @@ export default function BomBulkUploadModal({
         )}
       </button>
     ) : step === 'complete' ? (
-      <button
-        type="button"
-        onClick={handleClose}
-        className="w-full bg-[#0062ff] py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-blue-700"
-      >
+      <button type="button" onClick={handleClose} className={`${appPrimaryBtn} w-full`}>
         Done
       </button>
     ) : undefined
@@ -331,7 +324,7 @@ export default function BomBulkUploadModal({
       {pickError && (step === 'select' || step === 'mapping') ? (
         <ModalNotice tone="warn">
           {pickError}{' '}
-          <a href="/billing?plans=1" className="font-semibold text-[#0062ff] underline">
+          <a href="/billing?plans=1" className="font-semibold text-mk-accent underline">
             Compare plans
           </a>
         </ModalNotice>
@@ -359,10 +352,10 @@ export default function BomBulkUploadModal({
               setDragOver(false)
               addFiles(e.dataTransfer.files)
             }}
-            className={`flex flex-col items-center justify-center border-2 border-dashed px-8 py-10 text-center transition-colors ${
+            className={`flex flex-col items-center justify-center rounded-[8px] border border-dashed px-8 py-10 text-center transition-colors ${
               dragOver
-                ? 'border-[#0062ff] bg-[#0062ff]/5'
-                : 'border-slate-200 bg-[#f4f6f9] hover:border-[#0062ff]'
+                ? 'border-mk-accent bg-mk-accent/5'
+                : 'border-mk-line-strong bg-mk-raised hover:border-mk-accent'
             }`}
           >
             <input
@@ -376,14 +369,14 @@ export default function BomBulkUploadModal({
                 e.target.value = ''
               }}
             />
-            <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-slate-400">Drop files</p>
-            <p className="mt-2 text-[15px] font-medium text-slate-900">Drop your BOMs here</p>
-            <p className="mt-1 text-[13px] text-slate-500">or click to browse · one or many files</p>
+            <p className="mk-eyebrow">Drop files</p>
+            <p className="mk-app-heading mt-2 text-mk-ink">Drop your BOMs here</p>
+            <p className="mt-1 text-[13px] text-mk-ink-muted">or click to browse · one or many files</p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               {ACCEPTED.map((ext) => (
                 <span
                   key={ext}
-                  className="border border-slate-200 bg-white px-2.5 py-1 font-mono text-[11px] text-slate-500"
+                  className="rounded-[8px] border border-mk-line bg-mk-canvas px-2.5 py-1 font-mk-mono text-[11px] text-mk-ink-subtle"
                 >
                   {ext}
                 </span>
@@ -396,19 +389,19 @@ export default function BomBulkUploadModal({
               {items.map((item) => (
                 <li
                   key={item.key}
-                  className="flex items-center gap-3 border border-slate-200 bg-white px-4 py-3"
+                  className="flex items-center gap-3 rounded-[8px] bg-mk-raised px-4 py-3"
                 >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center border border-slate-200 bg-[#f4f6f9] text-slate-500">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-mk-canvas text-mk-ink-subtle">
                     <FileText className="h-4 w-4" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-medium text-slate-900">{item.file.name}</p>
-                    <p className="font-mono text-[11px] text-slate-400">{formatFileSize(item.file.size)}</p>
+                    <p className="truncate text-[13px] font-medium text-mk-ink">{item.file.name}</p>
+                    <p className="mk-data text-[11px] text-mk-ink-subtle">{formatFileSize(item.file.size)}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => removeItem(item.key)}
-                    className="shrink-0 px-2 py-1 font-mono text-[11px] uppercase tracking-[0.06em] text-slate-400 transition-colors hover:text-slate-700"
+                    className="shrink-0 px-2 py-1 text-[12px] font-medium text-mk-ink-subtle transition-colors hover:text-mk-ink"
                   >
                     Remove
                   </button>
@@ -427,18 +420,18 @@ export default function BomBulkUploadModal({
       {step === 'mapping' && parseResult ? (
         <>
           {items.length > 1 ? (
-            <ul className="mb-4 space-y-1 border border-slate-200 bg-[#f4f6f9] p-2">
+            <ul className="mb-4 space-y-1 rounded-[8px] bg-mk-raised p-2">
               {items.map((item, index) => (
                 <li
                   key={item.key}
-                  className={`flex items-center gap-2 px-2 py-1.5 font-mono text-[11px] ${
+                  className={`flex items-center gap-2 rounded-[6px] px-2 py-1.5 font-mk-mono text-[11px] ${
                     index === fileIndex
-                      ? 'bg-white text-[#0062ff]'
+                      ? 'bg-mk-canvas text-mk-accent'
                       : item.status === 'done'
-                        ? 'text-emerald-700'
+                        ? 'text-mk-green'
                         : item.status === 'failed'
-                          ? 'text-red-600'
-                          : 'text-slate-400'
+                          ? 'text-mk-red'
+                          : 'text-mk-ink-subtle'
                   }`}
                 >
                   <StatusIcon status={item.status} active={index === fileIndex} compact />
@@ -470,17 +463,17 @@ export default function BomBulkUploadModal({
           {items.map((item) => (
             <li
               key={item.key}
-              className={`flex items-center gap-3 border px-4 py-3 ${
-                item.status === 'failed' ? 'border-red-200 bg-red-50' : 'border-emerald-200 bg-emerald-50/60'
+              className={`flex items-center gap-3 rounded-[8px] px-4 py-3 ${
+                item.status === 'failed' ? 'bg-mk-red/5' : 'bg-mk-green/5'
               }`}
             >
               <StatusIcon status={item.status === 'failed' ? 'failed' : 'done'} active={false} />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-medium text-slate-900">
+                <p className="truncate text-[13px] font-medium text-mk-ink">
                   {item.saved?.name ?? item.file.name}
                 </p>
                 {item.status === 'done' && item.saved ? (
-                  <p className="font-mono text-[11px] text-emerald-700">
+                  <p className="mk-data text-[11px] text-mk-green">
                     {item.saved.lineCount.toLocaleString()} lines ·{' '}
                     {item.saved.atRiskCount > 0
                       ? `${item.saved.atRiskCount} at-risk`
@@ -488,7 +481,7 @@ export default function BomBulkUploadModal({
                   </p>
                 ) : null}
                 {item.status === 'failed' && item.error ? (
-                  <p className="text-[12px] text-red-600">{item.error}</p>
+                  <p className="text-[12px] text-mk-red">{item.error}</p>
                 ) : null}
               </div>
             </li>
@@ -511,13 +504,13 @@ function StatusIcon({
   const size = compact ? 'h-3.5 w-3.5' : 'h-5 w-5'
 
   if (status === 'done') {
-    return <CheckCircle className={`${size} shrink-0 text-emerald-500`} />
+    return <CheckCircle className={`${size} shrink-0 text-mk-green`} />
   }
   if (status === 'failed') {
-    return <XCircle className={`${size} shrink-0 text-red-500`} />
+    return <XCircle className={`${size} shrink-0 text-mk-red`} />
   }
   if (status === 'processing' || status === 'mapping' || active) {
-    return <Loader2 className={`${size} shrink-0 animate-spin text-[#0062ff]`} />
+    return <Loader2 className={`${size} shrink-0 animate-spin text-mk-accent`} />
   }
-  return <div className={`${size} shrink-0 border-2 border-slate-200`} />
+  return <div className={`${size} shrink-0 rounded-full border-2 border-mk-line`} />
 }

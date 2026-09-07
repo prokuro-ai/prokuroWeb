@@ -2,26 +2,23 @@
 
 import { Check } from 'lucide-react'
 import { AppModal, ModalNotice } from '@/components/AppModal'
+import { appGhostBtn, appPrimaryBtn } from '@/components/app/chrome'
 import { PUBLIC_PLANS, type PublicPlan } from '@/lib/publicPlans'
 import { PLAN_LIMITS, planLabel, type PlanId } from '@/lib/planLimits'
-import { SCHEDULE_DEMO_PATH } from '@/lib/sales'
 import { bedrockLabel, refreshLabel } from '@/lib/billing-display'
-
-const BLUE = '#0062ff'
-const NAVY = '#0f1b2d'
 
 const COMPARE_ROWS: { label: string; value: (plan: PlanId) => string }[] = [
   { label: 'People who can join', value: (plan) => String(PLAN_LIMITS[plan].seats) },
-  { label: 'Boards on file', value: (plan) => String(PLAN_LIMITS[plan].activeBoms) },
-  { label: 'Max parts / board', value: (plan) => PLAN_LIMITS[plan].maxLinesPerBom.toLocaleString() },
+  { label: 'BOMs on file', value: (plan) => String(PLAN_LIMITS[plan].activeBoms) },
+  { label: 'Max parts / BOM', value: (plan) => PLAN_LIMITS[plan].maxLinesPerBom.toLocaleString() },
   { label: 'Parts screened / month', value: (plan) => PLAN_LIMITS[plan].linesPerMonth.toLocaleString() },
-  { label: 'Board uploads / month', value: (plan) => String(PLAN_LIMITS[plan].analysesPerMonth) },
+  { label: 'BOM uploads / month', value: (plan) => String(PLAN_LIMITS[plan].analysesPerMonth) },
   {
     label: 'Quotes / month',
     value: (plan) => String(PLAN_LIMITS[plan].purchasingActionsPerMonth),
   },
   { label: 'Orders / month', value: (plan) => String(PLAN_LIMITS[plan].ordersPerMonth) },
-  { label: 'Board refresh', value: (plan) => refreshLabel(PLAN_LIMITS[plan].refresh) },
+  { label: 'BOM refresh', value: (plan) => refreshLabel(PLAN_LIMITS[plan].refresh) },
   { label: 'Line briefs', value: (plan) => bedrockLabel(PLAN_LIMITS[plan].bedrock) },
 ]
 
@@ -48,47 +45,43 @@ export function PricingModal({
       onClose={onClose}
       eyebrow="Plans"
       title="Choose the capacity you need"
-      subtitle="Checkout is live through Stripe. The capacity table below is the published plan catalog — your actual meters stay on the billing page."
+      subtitle="Checkout is live through Stripe. The table below is the published catalog — live meters stay on this page."
       maxWidth="2xl"
       closeDisabled={busy}
     >
       {error ? <ModalNotice tone="error">{error}</ModalNotice> : null}
 
-      <div className="grid gap-px bg-slate-200 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {PUBLIC_PLANS.map((plan) => {
           const current = plan.id === currentPlan
           return (
             <article
               key={plan.id}
-              className={`flex flex-col bg-white p-5 ${
-                plan.highlighted ? 'ring-1 ring-inset ring-[#0062ff]' : ''
+              className={`flex flex-col rounded-[8px] bg-mk-raised p-5 ${
+                plan.highlighted ? 'ring-1 ring-inset ring-mk-accent' : ''
               }`}
             >
               <div className="flex items-center justify-between gap-2">
-                <p className="text-[13px] font-semibold" style={{ color: NAVY }}>
-                  {plan.name}
-                </p>
+                <p className="text-[13px] font-semibold text-mk-ink">{plan.name}</p>
                 {current ? (
-                  <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#0062ff]">
-                    Current
-                  </span>
+                  <span className="mk-eyebrow text-mk-accent">Current</span>
                 ) : plan.highlighted ? (
-                  <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#0062ff]">
-                    Popular
-                  </span>
+                  <span className="mk-eyebrow text-mk-accent">Popular</span>
                 ) : null}
               </div>
-              <p className="mt-3 font-mono text-[28px] leading-none tracking-tight" style={{ color: NAVY }}>
+              <p className="mk-app-title mt-3 text-mk-ink">
                 {plan.price}
                 {plan.period ? (
-                  <span className="text-[12px] text-slate-400">{plan.period}</span>
+                  <span className="ml-1 font-mk-sans text-[13px] font-normal tracking-normal text-mk-ink-subtle">
+                    {plan.period}
+                  </span>
                 ) : null}
               </p>
-              <p className="mt-3 text-[12px] leading-5 text-slate-500">{plan.blurb}</p>
+              <p className="mt-3 text-[12px] leading-5 text-mk-ink-muted">{plan.blurb}</p>
               <ul className="mt-4 flex-1 space-y-2">
                 {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2 text-[12px] text-slate-600">
-                    <Check size={13} className="mt-0.5 shrink-0 text-[#0062ff]" aria-hidden />
+                  <li key={feature} className="flex items-start gap-2 text-[12px] text-mk-ink-muted">
+                    <Check size={13} className="mt-0.5 shrink-0 text-mk-accent" aria-hidden />
                     <span>{feature}</span>
                   </li>
                 ))}
@@ -97,14 +90,7 @@ export function PricingModal({
                 type="button"
                 disabled={busy || current}
                 onClick={() => onSelect(plan)}
-                className={`mt-5 w-full px-3 py-2 text-[12px] font-semibold disabled:opacity-50 ${
-                  current
-                    ? 'border border-slate-200 bg-slate-50 text-slate-400'
-                    : plan.highlighted
-                      ? 'text-white'
-                      : 'border border-slate-200 text-slate-800 hover:bg-slate-50'
-                }`}
-                style={current || !plan.highlighted ? undefined : { background: BLUE }}
+                className={`mt-5 w-full ${current ? appGhostBtn : plan.highlighted ? appPrimaryBtn : appGhostBtn}`}
               >
                 {current ? 'Current plan' : busy ? 'Opening…' : plan.cta}
               </button>
@@ -113,42 +99,35 @@ export function PricingModal({
         })}
       </div>
 
-      <p className="mt-6 text-[11px] text-slate-400">
+      <p className="mt-6 text-[11px] text-mk-ink-subtle">
         Comparison numbers are the published plan catalog, not this account&apos;s live usage.
       </p>
-      <div className="mt-2 overflow-x-auto border border-slate-200">
+      <div className="mt-2 overflow-x-auto rounded-[8px] bg-mk-raised">
         <table className="w-full min-w-[640px] border-collapse text-left text-[12px]">
-          <thead className="bg-[#f4f6f9]">
-            <tr>
-              <th className="px-3 py-2.5 font-medium text-slate-500">Capacity</th>
+          <thead>
+            <tr className="border-b border-mk-line">
+              <th className="px-4 py-3 font-medium text-mk-ink-subtle">Capacity</th>
               {(['free', 'growth', 'scale'] as const).map((id) => (
-                <th key={id} className="px-3 py-2.5 font-semibold" style={{ color: NAVY }}>
+                <th key={id} className="px-4 py-3 font-semibold text-mk-ink">
                   {planLabel(id)}
                   {id === currentPlan ? (
-                    <span className="ml-2 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[#0062ff]">
-                      You
-                    </span>
+                    <span className="ml-2 mk-eyebrow text-mk-accent">You</span>
                   ) : null}
                 </th>
               ))}
-              <th className="px-3 py-2.5 font-semibold" style={{ color: NAVY }}>
-                Enterprise
-              </th>
+              <th className="px-4 py-3 font-semibold text-mk-ink">Enterprise</th>
             </tr>
           </thead>
           <tbody>
             {COMPARE_ROWS.map((row) => (
-              <tr key={row.label} className="border-t border-slate-100">
-                <td className="px-3 py-2 text-slate-500">{row.label}</td>
+              <tr key={row.label} className="border-t border-mk-line">
+                <td className="px-4 py-2.5 text-mk-ink-subtle">{row.label}</td>
                 {(['free', 'growth', 'scale'] as const).map((id) => (
-                  <td
-                    key={id}
-                    className="px-3 py-2 font-mono tabular-nums text-slate-800"
-                  >
+                  <td key={id} className="px-4 py-2.5 font-mk-mono tabular-nums text-mk-ink">
                     {row.value(id)}
                   </td>
                 ))}
-                <td className="px-3 py-2 text-slate-500">Custom</td>
+                <td className="px-4 py-2.5 text-mk-ink-subtle">Custom</td>
               </tr>
             ))}
           </tbody>

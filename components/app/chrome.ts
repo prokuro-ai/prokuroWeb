@@ -11,6 +11,9 @@ export const appGhostBtn =
 export const appTextBtn =
   'inline-flex items-center gap-1.5 text-[13px] font-medium text-mk-accent transition-colors hover:text-mk-accent-hover disabled:opacity-50'
 
+export const appDangerBtn =
+  'inline-flex items-center justify-center gap-1.5 rounded-[8px] bg-mk-red px-4 py-2.5 text-[13px] font-medium text-white transition-colors hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50'
+
 export const appInput =
   'w-full border-0 border-b border-mk-line-strong bg-transparent py-2 text-[14px] text-mk-ink placeholder:text-mk-ink-subtle focus:border-mk-accent focus:outline-none'
 

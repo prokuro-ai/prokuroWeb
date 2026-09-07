@@ -1,6 +1,7 @@
 'use client'
 
 import type { ColumnMapping, ParseResult } from '@/lib/types'
+import { appField, appGhostBtn, appPrimaryBtn } from '@/components/app/chrome'
 
 type BomColumnMappingStepProps = {
   file: File | null
@@ -36,29 +37,29 @@ export default function BomColumnMappingStep({
   const hasMpn = mapping.some((col) => col.canonical === 'mpn' && col.detectedFrom)
 
   return (
-    <div className="w-full border border-slate-200 bg-white">
-      <div className="border-b border-slate-200 bg-[#f4f6f9] px-5 py-3">
-        <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-slate-400">Preview</p>
-        <p className="mt-1 text-[13px] text-slate-600">
+    <div className="w-full">
+      <div className="mb-4">
+        <p className="mk-eyebrow">Preview</p>
+        <p className="mt-1 text-[13px] text-mk-ink-muted">
           File {fileIndex + 1} of {fileCount}: {file?.name ?? parseResult.source_filename}
         </p>
       </div>
 
-      <div className="p-5">
+      <div>
         {headers.length > 0 ? (
-          <div className="relative mb-5 overflow-x-auto border border-slate-200">
+          <div className="relative mb-5 overflow-x-auto rounded-[8px] bg-mk-raised">
             {previewLoading ? (
-              <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 font-mono text-[11px] text-slate-500">
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-mk-canvas/80 font-mk-mono text-[11px] text-mk-ink-subtle">
                 Updating preview…
               </div>
             ) : null}
             <table className="w-full text-xs">
               <thead>
-                <tr className="bg-[#f4f6f9]">
+                <tr>
                   {headers.map((header) => (
                     <th
                       key={header}
-                      className="border-b border-r border-slate-200 px-3 py-2 text-left font-mono text-[10px] uppercase tracking-[0.06em] text-slate-500 last:border-r-0"
+                      className="border-b border-mk-line px-3 py-2 text-left font-mk-mono text-[10px] uppercase tracking-[0.06em] text-mk-ink-subtle"
                     >
                       {header}
                     </th>
@@ -71,7 +72,7 @@ export default function BomColumnMappingStep({
                     {row.map((cell, cellIdx) => (
                       <td
                         key={cellIdx}
-                        className={`border-r border-slate-200 px-3 py-2 text-slate-600 last:border-r-0 ${rowIdx < preview.length - 1 ? 'border-b' : ''}`}
+                        className={`px-3 py-2 text-mk-ink-muted ${rowIdx < preview.length - 1 ? 'border-b border-mk-line' : ''}`}
                       >
                         {cell}
                       </td>
@@ -87,25 +88,25 @@ export default function BomColumnMappingStep({
           {mapping.map((col, idx) => (
             <div
               key={col.canonical}
-              className={`flex items-center gap-3 border px-4 py-3 ${
-                col.confirmed ? 'border-slate-200 bg-white' : 'border-amber-300 bg-amber-50'
+              className={`flex items-center gap-3 rounded-[8px] px-4 py-3 ${
+                col.confirmed ? 'bg-mk-raised' : 'bg-mk-amber/10'
               }`}
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-[13px] font-medium text-slate-900">{col.label}</span>
+                  <span className="text-[13px] font-medium text-mk-ink">{col.label}</span>
                   {!col.confirmed ? (
-                    <span className="bg-amber-100 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-amber-800">
+                    <span className="rounded-[6px] bg-mk-amber/15 px-1.5 py-0.5 font-mk-mono text-[10px] uppercase tracking-wide text-mk-amber">
                       Needs confirmation
                     </span>
                   ) : null}
                 </div>
-                <div className="mt-0.5 font-mono text-[11px] text-slate-400">
+                <div className="mt-0.5 font-mk-mono text-[11px] text-mk-ink-subtle">
                   Canonical: {col.canonical}
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <span className="font-mono text-[10px] uppercase tracking-[0.06em] text-slate-400">From</span>
+                <span className="mk-eyebrow">From</span>
                 <select
                   value={col.detectedFrom ?? ''}
                   onChange={(e) =>
@@ -117,7 +118,7 @@ export default function BomColumnMappingStep({
                       ),
                     )
                   }
-                  className="border border-slate-200 bg-white px-2 py-1.5 text-[12px] text-slate-900 focus:border-[#0062ff] focus:outline-none"
+                  className={appField}
                 >
                   <option value="">(not mapped)</option>
                   {headers.map((header) => (
@@ -132,27 +133,17 @@ export default function BomColumnMappingStep({
         </div>
 
         {!hasMpn ? (
-          <p className="mt-4 text-[12px] text-amber-800">
+          <p className="mt-4 text-[12px] text-mk-amber">
             Map at least one column to <strong>MPN / Part Number</strong> before continuing.
           </p>
         ) : null}
       </div>
 
-      <div className="flex items-center justify-between border-t border-slate-200 bg-[#f4f6f9] px-5 py-4">
-        <button
-          type="button"
-          onClick={onBack}
-          disabled={confirming}
-          className="font-mono text-[11px] uppercase tracking-[0.08em] text-slate-500 hover:text-slate-900 disabled:opacity-50"
-        >
-          ← Back
+      <div className="mt-5 flex items-center justify-between">
+        <button type="button" onClick={onBack} disabled={confirming} className={appGhostBtn}>
+          Back
         </button>
-        <button
-          type="button"
-          onClick={onConfirm}
-          disabled={!hasMpn || confirming}
-          className="bg-[#0062ff] px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
+        <button type="button" onClick={onConfirm} disabled={!hasMpn || confirming} className={appPrimaryBtn}>
           {confirming ? 'Analyzing…' : confirmLabel}
         </button>
       </div>

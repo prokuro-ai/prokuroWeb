@@ -243,13 +243,13 @@ export default function BomResultPage({ id }: BomResultPageProps) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center p-6 text-center font-mk-sans">
         <h1 className="mk-app-title text-mk-ink">
-          {error ? 'Could not load this board' : 'Board not found'}
+          {error ? 'Could not load this BOM' : 'BOM not found'}
         </h1>
         <p className="mt-2 text-[13px] text-mk-ink-muted">
-          {error ?? 'This board may not exist in your account, or you may not have access to it.'}
+          {error ?? 'This BOM may not exist in your account, or you may not have access to it.'}
         </p>
         <Link href="/boms" className={`${appPrimaryBtn} mt-6`}>
-          Back to boards
+          Back to BOMs
         </Link>
       </div>
     )
@@ -271,7 +271,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden font-mk-sans">
       {conflict && (
         <div className="border-b border-mk-amber/30 bg-mk-amber/10 px-4 py-3 text-sm text-mk-ink sm:px-6">
-          This board was updated elsewhere.{' '}
+          This BOM was updated elsewhere.{' '}
           <button
             type="button"
             className="font-semibold underline"
@@ -318,7 +318,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
               <Link
                 href="/boms"
                 className="mt-0.5 shrink-0 p-1.5 text-mk-ink-subtle transition-colors hover:bg-mk-raised hover:text-mk-ink sm:mt-1"
-                aria-label="Back to boards"
+                aria-label="Back to BOMs"
               >
                 <ChevronLeft className="h-5 w-5" />
               </Link>

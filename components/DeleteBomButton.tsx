@@ -3,6 +3,7 @@
 import { useLocation } from '@/lib/navigation'
 import { useEffect, useState } from 'react'
 import { AppModal, ModalNotice } from '@/components/AppModal'
+import { appDangerBtn, appField, appGhostBtn } from '@/components/app/chrome'
 import { deleteBom } from '@/lib/api'
 
 type DeleteBomButtonProps = {
@@ -94,23 +95,14 @@ export function DeleteBomButton({
         closeDisabled={deleting}
         footer={
           <div className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={closeModal}
-              disabled={deleting}
-              className="px-4 py-2 text-[13px] font-medium text-slate-500 transition-colors hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-            >
+            <button type="button" onClick={closeModal} disabled={deleting} className={appGhostBtn}>
               Cancel
             </button>
             <button
               type="button"
               onClick={() => void handleDelete()}
               disabled={!canConfirm}
-              className={`px-4 py-2 text-[13px] font-semibold transition-colors ${
-                canConfirm
-                  ? 'bg-[#c62026] text-white hover:bg-red-700'
-                  : 'cursor-not-allowed bg-slate-200 text-slate-400'
-              }`}
+              className={appDangerBtn}
             >
               {deleting ? 'Deleting…' : 'Delete permanently'}
             </button>
@@ -119,8 +111,8 @@ export function DeleteBomButton({
       >
         {error ? <ModalNotice tone="error">{error}</ModalNotice> : null}
 
-        <label htmlFor={`delete-confirm-${bomId}`} className="block text-[13px] font-medium text-slate-700">
-          Type <span className="font-mono text-slate-900">{CONFIRM_WORD}</span> to confirm
+        <label htmlFor={`delete-confirm-${bomId}`} className="block text-[13px] font-medium text-mk-ink">
+          Type <span className="font-mk-mono text-mk-ink">{CONFIRM_WORD}</span> to confirm
         </label>
         <input
           id={`delete-confirm-${bomId}`}
@@ -131,7 +123,7 @@ export function DeleteBomButton({
           autoFocus
           disabled={deleting}
           placeholder={CONFIRM_WORD}
-          className="mt-2 w-full border border-slate-200 px-4 py-2.5 text-[13px] text-slate-900 placeholder:text-slate-400 focus:border-[#0062ff] focus:outline-none focus:ring-1 focus:ring-[#0062ff] disabled:cursor-not-allowed disabled:bg-slate-50"
+          className={`mt-2 ${appField} disabled:cursor-not-allowed disabled:bg-mk-raised`}
         />
       </AppModal>
     </>

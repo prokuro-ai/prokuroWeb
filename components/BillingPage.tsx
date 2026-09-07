@@ -160,7 +160,7 @@ export default function BillingPage() {
     <div className={appPage}>
       <PageHeader
         title="Your plan"
-        description="What you can upload, how often boards refresh, and who can join."
+        description="What you can upload, how often BOMs refresh, and who can join."
         actions={
           <>
             <button
@@ -216,73 +216,62 @@ export default function BillingPage() {
           <p className="border border-mk-red/30 bg-mk-canvas px-4 py-3 text-[13px] text-mk-red">{billingError}</p>
         ) : null}
 
-        <section className={appSheet}>
-          <div className="grid gap-6 px-5 py-5 lg:grid-cols-[1.4fr_1fr]">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="mk-app-title text-mk-ink">{planTitle(billing?.plan)}</h2>
-                {statusLabel ? (
-                  <span className="rounded-[8px] border border-mk-line px-2 py-0.5 text-[12px] text-mk-ink-muted">{statusLabel}</span>
-                ) : null}
-              </div>
-              <p className="mt-2 text-[13px] text-mk-ink-muted">
-                {billing
-                  ? billing.can_purchase
-                    ? 'You can get quotes. Monthly buys and orders still count against this plan.'
-                    : 'Quotes and orders stay locked until a paid plan is active.'
-                  : 'Could not load your plan — refresh to retry.'}
-              </p>
-              <dl className="mt-4 grid gap-3 text-[12px] sm:grid-cols-2">
-                <div>
-                  <dt className="mk-eyebrow">Period</dt>
-                  <dd className="mt-1 text-mk-ink">
-                    {periodEnd ? `Renews or closes ${periodEnd}` : 'Usage resets each calendar month'}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="mk-eyebrow">How you got it</dt>
-                  <dd className="mt-1 text-mk-ink">
-                    {billing?.plan_source === 'admin'
-                      ? 'Assigned by Prokuro'
-                      : billing?.plan_source === 'stripe'
-                        ? 'Paid subscription'
-                        : 'Free tier'}
-                  </dd>
-                </div>
-                {adminExpiry ? (
-                  <div>
-                    <dt className="mk-eyebrow">Assigned until</dt>
-                    <dd className="mt-1 text-mk-ink">{adminExpiry}</dd>
-                  </div>
-                ) : null}
-              </dl>
-            </div>
-            <div className="grid grid-cols-2 gap-px bg-mk-line">
-              <Entitlement label="Board refresh" value={refreshLabel(limits?.refresh)} />
-              <Entitlement label="Line briefs" value={bedrockLabel(limits?.bedrock)} />
-              <Entitlement label="Max parts / board" value={formatCap(limits?.max_lines_per_bom)} />
-              <Entitlement label="Boards at once" value={formatCap(limits?.concurrent_analyses)} />
-            </div>
+        <section className={`${appSheet} px-5 py-5`}>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="mk-app-title text-mk-ink">{planTitle(billing?.plan)}</h2>
+            {statusLabel ? (
+              <span className="rounded-[8px] bg-mk-raised px-2 py-0.5 text-[12px] text-mk-ink-muted">
+                {statusLabel}
+              </span>
+            ) : null}
           </div>
+          <p className="mt-2 max-w-2xl text-[13px] text-mk-ink-muted">
+            {billing
+              ? billing.can_purchase
+                ? 'You can get quotes. Monthly buys and orders still count against this plan.'
+                : 'Quotes and orders stay locked until a paid plan is active.'
+              : 'Could not load your plan — refresh to retry.'}
+          </p>
+          <dl className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <Entitlement
+              label="Period"
+              value={periodEnd ? `Renews ${periodEnd}` : 'Resets each month'}
+            />
+            <Entitlement
+              label="How you got it"
+              value={
+                billing?.plan_source === 'admin'
+                  ? 'Assigned by Prokuro'
+                  : billing?.plan_source === 'stripe'
+                    ? 'Paid subscription'
+                    : 'Free tier'
+              }
+            />
+            <Entitlement label="BOM refresh" value={refreshLabel(limits?.refresh)} />
+            <Entitlement label="Max parts / BOM" value={formatCap(limits?.max_lines_per_bom)} />
+            {adminExpiry ? <Entitlement label="Assigned until" value={adminExpiry} /> : null}
+            <Entitlement label="Line briefs" value={bedrockLabel(limits?.bedrock)} />
+            <Entitlement label="BOMs at once" value={formatCap(limits?.concurrent_analyses)} />
+          </dl>
         </section>
 
         <section>
-          <div className="mb-3">
+          <div className="mb-4">
             <h2 className="mk-app-heading text-mk-ink">This month</h2>
             <p className="mt-0.5 text-[13px] text-mk-ink-muted">
               Uploads, people on the account, and buys. Counters reset on the calendar month.
             </p>
           </div>
-          <div className="grid gap-px bg-mk-line sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <UsageMeter
               label="People on the account"
               used={seatsUsed}
               limit={seatsLimit}
               hint="Members plus pending invites"
             />
-            <UsageMeter label="Boards on file" used={usage?.active_boms_count} limit={limits?.active_boms} />
+            <UsageMeter label="BOMs on file" used={usage?.active_boms_count} limit={limits?.active_boms} />
             <UsageMeter
-              label="Board uploads this month"
+              label="BOM uploads this month"
               used={usage?.analyses_count}
               limit={limits?.analyses_per_month}
             />
@@ -303,11 +292,11 @@ export default function BillingPage() {
         <section className={`${appSheet} px-5 py-5`}>
           <h2 className="mk-app-heading text-mk-ink">What this plan includes</h2>
           <p className="mt-1 text-[13px] text-mk-ink-muted">
-            Unique part lookups reset every day. Seat and board caps are the same numbers as above.
+            Unique part lookups reset every day. Seat and BOM caps are the same numbers as above.
           </p>
-          <dl className="mt-4 grid gap-px bg-mk-line sm:grid-cols-2 lg:grid-cols-4">
+          <dl className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <Entitlement label="People who can join" value={formatCap(seatsLimit)} />
-            <Entitlement label="Boards on file" value={formatCap(limits?.active_boms)} />
+            <Entitlement label="BOMs on file" value={formatCap(limits?.active_boms)} />
             <Entitlement label="Unique part lookups / day" value={formatCap(limits?.unique_mpn_lookups_per_day)} />
             <Entitlement label="Line briefs" value={bedrockLabel(limits?.bedrock)} />
           </dl>
@@ -337,9 +326,9 @@ export default function BillingPage() {
 
 function Entitlement({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-mk-canvas px-4 py-3">
+    <div>
       <dt className="mk-eyebrow">{label}</dt>
-      <dd className="mt-1 text-[13px] font-semibold text-mk-ink">{value}</dd>
+      <dd className="mt-1.5 text-[15px] font-medium text-mk-ink">{value}</dd>
     </div>
   )
 }

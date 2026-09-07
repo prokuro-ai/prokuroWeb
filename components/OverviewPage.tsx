@@ -13,7 +13,7 @@ import { decisionHeadline } from '@/lib/decision'
 import { lineRiskLevel } from '@/lib/risk'
 import type { FlaggedLineItem } from '@/lib/types'
 
-type GroupBy = 'job' | 'board'
+type GroupBy = 'job' | 'bom'
 
 function lineHref(item: FlaggedLineItem): string {
   return `/bom/${encodeURIComponent(item.bomId)}?line=${item.line.row_index}`
@@ -29,14 +29,14 @@ function OverviewView() {
   const error = flaggedError ?? bomsError
 
   const groups = useMemo(() => {
-    if (groupBy === 'board') {
-      const byBoard = new Map<string, FlaggedLineItem[]>()
+    if (groupBy === 'bom') {
+      const byBom = new Map<string, FlaggedLineItem[]>()
       for (const item of items) {
-        const list = byBoard.get(item.bomId) ?? []
+        const list = byBom.get(item.bomId) ?? []
         list.push(item)
-        byBoard.set(item.bomId, list)
+        byBom.set(item.bomId, list)
       }
-      return [...byBoard.entries()].map(([id, rows]) => ({
+      return [...byBom.entries()].map(([id, rows]) => ({
         key: id,
         label: rows[0]?.bomName ?? id,
         rows,
@@ -55,8 +55,8 @@ function OverviewView() {
     : boms.length === 0
       ? null
       : items.length === 0
-        ? `${boms.length} board${boms.length === 1 ? '' : 's'} · nothing needs a call`
-        : `${boms.length} board${boms.length === 1 ? '' : 's'} · ${items.length} part${items.length === 1 ? '' : 's'} need a call`
+        ? `${boms.length} BOM${boms.length === 1 ? '' : 's'} · nothing needs a call`
+        : `${boms.length} BOM${boms.length === 1 ? '' : 's'} · ${items.length} part${items.length === 1 ? '' : 's'} need a call`
 
   return (
     <div className={appPage}>
@@ -66,7 +66,7 @@ function OverviewView() {
         actions={
           items.length > 0 ? (
             <div className="flex overflow-hidden rounded-[8px] border border-mk-line bg-mk-canvas p-0.5">
-              {(['job', 'board'] as const).map((option) => (
+              {(['job', 'bom'] as const).map((option) => (
                 <button
                   key={option}
                   type="button"
@@ -75,7 +75,7 @@ function OverviewView() {
                     groupBy === option ? 'bg-mk-ink text-mk-canvas' : 'text-mk-ink-muted hover:text-mk-ink'
                   }`}
                 >
-                  {option === 'job' ? 'By job' : 'By board'}
+                  {option === 'job' ? 'By job' : 'By BOM'}
                 </button>
               ))}
             </div>
@@ -102,21 +102,21 @@ function OverviewView() {
           />
         ) : boms.length === 0 ? (
           <EmptyState
-            title="Drop a board list in"
-            description="We’ll tell you what to fix first."
+            title="No BOMs yet"
+            description="Add a BOM on the BOMs page and we’ll tell you what to fix first."
             action={
               <button type="button" onClick={() => router.push('/boms')} className={appPrimaryBtn}>
-                Upload a board
+                Open BOMs
               </button>
             }
           />
         ) : items.length === 0 ? (
           <EmptyState
             title="No parts need a call this week"
-            description="Open a board if you want to scan every line."
+            description="Open a BOM if you want to scan every line."
             action={
               <button type="button" onClick={() => router.push('/boms')} className={appPrimaryBtn}>
-                Open boards
+                Open BOMs
               </button>
             }
           />

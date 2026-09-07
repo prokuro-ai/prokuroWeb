@@ -88,19 +88,19 @@ export default function BomsPage() {
     loading || boms.length === 0
       ? undefined
       : totalAtRisk > 0
-        ? `${boms.length} board${boms.length === 1 ? '' : 's'} · ${totalAtRisk} parts need a call`
-        : `${boms.length} board${boms.length === 1 ? '' : 's'} · nothing needs a call`
+        ? `${boms.length} BOM${boms.length === 1 ? '' : 's'} · ${totalAtRisk} parts need a call`
+        : `${boms.length} BOM${boms.length === 1 ? '' : 's'} · nothing needs a call`
 
   return (
     <>
       <div className={appPage}>
         <PageHeader
-          title="Boards"
-          description={status ?? (loading ? undefined : 'Upload a board list to see what to buy, drop, or watch.')}
+          title="BOMs"
+          description={status ?? (loading ? undefined : 'Upload a BOM to see what to buy, drop, or watch.')}
           actions={
-            canWrite ? (
+            canWrite && boms.length > 0 ? (
               <button type="button" onClick={() => setUploadOpen(true)} className={appPrimaryBtn}>
-                Upload
+                Upload BOM
               </button>
             ) : null
           }
@@ -114,12 +114,12 @@ export default function BomsPage() {
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Find a board"
-                  aria-label="Search boards"
+                  placeholder="Find a BOM"
+                  aria-label="Search BOMs"
                   className={`${appInput} pl-6`}
                 />
               </div>
-              <nav className="flex flex-wrap items-center gap-x-5 gap-y-2" aria-label="Filter boards">
+              <nav className="flex flex-wrap items-center gap-x-5 gap-y-2" aria-label="Filter BOMs">
                 {BOM_FILTERS.map((option) => (
                   <button
                     key={option}
@@ -147,7 +147,7 @@ export default function BomsPage() {
             </div>
           ) : error ? (
             <EmptyState
-              title="Could not load boards"
+              title="Could not load BOMs"
               description={error}
               action={
                 <button type="button" onClick={() => window.location.reload()} className={appPrimaryBtn}>
@@ -157,15 +157,15 @@ export default function BomsPage() {
             />
           ) : boms.length === 0 ? (
             <EmptyState
-              title="Drop a board list in"
-              description="We’ll tell you what to fix first."
+              title="No BOMs yet"
+              description="Upload a BOM and we’ll tell you what to fix first."
               action={
                 canWrite ? (
                   <button type="button" onClick={() => setUploadOpen(true)} className={appPrimaryBtn}>
-                    Upload
+                    Upload BOM
                   </button>
                 ) : (
-                  <p className="text-[13px] text-mk-ink-subtle">Ask someone who can upload to add a board.</p>
+                  <p className="text-[13px] text-mk-ink-subtle">Ask someone who can upload to add a BOM.</p>
                 )
               }
             />
@@ -174,7 +174,7 @@ export default function BomsPage() {
           ) : (
             <div className={appSheet}>
               <div className="hidden grid-cols-[minmax(0,1.4fr)_7rem_6rem_7rem_8rem_auto] gap-3 border-b border-mk-line px-5 py-2.5 mk:grid">
-                <span className="mk-eyebrow">Board</span>
+                <span className="mk-eyebrow">BOM</span>
                 <span className="mk-eyebrow text-right">Parts</span>
                 <span className="mk-eyebrow text-right">Need a call</span>
                 <span className="mk-eyebrow">Status</span>

@@ -21,7 +21,7 @@ export const PUBLIC_PLANS: PublicPlan[] = [
     name: 'Free',
     price: '$0',
     period: '',
-    blurb: 'Run one board through the analyst. Weekly refresh, small purchase pool.',
+    blurb: 'Run one BOM through the analyst. Weekly refresh, small purchase pool.',
     features: [
       `${PLAN_LIMITS.free.activeBoms} active BOM · ${PLAN_LIMITS.free.maxLinesPerBom} lines`,
       `${PLAN_LIMITS.free.analysesPerMonth} analyses / mo`,
@@ -37,7 +37,7 @@ export const PUBLIC_PLANS: PublicPlan[] = [
     name: 'Growth',
     price: '$149',
     period: '/mo',
-    blurb: 'For buyers with a handful of live boards who need daily monitoring.',
+    blurb: 'For buyers with a handful of live BOMs who need daily monitoring.',
     features: [
       `${PLAN_LIMITS.growth.activeBoms} active BOMs · ${PLAN_LIMITS.growth.maxLinesPerBom} lines`,
       `${PLAN_LIMITS.growth.analysesPerMonth} analyses / mo`,

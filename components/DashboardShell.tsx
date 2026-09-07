@@ -23,7 +23,7 @@ const WORK_NAV: NavItem[] = [
   },
   {
     href: '/boms',
-    label: 'Boards',
+    label: 'BOMs',
     match: (pathname) => pathname === '/boms' || pathname.startsWith('/bom'),
   },
   {

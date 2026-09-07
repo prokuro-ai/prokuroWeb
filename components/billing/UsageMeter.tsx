@@ -1,3 +1,5 @@
+import { appSheet } from '@/components/app/chrome'
+
 export function UsageMeter({
   label,
   used,
@@ -11,15 +13,10 @@ export function UsageMeter({
 }) {
   if (used == null || limit == null) {
     return (
-      <div className="rounded-[8px] border border-mk-line bg-mk-canvas px-4 py-4">
-        <div className="mb-2 flex items-baseline justify-between gap-3">
-          <span className="text-[12px] text-mk-ink-muted">{label}</span>
-          <span className="mk-data text-[12px] text-mk-ink">
-            {used == null ? '—' : used.toLocaleString()} / {limit == null ? '—' : limit.toLocaleString()}
-          </span>
-        </div>
-        <div className="mb-2 h-1 overflow-hidden bg-mk-raised-2" />
-        <p className="text-[11px] text-mk-ink-subtle">{hint ?? 'Waiting on your plan snapshot'}</p>
+      <div className={`${appSheet} px-5 py-5`}>
+        <p className="mk-eyebrow">{label}</p>
+        <p className="mk-app-title mt-3 text-mk-ink">—</p>
+        <p className="mt-2 text-[12px] text-mk-ink-subtle">{hint ?? 'Waiting on your plan snapshot'}</p>
       </div>
     )
   }
@@ -31,14 +28,13 @@ export function UsageMeter({
   const warn = !hot && pct >= 70
 
   return (
-    <div className="rounded-[8px] border border-mk-line bg-mk-canvas px-4 py-4">
-      <div className="mb-2 flex items-baseline justify-between gap-3">
-        <span className="text-[12px] text-mk-ink-muted">{label}</span>
-        <span className="mk-data text-[12px] text-mk-ink">
-          {used.toLocaleString()} / {limit.toLocaleString()}
-        </span>
-      </div>
-      <div className="mb-2 h-1 overflow-hidden bg-mk-raised-2">
+    <div className={`${appSheet} px-5 py-5`}>
+      <p className="mk-eyebrow">{label}</p>
+      <p className="mt-3 flex items-baseline gap-1.5">
+        <span className="mk-app-title text-mk-ink">{used.toLocaleString()}</span>
+        <span className="text-[13px] text-mk-ink-subtle">/ {limit.toLocaleString()}</span>
+      </p>
+      <div className="mt-4 h-px overflow-hidden bg-mk-raised-2">
         <div
           className="h-full transition-all"
           style={{
@@ -47,7 +43,7 @@ export function UsageMeter({
           }}
         />
       </div>
-      <p className="text-[11px] text-mk-ink-subtle">{hint ?? `${remaining.toLocaleString()} left this month`}</p>
+      <p className="mt-2 text-[12px] text-mk-ink-subtle">{hint ?? `${remaining.toLocaleString()} left this month`}</p>
     </div>
   )
 }
