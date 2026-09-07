@@ -4,56 +4,45 @@ import { useEffect, useRef, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Link } from '@/lib/navigation'
 import { useAuth } from '@/components/AuthProvider'
+import { ProkuroMark, ProkuroWordmark } from '@/components/brand/ProkuroLogo'
 import { displayNameForUser, initialsForUser, signOut } from '@/lib/auth'
-import { getBillingStatus, listBoms, type BillingAccountStatus } from '@/lib/api'
+import { getBillingStatus, listBoms, listFlaggedLines, type BillingAccountStatus } from '@/lib/api'
 import { planLabel } from '@/lib/planLimits'
-import {
-  Bell,
-  CreditCard,
-  Files,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Settings,
-  ShoppingCart,
-  X,
-} from 'lucide-react'
+import { LogOut, Menu, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react'
 
 const SIDEBAR_COLLAPSED_KEY = 'prokuro.sidebar.collapsed'
 
 type NavItem = {
   href: string
   label: string
-  icon: typeof LayoutDashboard
   match: (pathname: string) => boolean
 }
 
 const PRIMARY_NAV: NavItem[] = [
   {
     href: '/dashboard',
-    label: 'Overview',
-    icon: LayoutDashboard,
+    label: 'This week',
     match: (pathname) => pathname === '/dashboard',
   },
   {
     href: '/boms',
-    label: 'BOMs',
-    icon: Files,
+    label: 'Boards',
     match: (pathname) => pathname === '/boms' || pathname.startsWith('/bom'),
   },
   {
     href: '/purchasing',
-    label: 'Purchasing',
-    icon: ShoppingCart,
+    label: 'Buy',
     match: (pathname) => pathname === '/purchasing',
   },
   {
     href: '/billing',
-    label: 'Billing',
-    icon: CreditCard,
+    label: 'Plan',
     match: (pathname) => pathname === '/billing',
+  },
+  {
+    href: '/account',
+    label: 'Account',
+    match: (pathname) => pathname === '/account',
   },
 ]
 
@@ -63,12 +52,12 @@ function normalizePath(pathname: string | null): string {
 }
 
 function navClass(active: boolean, collapsed: boolean) {
-  return `relative flex items-center gap-3 px-3 py-2 text-[13px] font-medium transition-colors ${
+  return `relative flex items-center px-3 py-2.5 text-[14px] tracking-[-0.01em] transition-colors ${
     collapsed ? 'md:justify-center md:px-0' : ''
   } ${
     active
-      ? 'bg-[#f4f6f9] text-slate-900'
-      : 'text-slate-500 hover:bg-[#f4f6f9] hover:text-slate-800'
+      ? 'bg-mk-raised text-mk-ink'
+      : 'text-mk-ink-muted hover:bg-mk-raised hover:text-mk-ink'
   }`
 }
 
@@ -79,11 +68,10 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const [collapsed, setCollapsed] = useState(false)
   const [sidebarReady, setSidebarReady] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [bellOpen, setBellOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [bomCount, setBomCount] = useState(0)
+  const [flaggedCount, setFlaggedCount] = useState<number | null>(null)
   const [billing, setBilling] = useState<BillingAccountStatus | null>(null)
-  const bellRef = useRef<HTMLDivElement>(null)
   const profileRef = useRef<HTMLDivElement>(null)
   const labelClass = collapsed ? 'md:hidden' : ''
 
@@ -109,6 +97,13 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         if (!cancelled) setBomCount(page.items.length)
       })
       .catch(() => {})
+    listFlaggedLines()
+      .then((result) => {
+        if (!cancelled) setFlaggedCount(result.items.length)
+      })
+      .catch(() => {
+        if (!cancelled) setFlaggedCount(null)
+      })
     getBillingStatus()
       .then((status) => {
         if (!cancelled) setBilling(status)
@@ -123,13 +118,11 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
   useEffect(() => {
     setMobileOpen(false)
-    setBellOpen(false)
     setProfileOpen(false)
   }, [pathname])
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (bellRef.current && !bellRef.current.contains(e.target as Node)) setBellOpen(false)
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false)
     }
     document.addEventListener('mousedown', handleClick)
@@ -156,7 +149,10 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
   if (authLoading || !user) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#f4f6f9] font-sans text-[13px] text-slate-400">
+      <div
+        data-surface="light"
+        className="flex h-screen items-center justify-center bg-mk-raised font-mk-sans text-[13px] text-mk-ink-subtle"
+      >
         Loading…
       </div>
     )
@@ -168,8 +164,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const activePlan = billing?.plan
   const bomLimit = billing?.limits.active_boms
   const bomUsed = billing?.usage.active_boms_count ?? bomCount
-  const bomPct =
-    bomLimit != null && bomLimit > 0 ? Math.min((bomUsed / bomLimit) * 100, 100) : 0
+  const bomPct = bomLimit != null && bomLimit > 0 ? Math.min((bomUsed / bomLimit) * 100, 100) : 0
   const badge = billingReady ? planLabel(activePlan!) : '…'
   const upgradeLabel = !billingReady
     ? 'Billing unavailable'
@@ -177,21 +172,20 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       ? 'Upgrade to Growth'
       : activePlan === 'growth'
         ? 'Upgrade to Scale'
-        : 'Manage billing'
+        : 'Manage plan'
   const upgradeHref = !billingReady
     ? '/billing'
     : activePlan === 'scale'
       ? '/billing'
       : '/billing?plans=1'
-  const settingsActive = pathname === '/account'
 
   return (
-    <div className="relative flex h-screen bg-[#f4f6f9] font-sans text-slate-900">
+    <div data-surface="light" className="relative flex h-screen bg-mk-raised font-mk-sans text-mk-ink">
       {mobileOpen ? (
         <button
           type="button"
           aria-label="Close menu"
-          className="fixed inset-0 z-40 bg-slate-900/30 md:hidden"
+          className="fixed inset-0 z-40 bg-mk-ink/30 md:hidden"
           onClick={() => setMobileOpen(false)}
         />
       ) : null}
@@ -202,29 +196,27 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         } ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
       >
         <aside
-          className={`flex h-full w-[232px] flex-col border-r border-slate-200 bg-white ${
+          className={`flex h-full w-[232px] flex-col border-r border-mk-line bg-mk-canvas ${
             sidebarReady ? 'md:transition-[width] md:duration-200' : ''
           } ${collapsed ? 'md:w-16' : 'md:w-[232px]'}`}
         >
           <div
-            className={`flex h-14 shrink-0 items-center border-b border-slate-200 px-4 ${
+            className={`flex h-14 shrink-0 items-center border-b border-mk-line px-4 ${
               collapsed ? 'md:justify-center md:px-2' : ''
             }`}
           >
-            <Link href="/dashboard" className="flex min-w-0 items-center gap-2" onClick={() => setMobileOpen(false)}>
-              <span
-                className="h-4 w-4 shrink-0 bg-[#0062ff]"
-                style={{ clipPath: 'polygon(24% 0, 100% 0, 100% 100%, 0% 100%)' }}
-              />
-              <span className={`truncate text-[16px] font-semibold tracking-tight text-[#0f1b2d] ${labelClass}`}>
-                Prokuro<span className="text-[#0062ff]">.ai</span>
+            <Link href="/dashboard" className="flex min-w-0 items-center" onClick={() => setMobileOpen(false)}>
+              <span className={collapsed ? 'hidden md:inline-flex' : 'hidden'}>
+                <ProkuroMark size={22} className="text-mk-accent" />
+              </span>
+              <span className={collapsed ? 'md:hidden' : undefined}>
+                <ProkuroWordmark size={22} markClassName="text-mk-accent" />
               </span>
             </Link>
           </div>
 
           <nav className="flex flex-1 flex-col gap-0.5 p-2" aria-label="App">
             {PRIMARY_NAV.map((item) => {
-              const Icon = item.icon
               const active = item.match(pathname)
               return (
                 <Link
@@ -235,28 +227,20 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                   onClick={() => setMobileOpen(false)}
                 >
                   {active ? (
-                    <span className="absolute inset-y-0 left-0 w-[2px] bg-[#0062ff]" aria-hidden />
+                    <span className="absolute inset-y-0 left-0 w-0.5 bg-mk-accent" aria-hidden />
                   ) : null}
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span className={labelClass}>{item.label}</span>
+                  <span className={`font-medium ${labelClass}`}>{item.label}</span>
+                  {collapsed ? (
+                    <span className="hidden font-mk-display text-[15px] md:inline" aria-hidden>
+                      {item.label.slice(0, 1)}
+                    </span>
+                  ) : null}
                 </Link>
               )
             })}
           </nav>
 
-          <div className="mt-auto border-t border-slate-200 p-2">
-            <Link
-              href="/account"
-              title={collapsed ? 'Settings' : undefined}
-              className={navClass(settingsActive, collapsed)}
-              onClick={() => setMobileOpen(false)}
-            >
-              {settingsActive ? (
-                <span className="absolute inset-y-0 left-0 w-[2px] bg-[#0062ff]" aria-hidden />
-              ) : null}
-              <Settings className="h-4 w-4 shrink-0" />
-              <span className={labelClass}>Settings</span>
-            </Link>
+          <div className="mt-auto border-t border-mk-line p-2">
             <button
               type="button"
               onClick={toggleCollapsed}
@@ -275,10 +259,10 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-3 sm:px-5">
+        <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-mk-line bg-mk-canvas px-3 sm:px-5">
           <button
             type="button"
-            className="p-1.5 text-slate-500 hover:bg-[#f4f6f9] hover:text-slate-800 md:hidden"
+            className="p-1.5 text-mk-ink-muted hover:bg-mk-raised hover:text-mk-ink md:hidden"
             aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
             onClick={() => setMobileOpen((open) => !open)}
           >
@@ -286,79 +270,59 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           </button>
           <div className="hidden min-w-0 flex-1 md:block" />
 
-          <div className="ml-auto flex shrink-0 items-center gap-1">
-            <div className="relative" ref={bellRef}>
-              <button
-                type="button"
-                onClick={() => setBellOpen((open) => !open)}
-                className={`relative p-1.5 transition-colors ${
-                  bellOpen ? 'bg-[#f4f6f9] text-slate-900' : 'text-slate-400 hover:text-slate-700'
-                }`}
-                aria-label="Alerts"
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            {flaggedCount != null && flaggedCount > 0 ? (
+              <Link
+                href="/dashboard"
+                className="border border-mk-line px-2.5 py-1 text-[12px] font-medium text-mk-ink transition-colors hover:border-mk-line-strong hover:bg-mk-raised"
               >
-                <Bell className="h-5 w-5" />
-              </button>
-              {bellOpen ? (
-                <div className="absolute right-0 top-full z-50 mt-1 w-80 border border-slate-200 bg-white shadow-[0_18px_40px_-28px_rgb(15_27_45_/_30%)]">
-                  <div className="border-b border-slate-200 px-4 py-3">
-                    <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-slate-400">Alerts</p>
-                  </div>
-                  <div className="px-4 py-8 text-center">
-                    <p className="text-[14px] font-medium text-slate-800">Alerts coming soon</p>
-                    <p className="mt-1.5 text-[13px] leading-relaxed text-slate-500">
-                      Lifecycle, stock, and tariff alerts will appear here once monitoring is enabled.
-                    </p>
-                  </div>
-                </div>
-              ) : null}
-            </div>
+                <span className="mk-data text-[12px] text-mk-red">{flaggedCount}</span>
+                <span className="ml-1.5 text-mk-ink-muted">to do</span>
+              </Link>
+            ) : null}
 
             <div className="relative" ref={profileRef}>
               <button
                 type="button"
                 onClick={() => setProfileOpen((open) => !open)}
                 className={`flex items-center p-1 transition-colors ${
-                  profileOpen ? 'bg-[#f4f6f9]' : 'hover:bg-[#f4f6f9]'
+                  profileOpen ? 'bg-mk-raised' : 'hover:bg-mk-raised'
                 }`}
                 aria-label="Account menu"
               >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-[#0062ff] text-[11px] font-semibold text-white">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-mk-accent text-[11px] font-semibold text-mk-on-accent">
                   {initials}
                 </div>
               </button>
               {profileOpen ? (
-                <div className="absolute right-0 top-full z-50 mt-1 w-80 border border-slate-200 bg-white shadow-[0_18px_40px_-28px_rgb(15_27_45_/_30%)]">
-                  <div className="flex items-center gap-3 border-b border-slate-200 px-4 py-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#0062ff] text-[12px] font-semibold text-white">
+                <div className="absolute right-0 top-full z-50 mt-1 w-80 border border-mk-line bg-mk-canvas shadow-[var(--mk-shadow)]">
+                  <div className="flex items-center gap-3 border-b border-mk-line px-4 py-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-mk-accent text-[12px] font-semibold text-mk-on-accent">
                       {initials}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <p className="truncate text-[14px] font-semibold text-slate-900">
+                        <p className="truncate text-[14px] font-semibold text-mk-ink">
                           {displayName || user.email}
                         </p>
-                        <span className="shrink-0 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-[#0062ff]">
-                          {badge}
-                        </span>
+                        <span className="mk-eyebrow shrink-0 text-mk-accent">{badge}</span>
                       </div>
-                      <p className="truncate font-mono text-[11px] text-slate-400">{user.email}</p>
+                      <p className="truncate text-[12px] text-mk-ink-subtle">{user.email}</p>
                       {user.company?.trim() ? (
-                        <p className="mt-0.5 truncate text-[12px] text-slate-500">{user.company}</p>
+                        <p className="mt-0.5 truncate text-[12px] text-mk-ink-muted">{user.company}</p>
                       ) : null}
                     </div>
                   </div>
 
-                  <div className="border-b border-slate-200 px-4 py-3.5">
+                  <div className="border-b border-mk-line px-4 py-3.5">
                     <div className="mb-1.5 flex items-center justify-between">
-                      <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-slate-400">
-                        Active BOMs
-                      </span>
-                      <span className="font-mono text-[11px] tabular-nums text-slate-600">
+                      <span className="mk-eyebrow">Boards</span>
+                      <span className="mk-data text-[11px] text-mk-ink-muted">
                         {bomLimit != null ? `${bomUsed} / ${bomLimit}` : `${bomUsed} / —`}
                       </span>
                     </div>
-                    <div className="mb-3 h-1.5 overflow-hidden bg-slate-100">
-                      <div className="h-full bg-[#0062ff]" style={{ width: `${bomPct}%` }} />
+                    <div className="mb-3 h-1 overflow-hidden bg-mk-raised-2">
+                      <div className="h-full bg-mk-accent" style={{ width: `${bomPct}%` }} />
                     </div>
                     <button
                       type="button"
@@ -366,7 +330,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                         router.push(upgradeHref)
                         setProfileOpen(false)
                       }}
-                      className="font-mono text-[10px] uppercase tracking-[0.08em] text-[#0062ff] hover:underline"
+                      className="text-[12px] font-medium text-mk-accent hover:text-mk-accent-hover"
                     >
                       {upgradeLabel}
                     </button>
@@ -378,10 +342,9 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                       router.push('/account')
                       setProfileOpen(false)
                     }}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[#f4f6f9]"
+                    className="flex w-full items-center px-4 py-3 text-left text-[13px] font-medium text-mk-ink transition-colors hover:bg-mk-raised"
                   >
-                    <Settings className="h-4 w-4 shrink-0 text-slate-400" />
-                    <span className="text-[13px] font-medium text-slate-800">Account settings</span>
+                    Account
                   </button>
                   <button
                     type="button"
@@ -389,17 +352,16 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                       router.push('/billing')
                       setProfileOpen(false)
                     }}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[#f4f6f9]"
+                    className="flex w-full items-center px-4 py-3 text-left text-[13px] font-medium text-mk-ink transition-colors hover:bg-mk-raised"
                   >
-                    <CreditCard className="h-4 w-4 shrink-0 text-slate-400" />
-                    <span className="text-[13px] font-medium text-slate-800">Billing</span>
+                    Plan
                   </button>
 
-                  <div className="border-t border-slate-200">
+                  <div className="border-t border-mk-line">
                     <button
                       type="button"
                       onClick={handleSignOut}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-[13px] font-medium text-[#c62026] transition-colors hover:bg-[#f4f6f9]"
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-[13px] font-medium text-mk-red transition-colors hover:bg-mk-raised"
                     >
                       <LogOut className="h-4 w-4 shrink-0" /> Sign out
                     </button>

@@ -34,7 +34,7 @@ type RiskPresentation = {
 
 export const RISK_PRESENTATION: Record<RiskLevel, RiskPresentation> = {
   red: {
-    label: 'Critical',
+    label: 'Needs a call',
     row: 'bg-[rgb(198_32_38_/_4%)] hover:bg-[rgb(198_32_38_/_7%)]',
     rail: 'shadow-[inset_3px_0_0_#c62026]',
     bar: 'bg-[#c62026]',
@@ -54,7 +54,7 @@ export const RISK_PRESENTATION: Record<RiskLevel, RiskPresentation> = {
     fill: 55,
   },
   green: {
-    label: 'Clear',
+    label: 'Fine',
     row: '',
     rail: '',
     bar: 'bg-[#167c48]',
@@ -64,7 +64,7 @@ export const RISK_PRESENTATION: Record<RiskLevel, RiskPresentation> = {
     fill: 18,
   },
   unknown: {
-    label: 'Unknown',
+    label: 'Unmatched',
     row: '',
     rail: '',
     bar: '',
@@ -121,10 +121,17 @@ export function tariffLabel(line: AnalyzedLine): string {
 export type BomBand = 'Critical' | 'Watch' | 'Clear' | 'Unknown'
 
 const PORTFOLIO_BADGE: Record<BomBand, { label: string; cls: string; dot: string | null }> = {
-  Critical: { label: 'Critical', cls: 'bg-[#c62026]/10 text-[#c62026]', dot: 'bg-[#c62026]' },
-  Watch: { label: 'Watch', cls: 'bg-[#a25a05]/10 text-[#a25a05]', dot: 'bg-[#a25a05]' },
-  Clear: { label: 'Clear', cls: 'bg-[#167c48]/10 text-[#167c48]', dot: 'bg-[#167c48]' },
-  Unknown: { label: 'Unknown', cls: 'text-slate-500', dot: null },
+  Critical: { label: 'Needs a call', cls: 'bg-mk-red/10 text-mk-red', dot: 'bg-mk-red' },
+  Watch: { label: 'Watch', cls: 'bg-mk-amber/10 text-mk-amber', dot: 'bg-mk-amber' },
+  Clear: { label: 'Fine', cls: 'bg-mk-green/10 text-mk-green', dot: 'bg-mk-green' },
+  Unknown: { label: 'Unmatched', cls: 'text-mk-ink-subtle', dot: null },
+}
+
+export const BOM_BAND_LABEL: Record<BomBand, string> = {
+  Critical: 'Needs a call',
+  Watch: 'Watch',
+  Clear: 'Fine',
+  Unknown: 'Unmatched',
 }
 
 export function parseBomBand(value: string | undefined): BomBand {

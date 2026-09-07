@@ -11,18 +11,18 @@ const BLUE = '#0062ff'
 const NAVY = '#0f1b2d'
 
 const COMPARE_ROWS: { label: string; value: (plan: PlanId) => string }[] = [
-  { label: 'Seats', value: (plan) => String(PLAN_LIMITS[plan].seats) },
-  { label: 'Monitored BOMs', value: (plan) => String(PLAN_LIMITS[plan].activeBoms) },
-  { label: 'Max lines / BOM', value: (plan) => PLAN_LIMITS[plan].maxLinesPerBom.toLocaleString() },
-  { label: 'Lines / month', value: (plan) => PLAN_LIMITS[plan].linesPerMonth.toLocaleString() },
-  { label: 'Analyses / month', value: (plan) => String(PLAN_LIMITS[plan].analysesPerMonth) },
+  { label: 'People who can join', value: (plan) => String(PLAN_LIMITS[plan].seats) },
+  { label: 'Boards on file', value: (plan) => String(PLAN_LIMITS[plan].activeBoms) },
+  { label: 'Max parts / board', value: (plan) => PLAN_LIMITS[plan].maxLinesPerBom.toLocaleString() },
+  { label: 'Parts screened / month', value: (plan) => PLAN_LIMITS[plan].linesPerMonth.toLocaleString() },
+  { label: 'Board uploads / month', value: (plan) => String(PLAN_LIMITS[plan].analysesPerMonth) },
   {
-    label: 'Purchasing actions',
+    label: 'Quotes / month',
     value: (plan) => String(PLAN_LIMITS[plan].purchasingActionsPerMonth),
   },
   { label: 'Orders / month', value: (plan) => String(PLAN_LIMITS[plan].ordersPerMonth) },
-  { label: 'Refresh', value: (plan) => refreshLabel(PLAN_LIMITS[plan].refresh) },
-  { label: 'Analyst', value: (plan) => bedrockLabel(PLAN_LIMITS[plan].bedrock) },
+  { label: 'Board refresh', value: (plan) => refreshLabel(PLAN_LIMITS[plan].refresh) },
+  { label: 'Line briefs', value: (plan) => bedrockLabel(PLAN_LIMITS[plan].bedrock) },
 ]
 
 type PricingModalProps = {

@@ -24,9 +24,8 @@ import {
 } from '@/lib/billing-display'
 import { SCHEDULE_DEMO_PATH } from '@/lib/sales'
 import type { PublicPlan } from '@/lib/publicPlans'
-
-const NAVY = '#0f1b2d'
-const BLUE = '#0062ff'
+import PageHeader from '@/components/app/PageHeader'
+import { appGhostBtn, appPage, appPrimaryBtn, appSheet } from '@/components/app/chrome'
 
 export default function BillingPage() {
   const router = useRouter()
@@ -143,7 +142,7 @@ export default function BillingPage() {
 
   if (loading || !billingLoaded) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-[#f4f6f9] text-[13px] text-slate-400">
+      <div className="flex flex-1 items-center justify-center bg-mk-raised font-mk-sans text-[13px] text-mk-ink-subtle">
         Loading…
       </div>
     )
@@ -151,35 +150,25 @@ export default function BillingPage() {
 
   if (!user) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-[#f4f6f9] text-[13px] text-slate-400">
-        Sign in to view billing.
+      <div className="flex flex-1 items-center justify-center bg-mk-raised font-mk-sans text-[13px] text-mk-ink-subtle">
+        Sign in to view your plan.
       </div>
     )
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#f4f6f9] font-sans text-[#0f1b2d]">
-      <div className="border-b border-slate-200 bg-white px-6 py-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400">
-              Account
-            </p>
-            <h1 className="mt-1 text-[20px] font-semibold tracking-tight" style={{ color: NAVY }}>
-              Billing
-            </h1>
-            <p className="mt-1 max-w-xl text-[13px] text-slate-500">
-              Live usage and caps from your account billing status. Compare-plans copy is catalog
-              only — it is not this snapshot.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
+    <div className={appPage}>
+      <PageHeader
+        kicker="Plan"
+        title="Your plan"
+        description="What you can upload, how often boards refresh, and who can join."
+        actions={
+          <>
             <button
               type="button"
               disabled={billingBusy}
               onClick={() => setPlansOpen(true)}
-              className="px-3.5 py-2 text-[12px] font-semibold text-white disabled:opacity-60"
-              style={{ background: BLUE }}
+              className={appPrimaryBtn}
             >
               Compare plans
             </button>
@@ -187,14 +176,14 @@ export default function BillingPage() {
               type="button"
               disabled={billingBusy || !billing?.stripe_customer_id}
               onClick={handleManageBilling}
-              className="border border-slate-200 bg-white px-3.5 py-2 text-[12px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className={appGhostBtn}
               title={
                 billing?.stripe_customer_id
                   ? undefined
-                  : 'Complete checkout once to unlock the Stripe customer portal'
+                  : 'Complete checkout once to manage cards and invoices'
               }
             >
-              {billingBusy ? 'Opening…' : 'Manage in Stripe'}
+              {billingBusy ? 'Opening…' : 'Manage billing'}
             </button>
             <button
               type="button"
@@ -209,153 +198,119 @@ export default function BillingPage() {
                   })
                   .finally(() => setBillingBusy(false))
               }}
-              className="inline-flex items-center gap-1.5 border border-slate-200 bg-white px-3.5 py-2 text-[12px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+              className={appGhostBtn}
             >
               <RefreshCw className="h-3.5 w-3.5" />
               Refresh
             </button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
-      <div className="space-y-6 px-6 py-6">
+      <div className="mx-auto max-w-[1180px] space-y-6 px-6 py-8">
         {billingNotice ? (
-          <p className="border border-blue-100 bg-blue-50 px-4 py-3 text-[13px] text-[#0062ff]">
+          <p className="border border-mk-accent/25 bg-mk-canvas px-4 py-3 text-[13px] text-mk-accent">
             {billingNotice}
           </p>
         ) : null}
         {billingError ? (
-          <p className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
-            {billingError}
-          </p>
+          <p className="border border-mk-red/30 bg-mk-canvas px-4 py-3 text-[13px] text-mk-red">{billingError}</p>
         ) : null}
 
-        <section className="border border-slate-200 bg-white">
+        <section className={appSheet}>
           <div className="grid gap-6 px-5 py-5 lg:grid-cols-[1.4fr_1fr]">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-[16px] font-semibold" style={{ color: NAVY }}>
-                  {planTitle(billing?.plan)}
-                </h2>
+                <h2 className="font-mk-display text-[24px] text-mk-ink">{planTitle(billing?.plan)}</h2>
                 {statusLabel ? (
-                  <span className="border border-slate-200 bg-[#f4f6f9] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-slate-500">
-                    {statusLabel}
-                  </span>
+                  <span className="border border-mk-line px-2 py-0.5 text-[12px] text-mk-ink-muted">{statusLabel}</span>
                 ) : null}
               </div>
-              <p className="mt-2 text-[13px] text-slate-500">
+              <p className="mt-2 text-[13px] text-mk-ink-muted">
                 {billing
                   ? billing.can_purchase
-                    ? 'Purchasing is on. Monthly actions and orders still count against this plan.'
-                    : 'Purchasing stays locked until a paid subscription is active.'
-                  : 'Billing status unavailable — refresh to retry.'}
+                    ? 'You can get quotes. Monthly buys and orders still count against this plan.'
+                    : 'Quotes and orders stay locked until a paid plan is active.'
+                  : 'Could not load your plan — refresh to retry.'}
               </p>
               <dl className="mt-4 grid gap-3 text-[12px] sm:grid-cols-2">
                 <div>
-                  <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400">
-                    Period
-                  </dt>
-                  <dd className="mt-1 text-slate-700">
-                    {periodEnd ? `Renews or closes ${periodEnd}` : 'Calendar month usage'}
+                  <dt className="mk-eyebrow">Period</dt>
+                  <dd className="mt-1 text-mk-ink">
+                    {periodEnd ? `Renews or closes ${periodEnd}` : 'Usage resets each calendar month'}
                   </dd>
                 </div>
                 <div>
-                  <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400">
-                    Source
-                  </dt>
-                  <dd className="mt-1 text-slate-700">
+                  <dt className="mk-eyebrow">How you got it</dt>
+                  <dd className="mt-1 text-mk-ink">
                     {billing?.plan_source === 'admin'
                       ? 'Assigned by Prokuro'
                       : billing?.plan_source === 'stripe'
-                        ? 'Stripe subscription'
+                        ? 'Paid subscription'
                         : 'Free tier'}
                   </dd>
                 </div>
                 {adminExpiry ? (
                   <div>
-                    <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400">
-                      Admin expiry
-                    </dt>
-                    <dd className="mt-1 text-slate-700">{adminExpiry}</dd>
+                    <dt className="mk-eyebrow">Assigned until</dt>
+                    <dd className="mt-1 text-mk-ink">{adminExpiry}</dd>
                   </div>
                 ) : null}
               </dl>
             </div>
-            <div className="grid grid-cols-2 gap-px bg-slate-200">
-              <Entitlement label="Refresh" value={refreshLabel(limits?.refresh)} />
-              <Entitlement label="Analyst" value={bedrockLabel(limits?.bedrock)} />
-              <Entitlement
-                label="Max lines / BOM"
-                value={formatCap(limits?.max_lines_per_bom)}
-              />
-              <Entitlement
-                label="Concurrent analyses"
-                value={formatCap(limits?.concurrent_analyses)}
-              />
+            <div className="grid grid-cols-2 gap-px bg-mk-line">
+              <Entitlement label="Board refresh" value={refreshLabel(limits?.refresh)} />
+              <Entitlement label="Line briefs" value={bedrockLabel(limits?.bedrock)} />
+              <Entitlement label="Max parts / board" value={formatCap(limits?.max_lines_per_bom)} />
+              <Entitlement label="Boards at once" value={formatCap(limits?.concurrent_analyses)} />
             </div>
           </div>
         </section>
 
         <section>
-          <div className="mb-3 flex items-end justify-between gap-3">
-            <div>
-              <h2 className="text-[14px] font-semibold" style={{ color: NAVY }}>
-                Usage this period
-              </h2>
-              <p className="mt-0.5 text-[12px] text-slate-400">
-                Analyses, lines, purchasing, and orders come from billing status. Seats come from
-                the team snapshot. Monthly counters reset on the calendar month.
-              </p>
-            </div>
+          <div className="mb-3">
+            <h2 className="font-mk-display text-[22px] text-mk-ink">This month</h2>
+            <p className="mt-0.5 text-[13px] text-mk-ink-muted">
+              Uploads, people on the account, and buys. Counters reset on the calendar month.
+            </p>
           </div>
-          <div className="grid gap-px bg-slate-200 sm:grid-cols-2 xl:grid-cols-3">
-            <UsageMeter label="Team seats" used={seatsUsed} limit={seatsLimit} hint="Members and pending invites from the team API" />
+          <div className="grid gap-px bg-mk-line sm:grid-cols-2 xl:grid-cols-3">
             <UsageMeter
-              label="Monitored BOMs"
-              used={usage?.active_boms_count}
-              limit={limits?.active_boms}
+              label="People on the account"
+              used={seatsUsed}
+              limit={seatsLimit}
+              hint="Members plus pending invites"
             />
+            <UsageMeter label="Boards on file" used={usage?.active_boms_count} limit={limits?.active_boms} />
             <UsageMeter
-              label="Analyses this month"
+              label="Board uploads this month"
               used={usage?.analyses_count}
               limit={limits?.analyses_per_month}
             />
             <UsageMeter
-              label="Lines analyzed this month"
+              label="Parts screened this month"
               used={usage?.lines_count}
               limit={limits?.lines_per_month}
             />
             <UsageMeter
-              label="Purchasing actions"
+              label="Quotes this month"
               used={usage?.purchasing_actions_count}
               limit={limits?.purchasing_actions_per_month}
             />
-            <UsageMeter
-              label="Orders this month"
-              used={usage?.orders_count}
-              limit={limits?.orders_per_month}
-            />
+            <UsageMeter label="Orders this month" used={usage?.orders_count} limit={limits?.orders_per_month} />
           </div>
         </section>
 
-        <section className="border border-slate-200 bg-white px-5 py-5">
-          <h2 className="text-[14px] font-semibold" style={{ color: NAVY }}>
-            Plan entitlements
-          </h2>
-          <p className="mt-1 text-[12px] text-slate-400">
-            Caps from the same billing-status payload. Unique MPN lookups reset daily on the server.
+        <section className={`${appSheet} px-5 py-5`}>
+          <h2 className="font-mk-display text-[22px] text-mk-ink">What this plan includes</h2>
+          <p className="mt-1 text-[13px] text-mk-ink-muted">
+            Unique part lookups reset every day. Seat and board caps are the same numbers as above.
           </p>
-          <dl className="mt-4 grid gap-px bg-slate-200 sm:grid-cols-2 lg:grid-cols-4">
-            <Entitlement label="Seats" value={formatCap(seatsLimit)} />
-            <Entitlement label="Active BOMs" value={formatCap(limits?.active_boms)} />
-            <Entitlement
-              label="Unique MPN lookups / day"
-              value={formatCap(limits?.unique_mpn_lookups_per_day)}
-            />
-            <Entitlement
-              label="Bedrock"
-              value={bedrockLabel(limits?.bedrock)}
-            />
+          <dl className="mt-4 grid gap-px bg-mk-line sm:grid-cols-2 lg:grid-cols-4">
+            <Entitlement label="People who can join" value={formatCap(seatsLimit)} />
+            <Entitlement label="Boards on file" value={formatCap(limits?.active_boms)} />
+            <Entitlement label="Unique part lookups / day" value={formatCap(limits?.unique_mpn_lookups_per_day)} />
+            <Entitlement label="Line briefs" value={bedrockLabel(limits?.bedrock)} />
           </dl>
         </section>
       </div>
@@ -383,11 +338,9 @@ export default function BillingPage() {
 
 function Entitlement({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-white px-4 py-3">
-      <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400">{label}</dt>
-      <dd className="mt-1 text-[13px] font-semibold" style={{ color: NAVY }}>
-        {value}
-      </dd>
+    <div className="bg-mk-canvas px-4 py-3">
+      <dt className="mk-eyebrow">{label}</dt>
+      <dd className="mt-1 text-[13px] font-semibold text-mk-ink">{value}</dd>
     </div>
   )
 }

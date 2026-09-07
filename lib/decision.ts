@@ -21,6 +21,31 @@ export function analystBrief(line: AnalyzedLine): string | null {
   return text ? text : null
 }
 
+/** Serif call for a row. Uses the stored brief when present; otherwise real line fields. */
+export function decisionHeadline(line: AnalyzedLine): string {
+  const brief = analystBrief(line)
+  if (brief) {
+    const first = brief.split(/(?<=[.!?])\s+/)[0]?.trim() || brief
+    return first.length > 160 ? `${first.slice(0, 157).trimEnd()}…` : first
+  }
+  if (isPendingLine(line)) return 'Still matching this part to distributor data.'
+  const life = line.lifecycle_status?.toLowerCase() ?? ''
+  const avail = line.availability_status?.toLowerCase() ?? ''
+  const match = line.match_status?.toLowerCase() ?? ''
+  if (match === 'none' || avail === 'nomatch') return 'No distributor catalog match for this MPN.'
+  if (life === 'eol' || life === 'discontinued') {
+    return 'Going obsolete. Plan the last buy or an alternate.'
+  }
+  if (life === 'nrnd') return 'Not recommended for new designs.'
+  if (avail === 'outofstock') return "Can't buy this from tracked distributors."
+  const weeks = leadTimeWeeks(line)
+  if (weeks != null && weeks > 30) return `Factory lead is about ${weeks} weeks.`
+  if (line.total_duty_pct != null && line.total_duty_pct > 0) {
+    return `Estimated duty is ${line.total_duty_pct}%.`
+  }
+  return buildLineDecision(line).summary.replace(/^(Critical|Watch|Unknown|Clear):\s*/i, '')
+}
+
 function stockSentence(line: AnalyzedLine): string {
   const avail = line.availability_status?.toLowerCase() ?? ''
   if (avail === 'outofstock') return 'Distributor stock is out across tracked sellers.'

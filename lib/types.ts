@@ -13,6 +13,18 @@ export interface BomSummary {
   riskBand?: string
 }
 
+export interface FlaggedLineItem {
+  bomId: string
+  bomName: string
+  bomVersion: number
+  line: AnalyzedLine
+}
+
+export interface FlaggedLines {
+  accountId: string
+  items: FlaggedLineItem[]
+}
+
 export type LifecycleStatus = 'active' | 'nrnd' | 'eol' | 'discontinued' | 'unknown'
 export type LeadTimeTrend = 'improving' | 'stable' | 'worsening'
 

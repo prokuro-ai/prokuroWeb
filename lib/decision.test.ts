@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { analystBrief, buildLineDecision } from '@/lib/decision'
+import { analystBrief, buildLineDecision, decisionHeadline } from '@/lib/decision'
 import type { AnalyzedLine } from '@/lib/types'
 
 const base: AnalyzedLine = {
@@ -62,5 +62,26 @@ describe('buildLineDecision', () => {
     expect(decision.summary).not.toContain('Nova:')
     expect(decision.summary.toLowerCase()).toContain('critical')
     expect(analystBrief({ ...base, agent_brief: '  Nova: brief  ' })).toBe('Nova: brief')
+  })
+})
+
+describe('decisionHeadline', () => {
+  it('uses the stored brief when present', () => {
+    expect(
+      decisionHeadline({
+        ...base,
+        agent_brief: 'Qualify the alternate. Stock will not cover the run.',
+      }),
+    ).toBe('Qualify the alternate.')
+  })
+
+  it('composes from lifecycle when there is no brief', () => {
+    expect(
+      decisionHeadline({
+        ...base,
+        lifecycle_status: 'eol',
+        risk_level: 'red',
+      }),
+    ).toMatch(/obsolete/i)
   })
 })

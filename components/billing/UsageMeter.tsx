@@ -1,6 +1,3 @@
-const BLUE = '#0062ff'
-const NAVY = '#0f1b2d'
-
 export function UsageMeter({
   label,
   used,
@@ -14,15 +11,15 @@ export function UsageMeter({
 }) {
   if (used == null || limit == null) {
     return (
-      <div className="border border-slate-200 bg-white px-4 py-4">
+      <div className="border border-mk-line bg-mk-canvas px-4 py-4">
         <div className="mb-2 flex items-baseline justify-between gap-3">
-          <span className="text-[12px] text-slate-500">{label}</span>
-          <span className="font-mono text-[12px] tabular-nums font-semibold" style={{ color: NAVY }}>
+          <span className="text-[12px] text-mk-ink-muted">{label}</span>
+          <span className="mk-data text-[12px] text-mk-ink">
             {used == null ? '—' : used.toLocaleString()} / {limit == null ? '—' : limit.toLocaleString()}
           </span>
         </div>
-        <div className="mb-2 h-1.5 overflow-hidden bg-slate-100" />
-        <p className="text-[11px] text-slate-400">{hint ?? 'Waiting on billing status from the server'}</p>
+        <div className="mb-2 h-1 overflow-hidden bg-mk-raised-2" />
+        <p className="text-[11px] text-mk-ink-subtle">{hint ?? 'Waiting on your plan snapshot'}</p>
       </div>
     )
   }
@@ -34,25 +31,23 @@ export function UsageMeter({
   const warn = !hot && pct >= 70
 
   return (
-    <div className="border border-slate-200 bg-white px-4 py-4">
+    <div className="border border-mk-line bg-mk-canvas px-4 py-4">
       <div className="mb-2 flex items-baseline justify-between gap-3">
-        <span className="text-[12px] text-slate-500">{label}</span>
-        <span className="font-mono text-[12px] tabular-nums font-semibold" style={{ color: NAVY }}>
+        <span className="text-[12px] text-mk-ink-muted">{label}</span>
+        <span className="mk-data text-[12px] text-mk-ink">
           {used.toLocaleString()} / {limit.toLocaleString()}
         </span>
       </div>
-      <div className="mb-2 h-1.5 overflow-hidden bg-slate-100">
+      <div className="mb-2 h-1 overflow-hidden bg-mk-raised-2">
         <div
           className="h-full transition-all"
           style={{
             width: `${pct}%`,
-            background: hot ? '#c62026' : warn ? '#b45309' : BLUE,
+            background: hot ? 'var(--mk-red)' : warn ? 'var(--mk-amber)' : 'var(--mk-accent)',
           }}
         />
       </div>
-      <p className="text-[11px] text-slate-400">
-        {hint ?? `${remaining.toLocaleString()} remaining this period`}
-      </p>
+      <p className="text-[11px] text-mk-ink-subtle">{hint ?? `${remaining.toLocaleString()} left this month`}</p>
     </div>
   )
 }

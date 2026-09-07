@@ -38,14 +38,14 @@ export function formatPeriodEnd(value: string | null | undefined) {
 
 export function bedrockLabel(value: string | undefined) {
   if (!value) return '—'
-  if (value === 'haiku_capped') return 'Capped Haiku'
-  if (value === 'on') return 'Full analyst'
+  if (value === 'haiku_capped') return 'Standard briefs'
+  if (value === 'on') return 'Full briefs'
   return value.replace(/_/g, ' ')
 }
 
 export function refreshLabel(value: string | undefined) {
-  if (value === 'daily') return 'Daily'
-  if (value === 'weekly') return 'Weekly'
+  if (value === 'daily') return 'Every day'
+  if (value === 'weekly') return 'Every week'
   return value ?? '—'
 }
 

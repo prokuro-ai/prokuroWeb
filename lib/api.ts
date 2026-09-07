@@ -4,6 +4,7 @@ import type {
   AnalyzedLine,
   AnalyzeResult,
   BomSummary,
+  FlaggedLines,
   ParseResult,
   PlaceOrderRequest,
   PlaceOrderResponse,
@@ -197,6 +198,13 @@ export async function listBoms(params?: {
   const body: unknown = await readJsonBody(res)
   if (!res.ok) throw new Error(await readErrorMessage(res, body))
   return body as Page<BomSummary>
+}
+
+export async function listFlaggedLines(): Promise<FlaggedLines> {
+  const res = await fetch('/api/boms/flagged', { headers: await authHeaders() })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  return body as FlaggedLines
 }
 
 export async function getBom(id: string): Promise<BomRecord> {

@@ -1,72 +1,30 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { ChevronDown, Search, Sparkles } from 'lucide-react'
-import type { AnalyzedLine, RiskLevel } from '@/lib/types'
-import { analystBrief, buildLineDecision } from '@/lib/decision'
+import { useEffect, useMemo, useState } from 'react'
+import { ArrowRight, Search } from 'lucide-react'
+import DecisionRow from '@/components/app/DecisionRow'
+import { appSheet } from '@/components/app/chrome'
+import { analystBrief, buildLineDecision, decisionHeadline } from '@/lib/decision'
+import { lineFactChips } from '@/lib/buyerJob'
 import {
-  RISK_PRESENTATION,
   isAtRisk,
   isPendingLine,
   leadTimeWeeks,
-  lifecycleDot,
   lifecycleLabel,
   lineRiskLevel,
   tariffLabel,
 } from '@/lib/risk'
+import type { AnalyzedLine, RiskLevel } from '@/lib/types'
 
-const COLUMN_COUNT = 7
+const FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'red', label: 'Needs a call' },
+  { id: 'yellow', label: 'Watch' },
+  { id: 'green', label: 'Fine' },
+  { id: 'unknown', label: 'Unmatched' },
+] as const
 
-const FILTERS = ['All', 'Critical', 'Watch', 'Clear'] as const
-type Filter = (typeof FILTERS)[number]
-
-const FILTER_LEVEL: Record<Exclude<Filter, 'All'>, RiskLevel> = {
-  Critical: 'red',
-  Watch: 'yellow',
-  Clear: 'green',
-}
-
-function Pending() {
-  return <span className="animate-pulse text-[12px] text-slate-400">Looking up…</span>
-}
-
-function DecisionBlock({
-  title,
-  body,
-  accent,
-}: {
-  title: string
-  body: string
-  accent?: string
-}) {
-  return (
-    <div className="min-w-0 border border-slate-200 bg-white p-4">
-      <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
-        <Sparkles className="h-3.5 w-3.5 shrink-0 text-[#0062ff]" aria-hidden />
-        <span className="font-mono text-[11px] font-medium uppercase tracking-[0.09em] text-slate-500">
-          {title}
-        </span>
-        {accent ? (
-          <span className="bg-[#0062ff]/10 px-1.5 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wide text-[#0062ff]">
-            {accent}
-          </span>
-        ) : null}
-      </div>
-      <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-slate-600">
-        {body}
-      </p>
-    </div>
-  )
-}
-
-function Signal({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="font-mono text-[10px] uppercase tracking-[0.09em] text-slate-400">{label}</dt>
-      <dd className="mt-1 text-[13px] font-medium text-slate-700">{value}</dd>
-    </div>
-  )
-}
+type FilterId = (typeof FILTERS)[number]['id']
 
 function stockLabel(line: AnalyzedLine): string {
   const avail = line.availability_status?.toLowerCase() ?? ''
@@ -75,225 +33,108 @@ function stockLabel(line: AnalyzedLine): string {
   return `${line.total_avail.toLocaleString()} units`
 }
 
-function LineDetail({ line }: { line: AnalyzedLine }) {
-  const risk = RISK_PRESENTATION[lineRiskLevel(line)]
-  const pending = isPendingLine(line)
-  const weeks = leadTimeWeeks(line)
-  const lineLabel = String(line.row_index).padStart(4, '0')
-  const decision = buildLineDecision(line)
-  const brief = analystBrief(line)
-  // Briefs are filled on GET (heuristic/Bedrock). Never show an endless "Generating" state.
-
+function SpecCell({
+  label,
+  value,
+  hot,
+}: {
+  label: string
+  value: string
+  hot?: boolean
+}) {
   return (
-    <div className="min-w-0 border-t border-slate-200 bg-[#f4f6f9] px-4 py-4 sm:px-6 sm:py-5">
-      <div className="min-w-0 space-y-4 sm:space-y-5">
-        <div>
-          <p className={`font-mono text-[11px] uppercase tracking-[0.09em] ${risk.text}`}>
-            Line {lineLabel}: why {risk.label.toLowerCase()}
-          </p>
-          <p className="mt-2 max-w-[72ch] text-[14px] leading-relaxed text-slate-700 sm:text-[15px]">
-            {decision.summary}
-          </p>
-          {line.description ? (
-            <p className="mt-2 max-w-[72ch] text-[13px] leading-relaxed text-slate-500">
-              {line.description}
-            </p>
-          ) : null}
-        </div>
-
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-slate-200 pt-4 sm:gap-x-6 sm:gap-y-4 md:grid-cols-3 lg:grid-cols-6">
-          <Signal label="Lifecycle" value={pending ? 'Resolving…' : lifecycleLabel(line.lifecycle_status)} />
-          <Signal label="Distributor stock" value={pending ? 'Resolving…' : stockLabel(line)} />
-          <Signal label="Factory lead" value={weeks == null ? '—' : `${weeks} weeks`} />
-          <Signal label="Country of origin" value={line.country_of_origin || 'Unknown'} />
-          <Signal label="HTS code" value={line.hts_code || 'Unclassified'} />
-          <Signal label="Estimated duty" value={tariffLabel(line)} />
-        </dl>
-
-        {(line.refdes || line.category) && (
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] text-slate-500">
-            {line.refdes ? (
-              <span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.09em] text-slate-400">Ref des </span>
-                <span className="font-mono text-slate-700">{line.refdes}</span>
-              </span>
-            ) : null}
-            {line.category ? (
-              <span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.09em] text-slate-400">Category </span>
-                {line.category}
-              </span>
-            ) : null}
-          </div>
-        )}
-
-        <div className="grid min-w-0 gap-4 border-t border-slate-200 pt-4 lg:grid-cols-2">
-          <div className="space-y-2">
-            <p className="font-mono text-[10px] uppercase tracking-[0.09em] text-slate-400">
-              Alternates from your AML
-            </p>
-            {line.aml_candidates.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5">
-                {line.aml_candidates.map((mpn) => (
-                  <span
-                    key={mpn}
-                    className="border border-emerald-200 bg-emerald-50 px-2 py-1 font-mono text-xs font-medium text-emerald-700"
-                  >
-                    {mpn}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="text-[13px] text-slate-400">No approved alternate listed on this line.</p>
-            )}
-          </div>
-          <DecisionBlock
-            title="Recommended alternate"
-            accent={decision.recommendedAlternate ?? undefined}
-            body={decision.recommendedAlternateNote}
-          />
-        </div>
-
-        <DecisionBlock
-          title="Why this score"
-          accent={brief ? 'Analyst' : undefined}
-          body={brief ?? decision.whyScore}
-        />
-
-        <DecisionBlock
-          title="Cost & next action"
-          body={`${decision.costNote} ${decision.nextAction}`}
-        />
-
-        {(line.tariff_notes || line.entity_list_notes || line.tariff_disclaimer) && (
-          <div className="space-y-1.5 border-t border-slate-200 pt-4 text-[12px] leading-relaxed text-slate-500">
-            {line.tariff_notes ? <p>{line.tariff_notes}</p> : null}
-            {line.entity_list_notes ? <p className="text-red-700">{line.entity_list_notes}</p> : null}
-            {line.tariff_disclaimer ? <p className="text-slate-400">{line.tariff_disclaimer}</p> : null}
-          </div>
-        )}
-      </div>
+    <div className="bg-mk-canvas px-4 py-3.5">
+      <dt className="mk-eyebrow">{label}</dt>
+      <dd className="mk-data mt-1.5" style={{ color: hot ? 'var(--mk-red)' : 'var(--mk-ink)' }}>
+        {value}
+      </dd>
     </div>
   )
 }
 
-function LineRow({
-  line,
-  expanded,
-  onToggle,
-}: {
-  line: AnalyzedLine
-  expanded: boolean
-  onToggle: () => void
-}) {
-  const risk = RISK_PRESENTATION[lineRiskLevel(line)]
-  const expandable = isAtRisk(line)
+function LineDetail({ line }: { line: AnalyzedLine }) {
   const pending = isPendingLine(line)
   const weeks = leadTimeWeeks(line)
-  const avail = line.availability_status?.toLowerCase() ?? ''
-  const detailId = `bom-line-detail-${line.row_index}`
-
-  const rowClass = expandable
-    ? `group cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0062ff] ${risk.row} ${expanded ? 'bg-[#eef1f5]' : ''}`
-    : 'bg-white'
+  const decision = buildLineDecision(line)
+  const brief = analystBrief(line)
+  const life = lifecycleLabel(line.lifecycle_status)
+  const duty = tariffLabel(line)
+  const alternate = line.aml_candidates[0] ?? null
 
   return (
-    <>
-      <tr
-        role={expandable ? 'button' : undefined}
-        tabIndex={expandable ? 0 : undefined}
-        aria-expanded={expandable ? expanded : undefined}
-        aria-controls={expandable ? detailId : undefined}
-        onClick={expandable ? onToggle : undefined}
-        onKeyDown={
-          expandable
-            ? (event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault()
-                  onToggle()
-                }
-              }
-            : undefined
-        }
-        className={rowClass}
-      >
-        <td className={`px-5 py-3 ${expandable ? risk.rail : ''}`}>
-          <div className="flex items-start gap-2.5">
-            {expandable ? (
-              <ChevronDown
-                className={`mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform group-hover:text-[#0062ff] ${expanded ? 'rotate-180 text-[#0062ff]' : ''}`}
-                aria-hidden
-              />
-            ) : (
-              <span className="mt-0.5 inline-block h-3.5 w-3.5 shrink-0" aria-hidden />
-            )}
-            <div className="min-w-0">
-              <div className="truncate font-mono text-[13px] font-medium text-slate-900">{line.mpn ?? '—'}</div>
-              <div className="truncate text-[12px] text-slate-400">
-                {line.manufacturer ?? 'Manufacturer unknown'}
-              </div>
-            </div>
-          </div>
-        </td>
-        <td className="px-4 py-3 text-right font-mono text-[13px] tabular-nums text-slate-600">
-          {line.quantity ?? '—'}
-        </td>
-        <td className="px-4 py-3">
-          {pending ? (
-            <Pending />
-          ) : (
-            <span className="inline-flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-[0.06em] text-slate-700">
-              <span className={`h-1.5 w-1.5 shrink-0 ${lifecycleDot(line.lifecycle_status)}`} aria-hidden />
-              {lifecycleLabel(line.lifecycle_status)}
-            </span>
-          )}
-        </td>
-        <td className="px-4 py-3 text-right font-mono text-[13px] tabular-nums">
-          {pending ? (
-            <Pending />
-          ) : avail === 'outofstock' ? (
-            <span className="font-semibold text-red-600">Out of stock</span>
-          ) : avail === 'nomatch' ? (
-            <span className="text-slate-400">No match</span>
-          ) : (
-            <span className="text-slate-700">{line.total_avail.toLocaleString()}</span>
-          )}
-        </td>
-        <td className="px-4 py-3 text-right font-mono text-[13px] tabular-nums">
-          {pending ? (
-            <Pending />
-          ) : weeks == null ? (
-            <span className="text-slate-400">—</span>
-          ) : (
-            <span className={weeks > 30 ? 'font-semibold text-amber-700' : 'text-slate-600'}>{weeks}w</span>
-          )}
-        </td>
-        <td className="px-4 py-3 text-right font-mono text-[13px] tabular-nums text-slate-600">
-          {tariffLabel(line)}
-        </td>
-        <td className="px-5 py-3">
-          {risk.muted ? (
-            <span className="font-mono text-[12px] text-slate-500">{risk.label}</span>
-          ) : (
-            <span className={`font-mono text-[12px] font-semibold ${risk.text}`}>{risk.label}</span>
-          )}
-        </td>
-      </tr>
-      {expandable && expanded ? (
-        <tr id={detailId}>
-          <td colSpan={COLUMN_COUNT} className="p-0">
-            <LineDetail line={line} />
-          </td>
-        </tr>
+    <div className="space-y-5">
+      {line.description ? (
+        <p className="max-w-[72ch] text-[13px] leading-relaxed text-mk-ink-muted">{line.description}</p>
       ) : null}
-    </>
+
+      <dl className="grid grid-cols-2 gap-px border border-mk-line bg-mk-line sm:grid-cols-4">
+        <SpecCell label="Lifecycle" value={pending ? 'Looking up' : life} hot={life === 'EOL' || life === 'NRND'} />
+        <SpecCell
+          label="Stock"
+          value={pending ? 'Looking up' : stockLabel(line)}
+          hot={!pending && line.availability_status?.toLowerCase() === 'outofstock'}
+        />
+        <SpecCell
+          label="Lead"
+          value={weeks == null ? '—' : `${weeks} weeks`}
+          hot={weeks != null && weeks > 30}
+        />
+        <SpecCell label="Duty" value={duty} hot={duty !== '-'} />
+        {line.country_of_origin ? <SpecCell label="Origin" value={line.country_of_origin} /> : null}
+        {line.hts_code ? <SpecCell label="HTS" value={line.hts_code} /> : null}
+      </dl>
+
+      {alternate ? (
+        <div className="border border-mk-line bg-mk-canvas px-5 py-4">
+          <p className="mk-eyebrow">Approved alternate</p>
+          <p className="mk-data mt-2 text-mk-ink">{alternate}</p>
+          {line.aml_candidates.length > 1 ? (
+            <p className="mt-2 text-[13px] text-mk-ink-muted">
+              Also listed: {line.aml_candidates.slice(1).join(', ')}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {brief ? <p className="max-w-[72ch] text-[14px] leading-relaxed text-mk-ink">{brief}</p> : null}
+
+      {(isAtRisk(line) || isPendingLine(line)) && decision.nextAction ? (
+        <div className="flex items-start gap-3 border-t border-mk-line pt-4">
+          <ArrowRight size={15} className="mt-0.5 shrink-0 text-mk-accent" aria-hidden />
+          <p className="text-[14px] leading-relaxed text-mk-ink">{decision.nextAction}</p>
+        </div>
+      ) : null}
+
+      {(line.tariff_notes || line.entity_list_notes || line.tariff_disclaimer) && (
+        <div className="space-y-1.5 text-[12px] leading-relaxed text-mk-ink-subtle">
+          {line.tariff_notes ? <p>{line.tariff_notes}</p> : null}
+          {line.entity_list_notes ? <p className="text-mk-red">{line.entity_list_notes}</p> : null}
+          {line.tariff_disclaimer ? <p>{line.tariff_disclaimer}</p> : null}
+        </div>
+      )}
+    </div>
   )
 }
 
-export default function BomPartsTable({ lines }: { lines: AnalyzedLine[] }) {
-  const [expanded, setExpanded] = useState<number | null>(null)
+export default function BomPartsTable({
+  lines,
+  initialExpanded = null,
+}: {
+  lines: AnalyzedLine[]
+  initialExpanded?: number | null
+}) {
+  const [expanded, setExpanded] = useState<number | null>(initialExpanded)
   const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState<Filter>('All')
+  const [filter, setFilter] = useState<FilterId>('all')
+
+  useEffect(() => {
+    if (initialExpanded == null) return
+    setExpanded(initialExpanded)
+    const id = `bom-line-${initialExpanded}`
+    requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ block: 'center' })
+    })
+  }, [initialExpanded])
 
   const counts = useMemo(() => {
     const tally: Record<RiskLevel, number> = { red: 0, yellow: 0, green: 0, unknown: 0 }
@@ -304,7 +145,7 @@ export default function BomPartsTable({ lines }: { lines: AnalyzedLine[] }) {
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()
     return lines.filter((line) => {
-      if (filter !== 'All' && lineRiskLevel(line) !== FILTER_LEVEL[filter]) return false
+      if (filter !== 'all' && lineRiskLevel(line) !== filter) return false
       if (!query) return true
       return [line.mpn, line.manufacturer, line.description, line.refdes]
         .filter(Boolean)
@@ -313,74 +154,57 @@ export default function BomPartsTable({ lines }: { lines: AnalyzedLine[] }) {
   }, [lines, search, filter])
 
   return (
-    <div className="overflow-hidden border border-slate-200 bg-white shadow-[0_24px_48px_-30px_rgb(15_27_45_/_24%)]">
-      <div className="flex flex-col gap-2.5 border-b border-slate-200 bg-[#f4f6f9] px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:px-5">
+    <div className={appSheet}>
+      <div className="flex flex-col gap-2.5 border-b border-mk-line bg-mk-raised px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:px-5">
         <div className="relative min-w-0 w-full sm:max-w-xs sm:flex-1">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden />
+          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-mk-ink-subtle" aria-hidden />
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search part, manufacturer, ref des…"
+            placeholder="Find a part"
             aria-label="Search parts"
-            className="w-full border border-slate-200 bg-white py-1.5 pl-8 pr-3 text-[13px] focus:border-[#0062ff] focus:outline-none focus:ring-1 focus:ring-[#0062ff]"
+            className="w-full border border-mk-line bg-mk-canvas py-1.5 pl-8 pr-3 text-[13px] focus:border-mk-accent focus:outline-none"
           />
         </div>
-        <div className="flex max-w-full overflow-x-auto border border-slate-200 bg-white p-0.5">
+        <div className="flex max-w-full overflow-x-auto border border-mk-line bg-mk-canvas p-0.5">
           {FILTERS.map((option) => {
-            const count = option === 'All' ? lines.length : counts[FILTER_LEVEL[option]]
+            const count = option.id === 'all' ? lines.length : counts[option.id]
             return (
               <button
-                key={option}
+                key={option.id}
                 type="button"
-                onClick={() => setFilter(option)}
-                className={`shrink-0 px-2 py-1 font-mono text-[10px] font-medium uppercase tracking-[0.06em] transition-colors sm:px-2.5 sm:text-[11px] ${
-                  filter === option ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-800'
+                onClick={() => setFilter(option.id)}
+                className={`shrink-0 px-2.5 py-1 text-[12px] font-medium transition-colors ${
+                  filter === option.id ? 'bg-mk-ink text-mk-canvas' : 'text-mk-ink-muted hover:text-mk-ink'
                 }`}
               >
-                {option} <span className="tabular-nums opacity-70">{count}</span>
+                {option.label} <span className="tabular-nums opacity-70">{count}</span>
               </button>
             )
           })}
         </div>
-        <span className="ml-auto hidden font-mono text-[11px] uppercase tracking-[0.08em] text-slate-400 lg:block">
-          Expand critical &amp; watch rows
-        </span>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] border-collapse text-left text-[13px]">
-          <thead>
-            <tr className="border-b border-slate-200 bg-[#f4f6f9]">
-              {['Part', 'Qty', 'Lifecycle', 'Stock', 'Lead', 'Tariff', 'Risk'].map((header) => (
-                <th
-                  key={header}
-                  scope="col"
-                  className={`px-4 py-2.5 font-mono text-[11px] font-medium uppercase tracking-[0.09em] text-slate-400 ${
-                    header === 'Part' || header === 'Risk' ? 'px-5' : ''
-                  } ${['Qty', 'Stock', 'Lead', 'Tariff'].includes(header) ? 'text-right' : 'text-left'}`}
-                >
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {filtered.map((line) => (
-              <LineRow
-                key={line.row_index}
-                line={line}
-                expanded={expanded === line.row_index}
-                onToggle={() =>
-                  setExpanded((current) => (current === line.row_index ? null : line.row_index))
-                }
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {filtered.map((line) => (
+        <div key={line.row_index} id={`bom-line-${line.row_index}`}>
+          <DecisionRow
+            risk={lineRiskLevel(line)}
+            headline={decisionHeadline(line)}
+            mpn={line.mpn}
+            meta={line.refdes ?? line.manufacturer ?? undefined}
+            chips={lineFactChips(line)}
+            expanded={expanded === line.row_index}
+            onToggle={() =>
+              setExpanded((current) => (current === line.row_index ? null : line.row_index))
+            }
+          >
+            <LineDetail line={line} />
+          </DecisionRow>
+        </div>
+      ))}
 
       {filtered.length === 0 ? (
-        <div className="flex h-28 items-center justify-center border-t border-slate-200 text-[13px] text-slate-400">
+        <div className="flex h-28 items-center justify-center text-[13px] text-mk-ink-subtle">
           No parts match this view.
         </div>
       ) : null}
