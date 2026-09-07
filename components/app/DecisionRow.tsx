@@ -101,7 +101,7 @@ export default function DecisionRow({
     return (
       <Link
         href={href}
-        className={`relative block border-b border-mk-line px-5 py-4 transition-colors ${surface}`}
+        className={`relative block border-b border-mk-line/60 px-5 py-4 transition-colors last:border-b-0 ${surface}`}
       >
         {body}
       </Link>
@@ -110,7 +110,7 @@ export default function DecisionRow({
 
   if (onToggle) {
     return (
-      <div className="border-b border-mk-line">
+      <div className="border-b border-mk-line/60 last:border-b-0">
         <button
           type="button"
           onClick={onToggle}
@@ -120,11 +120,13 @@ export default function DecisionRow({
           {body}
         </button>
         {expanded && children ? (
-          <div className="border-t border-mk-line bg-mk-raised px-5 py-5">{children}</div>
+          <div className="bg-mk-raised px-5 py-5">{children}</div>
         ) : null}
       </div>
     )
   }
 
-  return <div className={`relative border-b border-mk-line px-5 py-4 ${surface}`}>{body}</div>
+  return (
+    <div className={`relative border-b border-mk-line/60 px-5 py-4 last:border-b-0 ${surface}`}>{body}</div>
+  )
 }

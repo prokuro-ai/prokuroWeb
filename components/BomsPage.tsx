@@ -95,7 +95,6 @@ export default function BomsPage() {
     <>
       <div className={appPage}>
         <PageHeader
-          kicker="Boards"
           title="Boards"
           description={status ?? (loading ? undefined : 'Upload a board list to see what to buy, drop, or watch.')}
           actions={

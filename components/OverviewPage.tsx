@@ -61,7 +61,6 @@ function OverviewView() {
   return (
     <div className={appPage}>
       <PageHeader
-        kicker="This week"
         title="What to do this week"
         description={statusLine}
         actions={

@@ -18,7 +18,7 @@ export const appField =
   'w-full rounded-[8px] border border-mk-line bg-mk-canvas px-3 py-2 text-[13px] text-mk-ink placeholder:text-mk-ink-subtle focus:border-mk-accent focus:outline-none'
 
 export const appPage =
-  'flex-1 overflow-y-auto bg-mk-raised font-mk-sans text-mk-ink'
+  'flex-1 overflow-y-auto bg-mk-canvas font-mk-sans text-mk-ink'
 
 export const appSheet =
-  'overflow-hidden rounded-[8px] border border-mk-line bg-mk-canvas'
+  'overflow-hidden rounded-[8px] bg-mk-canvas shadow-[var(--mk-shadow)]'

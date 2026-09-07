@@ -127,7 +127,6 @@ export default function PurchasingPage() {
   return (
     <div className={appPage}>
       <PageHeader
-        kicker="Buy"
         title="Get a quote"
         description="Enter part numbers and quantities. We’ll price them at Digi-Key or Mouser. Placing the order stays off until your distributor account is connected."
       />

@@ -311,7 +311,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
           </button>
         </div>
       ) : null}
-      <div className="flex-1 overflow-y-auto bg-mk-raised">
+      <div className="flex-1 overflow-y-auto bg-mk-canvas">
         <div className="sticky top-0 z-10 border-b border-mk-line bg-mk-canvas">
           <div className="mx-auto max-w-[1120px] px-4 py-4 sm:px-6">
             <div className="flex flex-wrap items-start gap-x-3 gap-y-3">

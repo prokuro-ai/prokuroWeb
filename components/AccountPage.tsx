@@ -186,7 +186,6 @@ export default function AccountPage() {
   return (
     <div className={appPage}>
       <PageHeader
-        kicker="Account"
         title="You and your team"
         description={`${planName}${
           seatsUsed != null ? ` · ${seatsUsed} / ${seatsLimit ?? '—'} people` : ''
@@ -228,14 +227,14 @@ export default function AccountPage() {
         <section>
           <h2 className="mb-3 font-mk-display text-[22px] text-mk-ink">Team</h2>
           {teamError && !team ? (
-            <div className="mb-3 border border-mk-amber/30 bg-mk-canvas px-3 py-2 text-[12px] text-mk-ink">
+            <div className="mb-3 rounded-[8px] border border-mk-amber/30 bg-mk-canvas px-3 py-2 text-[12px] text-mk-ink">
               Could not load the team ({teamError}).{' '}
               <button type="button" className="font-semibold underline" onClick={() => reloadTeam()}>
                 Retry
               </button>
             </div>
           ) : teamError ? (
-            <div className="mb-3 border border-mk-amber/30 bg-mk-canvas px-3 py-2 text-[12px] text-mk-ink">
+            <div className="mb-3 rounded-[8px] border border-mk-amber/30 bg-mk-canvas px-3 py-2 text-[12px] text-mk-ink">
               Team refresh failed ({teamError}). Showing last known people.{' '}
               <button type="button" className="font-semibold underline" onClick={() => reloadTeam()}>
                 Retry

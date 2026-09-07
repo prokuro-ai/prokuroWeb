@@ -159,7 +159,6 @@ export default function BillingPage() {
   return (
     <div className={appPage}>
       <PageHeader
-        kicker="Plan"
         title="Your plan"
         description="What you can upload, how often boards refresh, and who can join."
         actions={
