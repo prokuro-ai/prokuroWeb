@@ -223,7 +223,7 @@ export default function BillingPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="font-mk-display text-[24px] text-mk-ink">{planTitle(billing?.plan)}</h2>
                 {statusLabel ? (
-                  <span className="border border-mk-line px-2 py-0.5 text-[12px] text-mk-ink-muted">{statusLabel}</span>
+                  <span className="rounded-[8px] border border-mk-line px-2 py-0.5 text-[12px] text-mk-ink-muted">{statusLabel}</span>
                 ) : null}
               </div>
               <p className="mt-2 text-[13px] text-mk-ink-muted">

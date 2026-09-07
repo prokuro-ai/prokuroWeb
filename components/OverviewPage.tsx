@@ -66,7 +66,7 @@ function OverviewView() {
         description={statusLine}
         actions={
           items.length > 0 ? (
-            <div className="flex border border-mk-line bg-mk-canvas p-0.5">
+            <div className="flex overflow-hidden rounded-[8px] border border-mk-line bg-mk-canvas p-0.5">
               {(['job', 'board'] as const).map((option) => (
                 <button
                   key={option}

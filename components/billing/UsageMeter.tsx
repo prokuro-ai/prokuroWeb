@@ -11,7 +11,7 @@ export function UsageMeter({
 }) {
   if (used == null || limit == null) {
     return (
-      <div className="border border-mk-line bg-mk-canvas px-4 py-4">
+      <div className="rounded-[8px] border border-mk-line bg-mk-canvas px-4 py-4">
         <div className="mb-2 flex items-baseline justify-between gap-3">
           <span className="text-[12px] text-mk-ink-muted">{label}</span>
           <span className="mk-data text-[12px] text-mk-ink">
@@ -31,7 +31,7 @@ export function UsageMeter({
   const warn = !hot && pct >= 70
 
   return (
-    <div className="border border-mk-line bg-mk-canvas px-4 py-4">
+    <div className="rounded-[8px] border border-mk-line bg-mk-canvas px-4 py-4">
       <div className="mb-2 flex items-baseline justify-between gap-3">
         <span className="text-[12px] text-mk-ink-muted">{label}</span>
         <span className="mk-data text-[12px] text-mk-ink">

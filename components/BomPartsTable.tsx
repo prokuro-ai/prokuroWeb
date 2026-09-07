@@ -67,7 +67,7 @@ function LineDetail({ line }: { line: AnalyzedLine }) {
         <p className="max-w-[72ch] text-[13px] leading-relaxed text-mk-ink-muted">{line.description}</p>
       ) : null}
 
-      <dl className="grid grid-cols-2 gap-px border border-mk-line bg-mk-line sm:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[8px] border border-mk-line bg-mk-line sm:grid-cols-4">
         <SpecCell label="Lifecycle" value={pending ? 'Looking up' : life} hot={life === 'EOL' || life === 'NRND'} />
         <SpecCell
           label="Stock"
@@ -85,7 +85,7 @@ function LineDetail({ line }: { line: AnalyzedLine }) {
       </dl>
 
       {alternate ? (
-        <div className="border border-mk-line bg-mk-canvas px-5 py-4">
+        <div className="rounded-[8px] border border-mk-line bg-mk-canvas px-5 py-4">
           <p className="mk-eyebrow">Approved alternate</p>
           <p className="mk-data mt-2 text-mk-ink">{alternate}</p>
           {line.aml_candidates.length > 1 ? (
@@ -163,10 +163,10 @@ export default function BomPartsTable({
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Find a part"
             aria-label="Search parts"
-            className="w-full border border-mk-line bg-mk-canvas py-1.5 pl-8 pr-3 text-[13px] focus:border-mk-accent focus:outline-none"
+            className="w-full rounded-[8px] border border-mk-line bg-mk-canvas py-1.5 pl-8 pr-3 text-[13px] focus:border-mk-accent focus:outline-none"
           />
         </div>
-        <div className="flex max-w-full overflow-x-auto border border-mk-line bg-mk-canvas p-0.5">
+        <div className="flex max-w-full overflow-x-auto rounded-[8px] border border-mk-line bg-mk-canvas p-0.5">
           {FILTERS.map((option) => {
             const count = option.id === 'all' ? lines.length : counts[option.id]
             return (

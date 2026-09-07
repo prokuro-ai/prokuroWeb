@@ -1,9 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useLocation } from '@/lib/navigation'
 import { useAuth } from '@/components/AuthProvider'
-import { displayNameForUser, initialsForUser, updateProfile, signOut } from '@/lib/auth'
+import { displayNameForUser, initialsForUser, updateProfile } from '@/lib/auth'
 import {
   createTeamInvite,
   getBillingStatus,
@@ -18,7 +17,6 @@ import { useTeam } from '@/hooks/use-team'
 import { planLabel as shortPlanLabel } from '@/lib/planLimits'
 import PageHeader from '@/components/app/PageHeader'
 import { appField, appGhostBtn, appPage, appPrimaryBtn, appSheet } from '@/components/app/chrome'
-import { LogOut } from 'lucide-react'
 
 function InputField({
   label,
@@ -113,7 +111,6 @@ function memberInitials(member: {
 
 export default function AccountPage() {
   const { user, loading, refresh } = useAuth()
-  const [, navigate] = useLocation()
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -155,12 +152,6 @@ export default function AccountPage() {
     }
   }
 
-  const handleSignOut = async () => {
-    await signOut()
-    await refresh()
-    navigate('/login')
-  }
-
   const handleCancel = () => {
     if (!user) return
     setFirstName(user.firstName)
@@ -200,11 +191,6 @@ export default function AccountPage() {
         description={`${planName}${
           seatsUsed != null ? ` · ${seatsUsed} / ${seatsLimit ?? '—'} people` : ''
         }`}
-        actions={
-          <button type="button" onClick={handleSignOut} className={appGhostBtn}>
-            <LogOut className="h-3.5 w-3.5" /> Sign out
-          </button>
-        }
       />
 
       <div className="mx-auto grid max-w-[1180px] gap-8 px-6 py-8 lg:grid-cols-2">
@@ -212,7 +198,7 @@ export default function AccountPage() {
           <h2 className="mb-3 font-mk-display text-[22px] text-mk-ink">You</h2>
           <div className={appSheet}>
             <div className="flex items-center gap-4 border-b border-mk-line px-5 py-5">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center bg-mk-accent text-lg font-semibold text-mk-on-accent">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[8px] bg-mk-ink text-lg font-semibold text-mk-canvas">
                 {initials}
               </div>
               <div className="min-w-0">
@@ -270,7 +256,7 @@ export default function AccountPage() {
           <div className={appSheet}>
             {(team?.members ?? []).map((member) => (
               <div key={member.user_id} className="flex items-center gap-3 border-b border-mk-line px-5 py-4 last:border-b-0">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-mk-accent text-xs font-semibold text-mk-on-accent">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-mk-ink text-xs font-semibold text-mk-canvas">
                   {memberInitials(member)}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -292,7 +278,7 @@ export default function AccountPage() {
                         setInviteError(err instanceof Error ? err.message : 'Could not update role')
                       }
                     }}
-                    className="border border-mk-line bg-mk-canvas px-2 py-0.5 text-[11px] text-mk-ink"
+                    className="rounded-[8px] border border-mk-line bg-mk-canvas px-2 py-0.5 text-[11px] text-mk-ink"
                   >
                     <option value="read_only">Can view</option>
                     <option value="admin">Can edit</option>
@@ -321,7 +307,7 @@ export default function AccountPage() {
 
             {!team?.members?.length ? (
               <div className="flex items-center gap-3 px-5 py-4">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-mk-accent text-xs font-semibold text-mk-on-accent">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-mk-ink text-xs font-semibold text-mk-canvas">
                   {initials}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -334,7 +320,7 @@ export default function AccountPage() {
 
             {(team?.invites ?? []).map((invite: TeamInvite) => (
               <div key={invite.id} className="flex items-center gap-3 border-t border-mk-line px-5 py-4">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-mk-amber/15 text-[10px] font-bold text-mk-amber">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-mk-amber/15 text-[10px] font-bold text-mk-amber">
                   …
                 </div>
                 <div className="min-w-0 flex-1">
@@ -430,7 +416,7 @@ export default function AccountPage() {
                 {inviteNotice ? <p className="mt-2 text-[12px] text-mk-green">{inviteNotice}</p> : null}
                 {inviteError ? <p className="mt-2 text-[12px] text-mk-red">{inviteError}</p> : null}
                 {lastAcceptUrl ? (
-                  <div className="mt-3 border border-mk-line bg-mk-canvas px-3 py-2">
+                  <div className="mt-3 rounded-[8px] border border-mk-line bg-mk-canvas px-3 py-2">
                     <p className="text-[11px] font-medium text-mk-ink-muted">Invite link</p>
                     <a
                       href={lastAcceptUrl}
