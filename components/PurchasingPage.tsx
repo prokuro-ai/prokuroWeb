@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { placeOrder, quotePurchase } from '@/lib/api'
 import { useTeam } from '@/hooks/use-team'
 import PageHeader from '@/components/app/PageHeader'
-import { appField, appGhostBtn, appPage, appPrimaryBtn, appSheet } from '@/components/app/chrome'
+import { appField, appGhostBtn, appPage, appPrimaryBtn, appSection, appSheet } from '@/components/app/chrome'
 import type {
   PlaceOrderResponse,
   PurchaseProviderId,
@@ -131,10 +131,10 @@ export default function PurchasingPage() {
         description="Enter part numbers and quantities. We’ll price them at Digi-Key or Mouser. Placing the order stays off until your distributor account is connected."
       />
 
-      <div className="mx-auto max-w-[1180px] space-y-4 px-6 py-8">
+      <div className={`${appSection} space-y-4`}>
         <div className={appSheet}>
           <div className="border-b border-mk-line px-5 py-4">
-            <h2 className="font-mk-display text-[22px] text-mk-ink">Parts to buy</h2>
+            <h2 className="mk-app-heading text-mk-ink">Parts to buy</h2>
             <p className="mt-1 text-[13px] text-mk-ink-muted">
               One part number per row. Add a PO number only if you are ready to place the order.
             </p>
@@ -262,13 +262,13 @@ export default function PurchasingPage() {
           <div className={appSheet}>
             <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-mk-line px-5 py-4">
               <div>
-                <h2 className="font-mk-display text-[22px] text-mk-ink">Quote</h2>
+                <h2 className="mk-app-heading text-mk-ink">Quote</h2>
                 <p className="mt-1 text-[13px] text-mk-ink-muted">
                   {quote.provider} · {statusLabel(quote.status)}
                 </p>
               </div>
               {quote.subtotal != null ? (
-                <p className="font-mk-display text-[20px] text-mk-ink">
+                <p className="mk-app-heading text-mk-ink">
                   {money(quote.subtotal, quote.currency)}
                 </p>
               ) : null}
@@ -323,7 +323,7 @@ export default function PurchasingPage() {
 
         {order ? (
           <div className={`${appSheet} px-5 py-4`}>
-            <h2 className="font-mk-display text-[22px] text-mk-ink">Order</h2>
+            <h2 className="mk-app-heading text-mk-ink">Order</h2>
             <p className="mt-1 text-[13px] text-mk-ink-muted">
               {order.provider} · {statusLabel(order.status)}
             </p>

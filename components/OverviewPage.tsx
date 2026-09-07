@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import DecisionRow from '@/components/app/DecisionRow'
 import EmptyState from '@/components/app/EmptyState'
 import PageHeader from '@/components/app/PageHeader'
-import { appPage, appPrimaryBtn, appSheet } from '@/components/app/chrome'
+import { appPage, appPrimaryBtn, appSection, appSheet } from '@/components/app/chrome'
 import { useBoms } from '@/hooks/use-boms'
 import { useFlaggedLines } from '@/hooks/use-flagged-lines'
 import { BUYER_JOB_LABEL, BUYER_JOB_ORDER, buyerJob, lineFactChips } from '@/lib/buyerJob'
@@ -83,7 +83,7 @@ function OverviewView() {
         }
       />
 
-      <div className="mx-auto max-w-[1180px] px-6 py-8">
+      <div className={appSection}>
         {loading ? (
           <div className={`${appSheet} space-y-0`}>
             {[0, 1, 2].map((i) => (
@@ -125,7 +125,7 @@ function OverviewView() {
             {groups.map((group) => (
               <section key={group.key}>
                 <div className="mb-2 flex items-baseline justify-between gap-3">
-                  <h2 className="font-mk-display text-[22px] text-mk-ink">{group.label}</h2>
+                  <h2 className="mk-app-heading text-mk-ink">{group.label}</h2>
                   <span className="mk-eyebrow">
                     {group.rows.length} {group.rows.length === 1 ? 'part' : 'parts'}
                   </span>

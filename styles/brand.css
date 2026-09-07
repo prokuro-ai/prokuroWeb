@@ -46,6 +46,9 @@
 
   --ease-mk-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-mk-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* Product + marketing chrome. Below this the left rail is a drawer. */
+  --breakpoint-mk: 56.25rem;
 }
 
 /**
@@ -233,6 +236,25 @@
     font-family: var(--font-mk-display);
     font-weight: 400;
     font-size: var(--mk-text-2xl);
+    line-height: 1.14;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  /* In-app titles: same clamp ramp as marketing, capped below hero mk-h1/h2. */
+  .mk-app-title {
+    font-family: var(--font-mk-display);
+    font-weight: 400;
+    font-size: var(--mk-text-xl);
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+
+  .mk-app-heading {
+    font-family: var(--font-mk-display);
+    font-weight: 400;
+    font-size: var(--mk-text-lg);
     line-height: 1.14;
     letter-spacing: -0.02em;
     text-wrap: balance;

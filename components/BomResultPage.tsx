@@ -7,7 +7,7 @@ import BomExportMenu from '@/components/BomExportMenu'
 import BomPartsTable from '@/components/BomPartsTable'
 import EditableBomTable from '@/components/EditableBomTable'
 import { useAuth } from '@/components/AuthProvider'
-import { appGhostBtn, appPrimaryBtn } from '@/components/app/chrome'
+import { appContainer, appGhostBtn, appPrimaryBtn } from '@/components/app/chrome'
 import { Link } from '@/lib/navigation'
 import { getBom } from '@/lib/api'
 import { useTeam } from '@/hooks/use-team'
@@ -242,7 +242,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   if (!result) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center p-6 text-center font-mk-sans">
-        <h1 className="font-mk-display text-[24px] text-mk-ink">
+        <h1 className="mk-app-title text-mk-ink">
           {error ? 'Could not load this board' : 'Board not found'}
         </h1>
         <p className="mt-2 text-[13px] text-mk-ink-muted">
@@ -313,7 +313,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
       ) : null}
       <div className="flex-1 overflow-y-auto bg-mk-canvas">
         <div className="sticky top-0 z-10 border-b border-mk-line bg-mk-canvas">
-          <div className="mx-auto max-w-[1120px] px-4 py-4 sm:px-6">
+          <div className={`${appContainer} py-4`}>
             <div className="flex flex-wrap items-start gap-x-3 gap-y-3">
               <Link
                 href="/boms"
@@ -324,7 +324,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
               </Link>
               <div className="min-w-0 flex-1 basis-[min(100%,16rem)]">
                 <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-                  <h1 className="max-w-full truncate font-mk-display text-[22px] leading-tight tracking-[-0.02em] text-mk-ink sm:text-[26px]">
+                  <h1 className="mk-app-title max-w-full truncate text-mk-ink">
                     {displayName}
                   </h1>
                   <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-[12px] ${badge.cls}`}>
@@ -357,7 +357,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
           </div>
         </div>
 
-        <div className="mx-auto max-w-[1120px] px-4 py-6 sm:px-6 sm:py-8">
+        <div className={`${appContainer} py-5 mk:py-8`}>
           {pendingCount > 0 ? (
             <div className="mb-6 flex items-center gap-3 border border-mk-accent/25 bg-mk-canvas px-4 py-3">
               <Loader2 className="h-4 w-4 shrink-0 animate-spin text-mk-accent" aria-hidden />

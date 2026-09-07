@@ -38,9 +38,7 @@ function DecisionBody({
         style={{ background: risk === 'green' || risk === 'unknown' ? 'transparent' : color }}
         aria-hidden
       />
-      <p className="font-mk-display text-[18px] leading-snug tracking-[-0.02em] text-mk-ink sm:text-[20px]">
-        {headline}
-      </p>
+      <p className="mk-app-heading text-mk-ink">{headline}</p>
       <div className="mt-2 flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1">
         <span className="mk-data truncate text-mk-ink">{mpn ?? '—'}</span>
         {meta ? (
@@ -101,7 +99,7 @@ export default function DecisionRow({
     return (
       <Link
         href={href}
-        className={`relative block border-b border-mk-line/60 px-5 py-4 transition-colors last:border-b-0 ${surface}`}
+        className={`relative block border-b border-mk-line/60 px-4 py-3 transition-colors last:border-b-0 mk:px-5 mk:py-4 ${surface}`}
       >
         {body}
       </Link>
@@ -115,18 +113,18 @@ export default function DecisionRow({
           type="button"
           onClick={onToggle}
           aria-expanded={expanded}
-          className={`relative block w-full px-5 py-4 text-left transition-colors ${surface}`}
+          className={`relative block w-full px-4 py-3 text-left transition-colors mk:px-5 mk:py-4 ${surface}`}
         >
           {body}
         </button>
         {expanded && children ? (
-          <div className="bg-mk-raised px-5 py-5">{children}</div>
+          <div className="bg-mk-raised px-4 py-4 mk:px-5 mk:py-5">{children}</div>
         ) : null}
       </div>
     )
   }
 
   return (
-    <div className={`relative border-b border-mk-line/60 px-5 py-4 last:border-b-0 ${surface}`}>{body}</div>
+    <div className={`relative border-b border-mk-line/60 px-4 py-3 last:border-b-0 mk:px-5 mk:py-4 ${surface}`}>{body}</div>
   )
 }

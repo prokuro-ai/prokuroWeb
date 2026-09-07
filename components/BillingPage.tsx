@@ -25,7 +25,7 @@ import {
 import { SCHEDULE_DEMO_PATH } from '@/lib/sales'
 import type { PublicPlan } from '@/lib/publicPlans'
 import PageHeader from '@/components/app/PageHeader'
-import { appGhostBtn, appPage, appPrimaryBtn, appSheet } from '@/components/app/chrome'
+import { appGhostBtn, appPage, appPrimaryBtn, appSection, appSheet } from '@/components/app/chrome'
 
 export default function BillingPage() {
   const router = useRouter()
@@ -206,7 +206,7 @@ export default function BillingPage() {
         }
       />
 
-      <div className="mx-auto max-w-[1180px] space-y-6 px-6 py-8">
+      <div className={`${appSection} space-y-6`}>
         {billingNotice ? (
           <p className="border border-mk-accent/25 bg-mk-canvas px-4 py-3 text-[13px] text-mk-accent">
             {billingNotice}
@@ -220,7 +220,7 @@ export default function BillingPage() {
           <div className="grid gap-6 px-5 py-5 lg:grid-cols-[1.4fr_1fr]">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-mk-display text-[24px] text-mk-ink">{planTitle(billing?.plan)}</h2>
+                <h2 className="mk-app-title text-mk-ink">{planTitle(billing?.plan)}</h2>
                 {statusLabel ? (
                   <span className="rounded-[8px] border border-mk-line px-2 py-0.5 text-[12px] text-mk-ink-muted">{statusLabel}</span>
                 ) : null}
@@ -268,7 +268,7 @@ export default function BillingPage() {
 
         <section>
           <div className="mb-3">
-            <h2 className="font-mk-display text-[22px] text-mk-ink">This month</h2>
+            <h2 className="mk-app-heading text-mk-ink">This month</h2>
             <p className="mt-0.5 text-[13px] text-mk-ink-muted">
               Uploads, people on the account, and buys. Counters reset on the calendar month.
             </p>
@@ -301,7 +301,7 @@ export default function BillingPage() {
         </section>
 
         <section className={`${appSheet} px-5 py-5`}>
-          <h2 className="font-mk-display text-[22px] text-mk-ink">What this plan includes</h2>
+          <h2 className="mk-app-heading text-mk-ink">What this plan includes</h2>
           <p className="mt-1 text-[13px] text-mk-ink-muted">
             Unique part lookups reset every day. Seat and board caps are the same numbers as above.
           </p>

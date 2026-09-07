@@ -6,7 +6,7 @@ import { DeleteBomButton } from '@/components/DeleteBomButton'
 import BomBulkUploadModal from '@/components/BomBulkUploadModal'
 import EmptyState from '@/components/app/EmptyState'
 import PageHeader from '@/components/app/PageHeader'
-import { appInput, appPage, appPrimaryBtn, appSheet } from '@/components/app/chrome'
+import { appInput, appPage, appPrimaryBtn, appSection, appSheet } from '@/components/app/chrome'
 import { useBoms } from '@/hooks/use-boms'
 import { useTeam } from '@/hooks/use-team'
 import { listBoms } from '@/lib/api'
@@ -106,7 +106,7 @@ export default function BomsPage() {
           }
         />
 
-        <div className="mx-auto max-w-[1180px] px-6 py-8">
+        <div className={appSection}>
           {!loading && boms.length > 0 ? (
             <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="relative max-w-sm flex-1">
@@ -173,7 +173,7 @@ export default function BomsPage() {
             <EmptyState title="Nothing matches this filter." />
           ) : (
             <div className={appSheet}>
-              <div className="hidden grid-cols-[minmax(0,1.4fr)_7rem_6rem_7rem_8rem_auto] gap-3 border-b border-mk-line px-5 py-2.5 md:grid">
+              <div className="hidden grid-cols-[minmax(0,1.4fr)_7rem_6rem_7rem_8rem_auto] gap-3 border-b border-mk-line px-5 py-2.5 mk:grid">
                 <span className="mk-eyebrow">Board</span>
                 <span className="mk-eyebrow text-right">Parts</span>
                 <span className="mk-eyebrow text-right">Need a call</span>
@@ -187,7 +187,7 @@ export default function BomsPage() {
                 return (
                   <div
                     key={bom.id}
-                    className="relative grid grid-cols-1 items-center gap-2 border-b border-mk-line px-5 py-3 last:border-b-0 md:grid-cols-[minmax(0,1.4fr)_7rem_6rem_7rem_8rem_auto] md:gap-3"
+                    className="relative grid grid-cols-1 items-center gap-2 border-b border-mk-line px-4 py-3 last:border-b-0 mk:grid-cols-[minmax(0,1.4fr)_7rem_6rem_7rem_8rem_auto] mk:gap-3 mk:px-5"
                   >
                     {rail ? (
                       <span className="absolute inset-y-0 left-0 w-0.5" style={{ background: rail }} aria-hidden />
@@ -202,11 +202,11 @@ export default function BomsPage() {
                       </span>
                       <span className="mt-0.5 block truncate text-[12px] text-mk-ink-subtle">{bom.filename}</span>
                     </button>
-                    <span className="mk-data text-[13px] text-mk-ink-muted md:text-right">
+                    <span className="mk-data text-[13px] text-mk-ink-muted mk:text-right">
                       {bom.lineCount.toLocaleString()}
                     </span>
                     <span
-                      className={`mk-data text-[13px] md:text-right ${
+                      className={`mk-data text-[13px] mk:text-right ${
                         bom.atRiskCount > 0 ? 'text-mk-red' : 'text-mk-ink-muted'
                       }`}
                     >

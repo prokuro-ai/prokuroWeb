@@ -10,10 +10,10 @@ export default function EmptyState({
   action?: ReactNode
 }) {
   return (
-    <div className="px-2 py-16 text-center">
-      <p className="font-mk-display text-[22px] leading-snug text-mk-ink">{title}</p>
+    <div className="px-2 py-12 text-center mk:py-16">
+      <p className="mk-app-heading text-mk-ink">{title}</p>
       {description ? (
-        <p className="mx-auto mt-2 max-w-md text-[14px] leading-relaxed text-mk-ink-muted">{description}</p>
+        <p className="mk-small mx-auto mt-2 max-w-md text-mk-ink-muted">{description}</p>
       ) : null}
       {action ? <div className="mt-6">{action}</div> : null}
     </div>

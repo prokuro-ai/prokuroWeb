@@ -16,7 +16,7 @@ import {
 import { useTeam } from '@/hooks/use-team'
 import { planLabel as shortPlanLabel } from '@/lib/planLimits'
 import PageHeader from '@/components/app/PageHeader'
-import { appField, appGhostBtn, appPage, appPrimaryBtn, appSheet } from '@/components/app/chrome'
+import { appField, appGhostBtn, appPage, appPrimaryBtn, appSection, appSheet } from '@/components/app/chrome'
 
 function InputField({
   label,
@@ -192,9 +192,9 @@ export default function AccountPage() {
         }`}
       />
 
-      <div className="mx-auto grid max-w-[1180px] gap-8 px-6 py-8 lg:grid-cols-2">
+      <div className={`${appSection} grid gap-8 lg:grid-cols-2`}>
         <section>
-          <h2 className="mb-3 font-mk-display text-[22px] text-mk-ink">You</h2>
+          <h2 className="mk-app-heading mb-3 text-mk-ink">You</h2>
           <div className={appSheet}>
             <div className="flex items-center gap-4 border-b border-mk-line px-5 py-5">
               <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[8px] bg-mk-ink text-lg font-semibold text-mk-canvas">
@@ -225,7 +225,7 @@ export default function AccountPage() {
         </section>
 
         <section>
-          <h2 className="mb-3 font-mk-display text-[22px] text-mk-ink">Team</h2>
+          <h2 className="mk-app-heading mb-3 text-mk-ink">Team</h2>
           {teamError && !team ? (
             <div className="mb-3 rounded-[8px] border border-mk-amber/30 bg-mk-canvas px-3 py-2 text-[12px] text-mk-ink">
               Could not load the team ({teamError}).{' '}

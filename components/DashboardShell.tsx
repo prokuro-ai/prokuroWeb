@@ -7,6 +7,7 @@ import { useAuth } from '@/components/AuthProvider'
 import { ProkuroWordmark } from '@/components/brand/ProkuroLogo'
 import { displayNameForUser, initialsForUser, signOut } from '@/lib/auth'
 import { LogOut, Menu, X } from 'lucide-react'
+import { useMkDesktop } from '@/components/app/media'
 
 type NavItem = {
   href: string
@@ -49,6 +50,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const [mobileOpen, setMobileOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const profileRef = useRef<HTMLDivElement>(null)
+  const desktop = useMkDesktop()
 
   useEffect(() => {
     if (authLoading) return
@@ -59,6 +61,10 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     setMobileOpen(false)
     setProfileOpen(false)
   }, [pathname])
+
+  useEffect(() => {
+    if (desktop) setMobileOpen(false)
+  }, [desktop])
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -78,7 +84,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     return (
       <div
         data-surface="light"
-        className="flex h-screen items-center justify-center bg-mk-canvas font-mk-sans text-[13px] text-mk-ink-subtle"
+        className="flex h-dvh items-center justify-center bg-mk-canvas font-mk-sans text-[13px] text-mk-ink-subtle"
       >
         Loading…
       </div>
@@ -96,7 +102,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           <Link
             key={item.href}
             href={item.href}
-            className={`rounded-[8px] px-3 py-2 text-[15px] tracking-[-0.015em] transition-colors ${
+            className={`rounded-[8px] px-3 py-2 text-[length:var(--mk-text-sm)] tracking-[-0.015em] transition-colors ${
               active
                 ? 'bg-mk-raised font-semibold text-mk-ink'
                 : 'font-medium text-mk-ink-muted hover:bg-mk-raised/70 hover:text-mk-ink'
@@ -137,24 +143,24 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   ) : null
 
   return (
-    <div data-surface="light" className="relative flex h-screen bg-mk-canvas font-mk-sans text-mk-ink">
+    <div data-surface="light" className="relative flex h-dvh bg-mk-canvas font-mk-sans text-mk-ink">
       {mobileOpen ? (
         <button
           type="button"
           aria-label="Close menu"
-          className="fixed inset-0 z-40 bg-mk-ink/20 md:hidden"
+          className="fixed inset-0 z-40 bg-mk-ink/20 mk:hidden"
           onClick={() => setMobileOpen(false)}
         />
       ) : null}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[240px] flex-col bg-mk-raised transition-transform duration-200 md:static md:translate-x-0 ${
-          mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        className={`fixed inset-y-0 left-0 z-50 flex w-[min(16.5rem,86vw)] flex-col bg-mk-raised transition-transform duration-200 mk:static mk:w-56 mk:translate-x-0 xl:w-60 ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full mk:translate-x-0'
         }`}
       >
-        <div className="px-5 pb-6 pt-7">
+        <div className="px-4 pb-5 pt-5 mk:px-5 mk:pb-6 mk:pt-7">
           <Link href="/dashboard" onClick={() => setMobileOpen(false)}>
-            <ProkuroWordmark size={24} markClassName="text-mk-ink" />
+            <ProkuroWordmark size={22} markClassName="text-mk-ink" />
           </Link>
         </div>
 
@@ -181,7 +187,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex h-12 shrink-0 items-center px-3 md:hidden">
+        <div className="flex h-14 shrink-0 items-center px-3 mk:hidden">
           <button
             type="button"
             className="rounded-[8px] p-1.5 text-mk-ink hover:bg-mk-raised"

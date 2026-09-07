@@ -20,5 +20,9 @@ export const appField =
 export const appPage =
   'flex-1 overflow-y-auto bg-mk-canvas font-mk-sans text-mk-ink'
 
+export const appContainer = 'mk-container max-w-[1180px]'
+
+export const appSection = 'mk-container max-w-[1180px] py-5 mk:py-8'
+
 export const appSheet =
   'overflow-hidden rounded-[8px] bg-mk-canvas shadow-[var(--mk-shadow)]'
