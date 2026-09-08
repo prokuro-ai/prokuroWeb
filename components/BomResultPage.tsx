@@ -7,7 +7,7 @@ import BomExportMenu from '@/components/BomExportMenu'
 import BomPartsTable from '@/components/BomPartsTable'
 import EditableBomTable from '@/components/EditableBomTable'
 import { useAuth } from '@/components/AuthProvider'
-import { appContainer, appGhostBtn, appPrimaryBtn } from '@/components/app/chrome'
+import { appContainer, appPrimaryBtn, appToolbarBtn, appToolbarBtnOn } from '@/components/app/chrome'
 import { Link } from '@/lib/navigation'
 import { getBom } from '@/lib/api'
 import { useTeam } from '@/hooks/use-team'
@@ -346,12 +346,12 @@ export default function BomResultPage({ id }: BomResultPageProps) {
                     type="button"
                     onClick={() => setEditing((current) => !current)}
                     aria-pressed={editing}
-                    className={editing ? appPrimaryBtn : appGhostBtn}
+                    className={editing ? appToolbarBtnOn : appToolbarBtn}
                   >
                     {editing ? 'Done' : 'Edit'}
                   </button>
                 ) : null}
-                <BomExportMenu result={result} triggerClassName={appGhostBtn} />
+                <BomExportMenu result={result} />
               </div>
             </div>
           </div>

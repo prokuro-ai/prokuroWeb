@@ -14,6 +14,18 @@ export const appTextBtn =
 export const appDangerBtn =
   'inline-flex items-center justify-center gap-1.5 rounded-[8px] bg-mk-red px-4 py-2.5 text-[13px] font-medium text-white transition-colors hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50'
 
+export const appToolbarBtn =
+  'inline-flex items-center justify-center gap-1.5 rounded-[8px] border border-mk-line bg-mk-canvas px-3.5 py-2 text-[13px] font-medium text-mk-ink transition-colors hover:bg-mk-raised disabled:cursor-not-allowed disabled:opacity-50'
+
+export const appToolbarBtnOn =
+  'inline-flex items-center justify-center gap-1.5 rounded-[8px] bg-mk-ink px-3.5 py-2 text-[13px] font-medium text-mk-canvas transition-colors hover:bg-mk-ink/90 disabled:cursor-not-allowed disabled:opacity-50'
+
+export const appMenu =
+  'z-50 min-w-[11rem] overflow-hidden rounded-[8px] border-0 bg-mk-canvas p-1 text-mk-ink shadow-[var(--mk-shadow)]'
+
+export const appMenuItem =
+  'flex cursor-pointer items-center rounded-[6px] px-3 py-2 text-[13px] text-mk-ink outline-none focus:bg-mk-raised data-[highlighted]:bg-mk-raised'
+
 export const appInput =
   'w-full border-0 border-b border-mk-line-strong bg-transparent py-2 text-[14px] text-mk-ink placeholder:text-mk-ink-subtle focus:border-mk-accent focus:outline-none'
 

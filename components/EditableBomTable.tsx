@@ -10,7 +10,9 @@ import {
   deleteBomLine,
   patchBomLine,
 } from '@/lib/api'
-import { lifecycleBadge, lifecycleLabel } from '@/lib/risk'
+import { appColHead, appSheet, appToolbarBtn } from '@/components/app/chrome'
+import { riskLabel, riskTone, stockHot, stockLabel } from '@/lib/bomLineDisplay'
+import { isPendingLine, lifecycleLabel } from '@/lib/risk'
 import { Trash2, Plus } from 'lucide-react'
 
 type EditableField = 'mpn' | 'manufacturer' | 'quantity' | 'refdes' | 'description'
@@ -24,12 +26,6 @@ type EditableBomTableProps = {
   onLinesChange: (lines: AnalyzedLine[]) => void
   onVersionChange: (version: number) => void
   onConflict: () => void
-}
-
-function isLookupFailed(line: AnalyzedLine): boolean {
-  const avail = line.availability_status?.toLowerCase() ?? ''
-  const match = line.match_status?.toLowerCase() ?? ''
-  return avail === 'pending' || match === 'pending'
 }
 
 function sameEditableFields(a: AnalyzedLine, b: AnalyzedLine): boolean {
@@ -60,13 +56,6 @@ function mergeLinesAfterEdit(
   const merged = mergePropEnrichment(localLines, propLines)
   merged[editedIndex] = editedLine
   return merged
-}
-
-function riskLevelText(level: string | undefined) {
-  if (level === 'red') return 'text-[#c62026]'
-  if (level === 'yellow') return 'text-[#a25a05]'
-  if (level === 'unknown') return 'text-slate-500'
-  return 'text-[#167c48]'
 }
 
 function messageForSaveError(err: unknown): string {
@@ -136,21 +125,19 @@ function EditableCell({
               setEditing(false)
             }
           }}
-          className={`w-full min-w-[4rem] rounded border bg-white px-1.5 py-0.5 text-xs text-slate-800 outline-none ring-2 ${
-            saveState === 'error'
-              ? 'border-red-400 ring-red-100'
-              : 'border-slate-300 ring-slate-200'
-          } ${mono ? 'font-mono font-bold' : ''}`}
+          className={`w-full min-w-[4rem] rounded-[6px] border bg-mk-canvas px-1.5 py-0.5 text-[13px] text-mk-ink outline-none ${
+            saveState === 'error' ? 'border-mk-red' : 'border-mk-line-strong'
+          } ${mono ? 'font-mk-mono font-medium' : ''}`}
         />
-        {saveState === 'saving' && <p className="text-[10px] text-slate-400">Saving…</p>}
+        {saveState === 'saving' && <p className="text-[11px] text-mk-ink-subtle">Saving…</p>}
         {saveState === 'error' && errorMessage && (
           <div className="space-y-1">
-            <p className="text-[10px] leading-snug text-red-600">{errorMessage}</p>
+            <p className="text-[11px] leading-snug text-mk-red">{errorMessage}</p>
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => void commit()}
-              className="text-[10px] font-semibold text-red-700 underline"
+              className="text-[11px] font-semibold text-mk-red underline"
             >
               Retry
             </button>
@@ -168,14 +155,14 @@ function EditableCell({
         setEditing(true)
         setErrorMessage(null)
       }}
-      className={`group flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left hover:bg-slate-100 ${
-        mono ? 'font-mono text-xs font-bold text-slate-800' : 'text-xs text-slate-600'
+      className={`group flex w-full items-center gap-1.5 rounded-[6px] px-1 py-0.5 text-left hover:bg-mk-raised ${
+        mono ? 'font-mk-mono text-[13px] font-medium text-mk-ink' : 'text-[13px] text-mk-ink-muted'
       }`}
       title="Click to edit"
     >
-      <span className="truncate">{value || '-'}</span>
-      {saveState === 'saving' && <span className="text-[10px] text-slate-400">Saving…</span>}
-      {saveState === 'saved' && <span className="text-[10px] text-emerald-600">Saved</span>}
+      <span className="truncate">{value || '—'}</span>
+      {saveState === 'saving' && <span className="text-[11px] text-mk-ink-subtle">Saving…</span>}
+      {saveState === 'saved' && <span className="text-[11px] text-mk-green">Saved</span>}
     </button>
   )
 }
@@ -332,57 +319,46 @@ export default function EditableBomTable({
   }
 
   return (
-    <div className="overflow-hidden border border-slate-200 bg-white shadow-[0_24px_48px_-30px_rgb(15_27_45_/_24%)]">
-      <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-[#f4f6f9] px-5 py-2.5">
-        <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-slate-500">
-          Edit mode · click a cell to change it
-        </p>
+    <div className={appSheet}>
+      <div className="flex flex-wrap items-center gap-3 px-5 py-3">
+        <p className="text-[13px] text-mk-ink-muted">Click a cell to change it</p>
         <button
           type="button"
           disabled={busy}
           onClick={() => void handleAdd()}
-          className="ml-auto inline-flex items-center gap-1.5 border border-slate-200 bg-white px-3 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-40"
+          className={`ml-auto ${appToolbarBtn}`}
         >
           <Plus className="h-3.5 w-3.5" />
           Add line
         </button>
       </div>
       {rowError ? (
-        <div className="border-b border-amber-200 bg-amber-50 px-5 py-2 text-[13px] text-amber-800">
+        <div className="border-t border-mk-amber/30 bg-mk-amber/10 px-5 py-2 text-[13px] text-mk-amber">
           {rowError}
         </div>
       ) : null}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[860px] border-collapse text-left text-[13px]">
           <thead>
-            <tr className="border-b border-slate-200 bg-[#f4f6f9]">
-              {[
-                'Part',
-                'Manufacturer',
-                'Qty',
-                'Ref des',
-                'Description',
-                'Lifecycle',
-                'Stock',
-                'Risk',
-                '',
-              ].map((h) => (
-                <th
-                  key={h || 'actions'}
-                  scope="col"
-                  className="px-4 py-2.5 font-mono text-[11px] font-medium uppercase tracking-[0.09em] text-slate-400 whitespace-nowrap"
-                >
-                  {h}
-                </th>
-              ))}
+            <tr className="border-y border-mk-line">
+              {['Part', 'Manufacturer', 'Qty', 'Ref', 'Description', 'Lifecycle', 'Stock', 'Risk', ''].map(
+                (header) => (
+                  <th
+                    key={header || 'actions'}
+                    scope="col"
+                    className={`${appColHead} whitespace-nowrap px-4 py-2.5`}
+                  >
+                    {header}
+                  </th>
+                ),
+              )}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody>
             {lines.map((line, i) => {
-              const lookupFailed = isLookupFailed(line)
-              const avail = line.availability_status?.toLowerCase() ?? ''
+              const life = isPendingLine(line) ? '—' : lifecycleLabel(line.lifecycle_status)
               return (
-                <tr key={`${line.row_index}-${i}`} className="bg-white hover:bg-slate-50/80">
+                <tr key={`${line.row_index}-${i}`} className="border-b border-mk-line last:border-b-0 hover:bg-mk-raised/70">
                   <td className="px-3 py-2">
                     <EditableCell
                       value={line.mpn ?? ''}
@@ -419,41 +395,29 @@ export default function EditableBomTable({
                       onCommit={(field, next) => handleFieldCommit(i, field, next)}
                     />
                   </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`px-2 py-0.5 font-mono text-[11px] font-medium uppercase tracking-[0.06em] ${lifecycleBadge(line.lifecycle_status)}`}
-                    >
-                      {lifecycleLabel(line.lifecycle_status)}
-                    </span>
+                  <td
+                    className={`px-4 py-2.5 ${
+                      life === 'EOL' || life === 'NRND' ? 'text-mk-red' : 'text-mk-ink-muted'
+                    }`}
+                  >
+                    {life}
                   </td>
-                  <td className="px-4 py-3 font-mono text-[13px] tabular-nums">
-                    {lookupFailed ? (
-                      <span className="text-slate-400">—</span>
-                    ) : avail === 'outofstock' || avail === 'nomatch' ? (
-                      <span className="font-semibold text-red-600">
-                        {avail === 'nomatch' ? 'No match' : 'Out of stock'}
-                      </span>
-                    ) : (
-                      <span className="text-slate-700">{line.total_avail.toLocaleString()}</span>
-                    )}
+                  <td
+                    className={`px-4 py-2.5 tabular-nums ${
+                      stockHot(line) ? 'text-mk-red' : 'text-mk-ink-muted'
+                    }`}
+                  >
+                    {stockLabel(line)}
                   </td>
-                  <td className="px-4 py-3">
-                    <span className={`font-mono text-[12px] font-semibold ${riskLevelText(line.risk_level)}`}>
-                      {line.risk_level === 'red'
-                        ? 'Critical'
-                        : line.risk_level === 'yellow'
-                          ? 'Watch'
-                          : line.risk_level === 'unknown'
-                            ? 'Unknown'
-                            : 'Clear'}
-                    </span>
+                  <td className={`px-4 py-2.5 font-medium ${riskTone(line.risk_level)}`}>
+                    {riskLabel(line.risk_level)}
                   </td>
                   <td className="px-3 py-2">
                     <button
                       type="button"
                       disabled={busy}
                       onClick={() => void handleDelete(i)}
-                      className="p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
+                      className="rounded-[6px] p-1.5 text-mk-ink-subtle transition-colors hover:bg-mk-raised hover:text-mk-red disabled:opacity-40"
                       aria-label={`Remove line ${i + 1}`}
                       title="Remove line"
                     >
