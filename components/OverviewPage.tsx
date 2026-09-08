@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { ChevronDown } from 'lucide-react'
 import DecisionRow from '@/components/app/DecisionRow'
 import EmptyState from '@/components/app/EmptyState'
 import PageHeader from '@/components/app/PageHeader'
@@ -25,6 +26,20 @@ function OverviewView() {
   const { boms, loading: bomsLoading, error: bomsError } = useBoms()
   const { items, loading: flaggedLoading, error: flaggedError } = useFlaggedLines()
   const [groupBy, setGroupBy] = useState<GroupBy>('job')
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    setCollapsed(new Set())
+  }, [groupBy])
+
+  function toggleGroup(key: string) {
+    setCollapsed((current) => {
+      const next = new Set(current)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
 
   const loading = bomsLoading || flaggedLoading
   const error = flaggedError ?? bomsError
@@ -119,29 +134,42 @@ function OverviewView() {
           />
         ) : (
           <div className="space-y-8">
-            {groups.map((group) => (
-              <section key={group.key}>
-                <div className="mb-2 flex items-baseline justify-between gap-3">
-                  <h2 className="mk-app-heading text-mk-ink">{group.label}</h2>
-                  <span className="mk-eyebrow">
-                    {group.rows.length} {group.rows.length === 1 ? 'part' : 'parts'}
-                  </span>
-                </div>
-                <div className={appSheet}>
-                  {group.rows.map((item) => (
-                    <DecisionRow
-                      key={`${item.bomId}-${item.line.row_index}`}
-                      risk={lineRiskLevel(item.line)}
-                      headline={decisionHeadline(item.line)}
-                      mpn={item.line.mpn}
-                      meta={groupBy === 'job' ? item.bomName : item.line.refdes ?? undefined}
-                      chips={lineFactChips(item.line)}
-                      href={lineHref(item)}
+            {groups.map((group) => {
+              const open = !collapsed.has(group.key)
+              return (
+                <section key={group.key}>
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(group.key)}
+                    aria-expanded={open}
+                    className="group mb-2 flex w-full items-center justify-between gap-3 text-left"
+                  >
+                    <h2 className="mk-app-heading text-mk-ink">{group.label}</h2>
+                    <ChevronDown
+                      className={`h-4 w-4 shrink-0 text-mk-ink-subtle transition-colors transition-transform group-hover:text-mk-ink ${
+                        open ? 'rotate-180' : ''
+                      }`}
+                      aria-hidden
                     />
-                  ))}
-                </div>
-              </section>
-            ))}
+                  </button>
+                  {open ? (
+                    <div className={appSheet}>
+                      {group.rows.map((item) => (
+                        <DecisionRow
+                          key={`${item.bomId}-${item.line.row_index}`}
+                          risk={lineRiskLevel(item.line)}
+                          headline={decisionHeadline(item.line)}
+                          mpn={item.line.mpn}
+                          meta={groupBy === 'job' ? item.bomName : item.line.refdes ?? undefined}
+                          chips={lineFactChips(item.line)}
+                          href={lineHref(item)}
+                        />
+                      ))}
+                    </div>
+                  ) : null}
+                </section>
+              )
+            })}
           </div>
         )}
       </div>

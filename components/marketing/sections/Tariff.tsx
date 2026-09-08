@@ -20,22 +20,22 @@ export default function TariffSection() {
           <p className="mk-lead mt-6 max-w-[52ch] text-mk-ink-muted">
             A part that saves eleven cents and lands in a 25% duty bracket is not a saving.
             Origin, rate, and Entity List status sit on the same line as stock and lifecycle,
-            so the landed cost is in the call — not a workbook you open later.
+            so the landed cost is in the call, not a workbook you open later.
           </p>
         </Reveal>
 
         <Reveal delay={0.08}>
-          <dl className="mt-14 grid gap-px bg-mk-line sm:grid-cols-2">
+          <dl className="mt-14 border-t border-mk-line">
             {SPECS.map((spec) => (
-              <div key={spec.label} className="bg-mk-canvas px-6 py-7 mk:px-8 mk:py-8">
+              <div
+                key={spec.label}
+                className="grid gap-2 border-b border-mk-line py-6 md:grid-cols-[10rem_1fr] md:items-baseline md:gap-10 md:py-7"
+              >
                 <dt className="mk-eyebrow">{spec.label}</dt>
-                <dd className="mk-body mt-3 max-w-[36ch] text-mk-ink-muted">{spec.value}</dd>
+                <dd className="mk-lead text-mk-ink">{spec.value}</dd>
               </div>
             ))}
           </dl>
-          <p className="mk-eyebrow mt-6 leading-5">
-            Planning estimates · not a customs-broker classification
-          </p>
         </Reveal>
       </div>
     </section>

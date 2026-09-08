@@ -1,6 +1,5 @@
 'use client'
 
-import type { ReactNode } from 'react'
 import { Link } from '@/lib/navigation'
 import type { RiskLevel } from '@/lib/types'
 
@@ -17,21 +16,23 @@ const RISK_COLOR: Record<RiskLevel, string> = {
   unknown: 'var(--mk-slate)',
 }
 
-function DecisionBody({
+export default function DecisionRow({
   risk,
   headline,
   mpn,
   meta,
   chips,
+  href,
 }: {
   risk: RiskLevel
   headline: string
   mpn: string | null
   meta?: string
   chips: DecisionChip[]
+  href?: string
 }) {
   const color = RISK_COLOR[risk]
-  return (
+  const body = (
     <>
       <span
         className="absolute inset-y-0 left-0 w-0.5"
@@ -67,33 +68,7 @@ function DecisionBody({
       ) : null}
     </>
   )
-}
-
-export default function DecisionRow({
-  risk,
-  headline,
-  mpn,
-  meta,
-  chips,
-  href,
-  expanded,
-  onToggle,
-  children,
-}: {
-  risk: RiskLevel
-  headline: string
-  mpn: string | null
-  meta?: string
-  chips: DecisionChip[]
-  href?: string
-  expanded?: boolean
-  onToggle?: () => void
-  children?: ReactNode
-}) {
-  const body = (
-    <DecisionBody risk={risk} headline={headline} mpn={mpn} meta={meta} chips={chips} />
-  )
-  const surface = expanded ? 'bg-mk-raised' : 'bg-mk-canvas hover:bg-mk-raised/80'
+  const surface = 'bg-mk-canvas hover:bg-mk-raised/80'
 
   if (href) {
     return (
@@ -106,25 +81,9 @@ export default function DecisionRow({
     )
   }
 
-  if (onToggle) {
-    return (
-      <div className="border-b border-mk-line/60 last:border-b-0">
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-expanded={expanded}
-          className={`relative block w-full px-4 py-3 text-left transition-colors mk:px-5 mk:py-4 ${surface}`}
-        >
-          {body}
-        </button>
-        {expanded && children ? (
-          <div className="bg-mk-raised px-4 py-4 mk:px-5 mk:py-5">{children}</div>
-        ) : null}
-      </div>
-    )
-  }
-
   return (
-    <div className={`relative border-b border-mk-line/60 px-4 py-3 last:border-b-0 mk:px-5 mk:py-4 ${surface}`}>{body}</div>
+    <div className={`relative border-b border-mk-line/60 px-4 py-3 last:border-b-0 mk:px-5 mk:py-4 ${surface}`}>
+      {body}
+    </div>
   )
 }

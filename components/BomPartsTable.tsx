@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { Search } from 'lucide-react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
+import { ChevronDown, Search } from 'lucide-react'
 import { appColHead, appField, appSheet } from '@/components/app/chrome'
+import LineDetail from '@/components/app/LineDetail'
 import { leadLabel, riskLabel, riskTone, stockHot, stockLabel } from '@/lib/bomLineDisplay'
-import { isPendingLine, lifecycleLabel, lineRiskLevel, tariffLabel } from '@/lib/risk'
+import { isAtRisk, isPendingLine, lifecycleLabel, lineRiskLevel, tariffLabel } from '@/lib/risk'
 import type { AnalyzedLine, RiskLevel } from '@/lib/types'
 
 const FILTERS = [
@@ -18,6 +19,7 @@ const FILTERS = [
 type FilterId = (typeof FILTERS)[number]['id']
 
 const COLS = ['Part', 'Manufacturer', 'Qty', 'Ref', 'Lifecycle', 'Stock', 'Lead', 'Duty', 'Risk'] as const
+const COLUMN_COUNT = COLS.length
 
 export default function BomPartsTable({
   lines,
@@ -28,11 +30,11 @@ export default function BomPartsTable({
 }) {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<FilterId>('all')
-  const [focusRow, setFocusRow] = useState<number | null>(initialExpanded)
+  const [expanded, setExpanded] = useState<number | null>(initialExpanded)
 
   useEffect(() => {
     if (initialExpanded == null) return
-    setFocusRow(initialExpanded)
+    setExpanded(initialExpanded)
     requestAnimationFrame(() => {
       document.getElementById(`bom-line-${initialExpanded}`)?.scrollIntoView({ block: 'center' })
     })
@@ -114,54 +116,99 @@ export default function BomPartsTable({
               const risk = lineRiskLevel(line)
               const life = isPendingLine(line) ? '—' : lifecycleLabel(line.lifecycle_status)
               const duty = isPendingLine(line) ? '—' : tariffLabel(line)
-              const focused = focusRow === line.row_index
+              const expandable = isAtRisk(line)
+              const open = expanded === line.row_index
+              const detailId = `bom-line-detail-${line.row_index}`
               return (
-                <tr
-                  key={line.row_index}
-                  id={`bom-line-${line.row_index}`}
-                  className={`border-b border-mk-line last:border-b-0 ${
-                    focused ? 'bg-mk-raised' : 'hover:bg-mk-raised/70'
-                  }`}
-                >
-                  <td className="max-w-[16rem] px-4 py-2.5">
-                    <span className="mk-data block truncate text-mk-ink">{line.mpn || '—'}</span>
-                    {line.description ? (
-                      <span className="mt-0.5 block truncate text-[12px] text-mk-ink-subtle">
-                        {line.description}
-                      </span>
-                    ) : null}
-                  </td>
-                  <td className="max-w-[10rem] truncate px-4 py-2.5 text-mk-ink-muted">
-                    {line.manufacturer || '—'}
-                  </td>
-                  <td className="px-4 py-2.5 text-right tabular-nums text-mk-ink-muted">
-                    {line.quantity?.toLocaleString() ?? '—'}
-                  </td>
-                  <td className="px-4 py-2.5 text-mk-ink-muted">{line.refdes || '—'}</td>
-                  <td
-                    className={`px-4 py-2.5 ${
-                      life === 'EOL' || life === 'NRND' ? 'text-mk-red' : 'text-mk-ink-muted'
-                    }`}
+                <Fragment key={line.row_index}>
+                  <tr
+                    id={`bom-line-${line.row_index}`}
+                    role={expandable ? 'button' : undefined}
+                    tabIndex={expandable ? 0 : undefined}
+                    aria-expanded={expandable ? open : undefined}
+                    aria-controls={expandable ? detailId : undefined}
+                    onClick={
+                      expandable
+                        ? () => setExpanded((current) => (current === line.row_index ? null : line.row_index))
+                        : undefined
+                    }
+                    onKeyDown={
+                      expandable
+                        ? (event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault()
+                              setExpanded((current) => (current === line.row_index ? null : line.row_index))
+                            }
+                          }
+                        : undefined
+                    }
+                    className={`border-b border-mk-line last:border-b-0 ${
+                      expandable ? 'cursor-pointer' : ''
+                    } ${open ? 'border-b-0 bg-mk-raised' : 'hover:bg-mk-raised/70'}`}
                   >
-                    {life}
-                  </td>
-                  <td
-                    className={`px-4 py-2.5 text-right tabular-nums ${
-                      stockHot(line) ? 'text-mk-red' : 'text-mk-ink-muted'
-                    }`}
-                  >
-                    {stockLabel(line)}
-                  </td>
-                  <td className="px-4 py-2.5 text-right tabular-nums text-mk-ink-muted">{leadLabel(line)}</td>
-                  <td
-                    className={`px-4 py-2.5 text-right tabular-nums ${
-                      duty !== '-' && duty !== '—' ? 'text-mk-red' : 'text-mk-ink-muted'
-                    }`}
-                  >
-                    {duty}
-                  </td>
-                  <td className={`px-4 py-2.5 font-medium ${riskTone(risk)}`}>{riskLabel(risk)}</td>
-                </tr>
+                    <td className="max-w-[16rem] px-4 py-2.5">
+                      <div className="flex items-start gap-2">
+                        {expandable ? (
+                          <ChevronDown
+                            className={`mt-0.5 h-3.5 w-3.5 shrink-0 text-mk-ink-subtle transition-transform ${
+                              open ? 'rotate-180 text-mk-ink' : ''
+                            }`}
+                            aria-hidden
+                          />
+                        ) : (
+                          <span className="mt-0.5 inline-block h-3.5 w-3.5 shrink-0" aria-hidden />
+                        )}
+                        <div className="min-w-0">
+                          <span className="mk-data block truncate text-mk-ink">{line.mpn || '—'}</span>
+                          {line.description ? (
+                            <span className="mt-0.5 block truncate text-[12px] text-mk-ink-subtle">
+                              {line.description}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="max-w-[10rem] truncate px-4 py-2.5 text-mk-ink-muted">
+                      {line.manufacturer || '—'}
+                    </td>
+                    <td className="px-4 py-2.5 text-right tabular-nums text-mk-ink-muted">
+                      {line.quantity?.toLocaleString() ?? '—'}
+                    </td>
+                    <td className="px-4 py-2.5 text-mk-ink-muted">{line.refdes || '—'}</td>
+                    <td
+                      className={`px-4 py-2.5 ${
+                        life === 'EOL' || life === 'NRND' ? 'text-mk-red' : 'text-mk-ink-muted'
+                      }`}
+                    >
+                      {life}
+                    </td>
+                    <td
+                      className={`px-4 py-2.5 text-right tabular-nums ${
+                        stockHot(line) ? 'text-mk-red' : 'text-mk-ink-muted'
+                      }`}
+                    >
+                      {stockLabel(line)}
+                    </td>
+                    <td className="px-4 py-2.5 text-right tabular-nums text-mk-ink-muted">{leadLabel(line)}</td>
+                    <td
+                      className={`px-4 py-2.5 text-right tabular-nums ${
+                        duty !== '-' && duty !== '—' ? 'text-mk-red' : 'text-mk-ink-muted'
+                      }`}
+                    >
+                      {duty}
+                    </td>
+                    <td className={`px-4 py-2.5 font-medium ${riskTone(risk)}`}>{riskLabel(risk)}</td>
+                  </tr>
+                  {expandable && open ? (
+                    <tr id={detailId}>
+                      <td colSpan={COLUMN_COUNT} className="border-b border-mk-line p-0">
+                        <div className="bg-mk-raised px-4 py-4 mk:px-5 mk:py-5">
+                          <LineDetail line={line} />
+                        </div>
+                      </td>
+                    </tr>
+                  ) : null}
+                </Fragment>
               )
             })}
           </tbody>

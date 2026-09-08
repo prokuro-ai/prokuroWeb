@@ -100,7 +100,6 @@ export default function PricingPage() {
           </h1>
           <p className="mt-3 text-[15px] text-slate-500">
             Pay for how many BOMs you keep monitored. We cap lines so API spend cannot explode.
-            Enterprise adds SSO, custom volume, and white-glove rollout.
           </p>
         </div>
 
@@ -137,14 +136,16 @@ export default function PricingPage() {
                 ) : null}
               </p>
               <p className="mt-2 text-[13px] text-slate-500">{plan.blurb}</p>
-              <ul className="mt-5 space-y-2">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2 text-[13px] text-slate-700">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#0062ff]" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
+              {plan.features.length > 0 ? (
+                <ul className="mt-5 space-y-2">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2 text-[13px] text-slate-700">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#0062ff]" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
               <button
                 type="button"
                 disabled={busy === plan.id}
