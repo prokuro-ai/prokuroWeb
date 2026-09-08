@@ -1,11 +1,6 @@
-import type { Metadata } from 'next'
-import PricingPage from '@/components/PricingPage'
-
-export const metadata: Metadata = {
-  title: 'Pricing',
-  description: 'Free, Growth ($149), and Scale ($399) plans for BOM risk analysis and purchasing.',
-}
+import { redirect } from 'next/navigation'
+import { SCHEDULE_DEMO_PATH } from '@/lib/sales'
 
 export default function PricingRoute() {
-  return <PricingPage />
+  redirect(SCHEDULE_DEMO_PATH)
 }

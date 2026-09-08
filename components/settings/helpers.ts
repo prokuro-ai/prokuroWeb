@@ -1,8 +1,8 @@
-import type { BillingAccountStatus, TeamRole } from '@/lib/api'
-import { planLabel as shortPlanLabel } from '@/lib/planLimits'
+import type { TeamRole } from '@/lib/api'
 
-export function planName(plan: BillingAccountStatus['plan'] | undefined) {
-  return plan ? `${shortPlanLabel(plan)} Plan` : 'Plan unavailable'
+export function planName(provisioned: boolean | undefined) {
+  if (provisioned) return 'Enabled'
+  return 'Waiting for access'
 }
 
 export function inviteDeliveryNotice(invite: {

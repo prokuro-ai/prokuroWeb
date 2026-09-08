@@ -12,6 +12,7 @@ export const APP_ROUTE_PREFIXES = [
   '/purchasing',
   '/account',
   '/billing',
+  '/admin',
   '/invite',
   '/bom',
   '/analyze',

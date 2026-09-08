@@ -1,16 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { appField, appPrimaryBtn } from '@/components/app/chrome'
 import { useTeam } from '@/hooks/use-team'
 import {
   createTeamInvite,
-  getBillingStatus,
   patchTeamMemberRole,
   removeTeamMember,
   revokeTeamInvite,
-  type BillingAccountStatus,
   type TeamInvite,
   type TeamRole,
 } from '@/lib/api'
@@ -26,32 +24,19 @@ export default function TeamPane() {
   const [inviteError, setInviteError] = useState<string | null>(null)
   const [inviteNotice, setInviteNotice] = useState<string | null>(null)
   const [lastAcceptUrl, setLastAcceptUrl] = useState<string | null>(null)
-  const [billing, setBilling] = useState<BillingAccountStatus | null>(null)
-
-  useEffect(() => {
-    getBillingStatus()
-      .then(setBilling)
-      .catch(() => setBilling(null))
-  }, [])
 
   if (!user) return null
 
   const initials = initialsForUser(user)
   const displayName = displayNameForUser(user)
-  const activePlan = billing?.plan
-  const seatsLimit = team?.seats.limit ?? billing?.limits.seats
   const seatsUsed = team?.seats.used
 
   return (
     <div className="space-y-4">
       <p className="text-[13px] text-mk-ink-muted">
-        {planName(activePlan)}
-        {seatsUsed != null ? ` · ${seatsUsed} of ${seatsLimit ?? '—'} seats` : ''}
-        {!canInvite && activePlan === 'free'
-          ? '. Upgrade before inviting people.'
-          : !canInvite && seatsLimit != null && seatsUsed != null && seatsUsed >= seatsLimit
-            ? '. All seats are in use — revoke a pending invite or add seats on Plan.'
-            : '.'}
+        {planName(true)}
+        {seatsUsed != null ? ` · ${seatsUsed} ${seatsUsed === 1 ? 'person' : 'people'} on the account` : ''}
+        {!canInvite ? '. Only owners and editors can invite people.' : '.'}
       </p>
 
       {teamError && !team ? (

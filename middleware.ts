@@ -19,6 +19,8 @@ export const config = {
     '/purchasing/:path*',
     '/account/:path*',
     '/billing/:path*',
+    '/admin',
+    '/admin/:path*',
     '/bom/:path*',
     '/analyze/:path*',
     '/auth/:path*',

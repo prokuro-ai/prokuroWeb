@@ -5,7 +5,7 @@ import { ArrowRight, CheckCircle, FileText, Loader2, XCircle } from 'lucide-reac
 import { AppModal, ModalNotice } from '@/components/AppModal'
 import { appPrimaryBtn } from '@/components/app/chrome'
 import BomColumnMappingStep from '@/components/BomColumnMappingStep'
-import { analyzeFile, getBillingStatus, parseFile, saveBom } from '@/lib/api'
+import { analyzeFile, parseFile, saveBom } from '@/lib/api'
 import {
   buildColumnMappings,
   extractHeaders,
@@ -35,7 +35,6 @@ type BomBulkUploadModalProps = {
   open: boolean
   onClose: () => void
   onComplete: (saved: BomSummary[]) => void
-  existingBomCount?: number
 }
 
 function queueKey(file: File) {
@@ -54,7 +53,6 @@ export default function BomBulkUploadModal({
   open,
   onClose,
   onComplete,
-  existingBomCount = 0,
 }: BomBulkUploadModalProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const savedRef = useRef<BomSummary[]>([])
@@ -72,16 +70,6 @@ export default function BomBulkUploadModal({
   const [mapping, setMapping] = useState<ColumnMapping[]>([])
   const [headers, setHeaders] = useState<string[]>([])
   const [preview, setPreview] = useState<string[][]>([])
-  const [maxFiles, setMaxFiles] = useState<number | null>(null)
-
-  useEffect(() => {
-    if (!open) return
-    getBillingStatus()
-      .then((status) => {
-        setMaxFiles(status.limits.active_boms)
-      })
-      .catch(() => setMaxFiles(null))
-  }, [open])
 
   const reset = useCallback(() => {
     setStep('select')
@@ -111,26 +99,10 @@ export default function BomBulkUploadModal({
     const incoming = Array.from(files)
     if (incoming.length === 0) return
 
-    if (maxFiles == null) {
-      setPickError('Could not load your BOM cap from billing status. Close and try again.')
-      return
-    }
-
-    const slotsLeft = maxFiles - existingBomCount - items.length
-    if (slotsLeft <= 0) {
-      setPickError(`Your plan supports up to ${maxFiles} BOMs. Remove files or upgrade to add more.`)
-      return
-    }
-
-    const toAdd = incoming.slice(0, slotsLeft)
-    if (incoming.length > slotsLeft) {
-      setPickError(`Only ${slotsLeft} more BOM${slotsLeft === 1 ? '' : 's'} can be added on your current plan.`)
-    }
-
     const next: QueueItem[] = []
     const seen = new Set(items.map((item) => item.key))
 
-    for (const file of toAdd) {
+    for (const file of incoming) {
       const key = queueKey(file)
       if (seen.has(key)) continue
       const validation = validateFile(file)
@@ -322,12 +294,7 @@ export default function BomBulkUploadModal({
       footer={footer}
     >
       {pickError && (step === 'select' || step === 'mapping') ? (
-        <ModalNotice tone="warn">
-          {pickError}{' '}
-          <a href="/billing?plans=1" className="font-semibold text-mk-accent underline">
-            Compare plans
-          </a>
-        </ModalNotice>
+        <ModalNotice tone="warn">{pickError}</ModalNotice>
       ) : null}
 
       {step === 'select' ? (

@@ -78,7 +78,7 @@ async function readErrorMessage(res: Response, body: unknown): Promise<string> {
       retry_safe?: boolean
       quota_consumed?: boolean
     }
-    if (payload.error === 'plan_cap_exceeded' && payload.message) {
+    if (payload.error === 'not_provisioned' && payload.message) {
       return payload.message
     }
     if (typeof payload.message === 'string' && payload.message.trim()) {
@@ -87,45 +87,6 @@ async function readErrorMessage(res: Response, body: unknown): Promise<string> {
     return payload.error
   }
   return `HTTP ${res.status}`
-}
-
-export class PlanCapError extends Error {
-  readonly cap: string
-  readonly used: number
-  readonly limit: number
-  readonly plan: string
-
-  constructor(message: string, cap: string, used: number, limit: number, plan: string) {
-    super(message)
-    this.name = 'PlanCapError'
-    this.cap = cap
-    this.used = used
-    this.limit = limit
-    this.plan = plan
-  }
-}
-
-function parsePlanCapError(res: Response, body: unknown): PlanCapError | null {
-  if (res.status !== 402 || typeof body !== 'object' || !body || !('error' in body)) return null
-  const payload = body as {
-    error?: string
-    cap?: string
-    used?: number
-    limit?: number
-    plan?: string
-    message?: string
-  }
-  if (payload.error !== 'plan_cap_exceeded') return null
-  const message =
-    payload.message ??
-    `Plan limit reached (${payload.used ?? '?'}/${payload.limit ?? '?'} on ${payload.cap ?? 'cap'}).`
-  return new PlanCapError(
-    message,
-    payload.cap ?? 'cap',
-    payload.used ?? 0,
-    payload.limit ?? 0,
-    payload.plan ?? 'free',
-  )
 }
 
 async function postFile(
@@ -393,6 +354,8 @@ export type BillingAccountStatus = {
   status: BillingStatus
   plan_source?: PlanSource
   can_purchase: boolean
+  provisioned?: boolean
+  is_operator?: boolean
   limits: PlanLimitsApi
   usage: PlanUsageApi
   stripe_customer_id?: string | null
@@ -407,33 +370,29 @@ export async function getBillingStatus(): Promise<BillingAccountStatus> {
   return body as BillingAccountStatus
 }
 
-export async function startCheckout(
-  plan: Exclude<BillingPlan, 'free'>,
-  returnUrl: string,
-): Promise<string> {
-  const res = await fetch('/api/billing/checkout', {
+export async function createAccessGrant(
+  email: string,
+  expiresAt?: string,
+): Promise<{ email: string; expires_at?: string | null; account_id?: string | null }> {
+  const res = await fetch('/api/billing/grants', {
     method: 'POST',
     headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ plan, return_url: returnUrl }),
+    body: JSON.stringify({ email, expires_at: expiresAt ?? null }),
   })
   const body: unknown = await readJsonBody(res)
   if (!res.ok) throw new Error(await readErrorMessage(res, body))
-  const clientSecret = (body as { client_secret?: string }).client_secret
-  if (!clientSecret) throw new Error('Checkout client_secret missing')
-  return clientSecret
+  return body as { email: string; expires_at?: string | null; account_id?: string | null }
 }
 
-export async function openBillingPortal(returnUrl: string): Promise<string> {
-  const res = await fetch('/api/billing/portal', {
-    method: 'POST',
-    headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ return_url: returnUrl }),
+export async function revokeAccessGrant(email: string): Promise<void> {
+  const res = await fetch(`/api/billing/grants?email=${encodeURIComponent(email)}`, {
+    method: 'DELETE',
+    headers: await authHeaders(),
   })
-  const body: unknown = await readJsonBody(res)
-  if (!res.ok) throw new Error(await readErrorMessage(res, body))
-  const url = (body as { url?: string }).url
-  if (!url) throw new Error('Portal URL missing')
-  return url
+  if (!res.ok) {
+    const body: unknown = await readJsonBody(res)
+    throw new Error(await readErrorMessage(res, body))
+  }
 }
 
 export type TeamRole = 'owner' | 'admin' | 'read_only'
@@ -467,7 +426,7 @@ export type TeamSnapshot = {
   user_id: string
   role: TeamRole
   plan: BillingPlan
-  seats: { used: number; limit: number }
+  seats: { used: number; limit?: number }
   members: TeamMember[]
   invites: TeamInvite[]
 }
@@ -490,7 +449,7 @@ export async function createTeamInvite(
   })
   const body: unknown = await readJsonBody(res)
   if (!res.ok) {
-    throw parsePlanCapError(res, body) ?? new Error(await readErrorMessage(res, body))
+    throw new Error(await readErrorMessage(res, body))
   }
   return body as TeamInvite
 }

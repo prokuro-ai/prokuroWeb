@@ -1,11 +1,13 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Link } from '@/lib/navigation'
 import { useAuth } from '@/components/AuthProvider'
+import AccessWall from '@/components/AccessWall'
 import { ProkuroWordmark } from '@/components/brand/ProkuroLogo'
 import { displayNameForUser, initialsForUser, signOut } from '@/lib/auth'
+import { getBillingStatus, type BillingAccountStatus } from '@/lib/api'
 import { LogOut, Menu, X } from 'lucide-react'
 import { useMkDesktop } from '@/components/app/media'
 import { useSettings } from '@/components/settings/SettingsContext'
@@ -35,10 +37,16 @@ const WORK_NAV: NavItem[] = [
   },
   {
     href: '/billing',
-    label: 'Plan',
+    label: 'Access',
     match: (pathname) => pathname === '/billing',
   },
 ]
+
+const ADMIN_NAV: NavItem = {
+  href: '/admin',
+  label: 'Admin',
+  match: (pathname) => pathname === '/admin',
+}
 
 function normalizePath(pathname: string | null): string {
   if (!pathname || pathname === '/') return '/'
@@ -51,6 +59,9 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const { user, loading: authLoading, refresh } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [billing, setBilling] = useState<BillingAccountStatus | null>(null)
+  const [billingLoaded, setBillingLoaded] = useState(false)
+  const [billingError, setBillingError] = useState<string | null>(null)
   const profileRef = useRef<HTMLDivElement>(null)
   const desktop = useMkDesktop()
   const { open: settingsOpen, pane, openSettings, setPane, closeSettings } = useSettings()
@@ -59,6 +70,37 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     if (authLoading) return
     if (!user) router.replace('/login')
   }, [authLoading, user, router])
+
+  useEffect(() => {
+    if (authLoading || !user) return
+    let cancelled = false
+    setBillingLoaded(false)
+    getBillingStatus()
+      .then((status) => {
+        if (cancelled) return
+        setBilling(status)
+        setBillingError(null)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setBilling(null)
+        setBillingError('Could not load access status')
+      })
+      .finally(() => {
+        if (!cancelled) setBillingLoaded(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [authLoading, user])
+
+  const isOperator = Boolean(billing?.is_operator)
+  const provisioned = Boolean(billing?.provisioned || isOperator)
+
+  useEffect(() => {
+    if (!billingLoaded || isOperator) return
+    if (pathname === '/admin') router.replace('/dashboard')
+  }, [billingLoaded, isOperator, pathname, router])
 
   useEffect(() => {
     setMobileOpen(false)
@@ -77,13 +119,18 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
+  const navItems = useMemo(() => {
+    if (!provisioned) return []
+    return isOperator ? [...WORK_NAV, ADMIN_NAV] : WORK_NAV
+  }, [provisioned, isOperator])
+
   const handleSignOut = async () => {
     await signOut()
     await refresh()
     router.push('/login')
   }
 
-  if (authLoading || !user) {
+  if (authLoading || !user || !billingLoaded) {
     return (
       <div
         data-surface="light"
@@ -99,7 +146,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
   const nav = (
     <nav className="flex flex-col gap-1 px-3" aria-label="App">
-      {WORK_NAV.map((item) => {
+      {navItems.map((item) => {
         const active = item.match(pathname)
         return (
           <Link
@@ -125,16 +172,18 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         <p className="truncate text-[13px] font-semibold text-mk-ink">{displayName || user.email}</p>
         <p className="truncate text-[12px] text-mk-ink-subtle">{user.email}</p>
       </div>
-      <button
-        type="button"
-        onClick={() => {
-          openSettings('profile')
-          setProfileOpen(false)
-        }}
-        className="flex w-full items-center px-4 py-2.5 text-left text-[13px] font-medium text-mk-ink hover:bg-mk-raised"
-      >
-        Settings
-      </button>
+      {provisioned ? (
+        <button
+          type="button"
+          onClick={() => {
+            openSettings('profile')
+            setProfileOpen(false)
+          }}
+          className="flex w-full items-center px-4 py-2.5 text-left text-[13px] font-medium text-mk-ink hover:bg-mk-raised"
+        >
+          Settings
+        </button>
+      ) : null}
       <div className="mx-3 my-1 h-px bg-mk-line" />
       <button
         type="button"
@@ -145,6 +194,41 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       </button>
     </div>
   ) : null
+
+  let main: ReactNode
+  if (billingError) {
+    main = (
+      <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+        <p className="text-[13px] text-mk-red">{billingError}</p>
+        <button
+          type="button"
+          className="mt-4 text-[13px] font-semibold text-mk-accent underline"
+          onClick={() => {
+            setBillingLoaded(false)
+            getBillingStatus()
+              .then((status) => {
+                setBilling(status)
+                setBillingError(null)
+              })
+              .catch(() => setBillingError('Could not load access status'))
+              .finally(() => setBillingLoaded(true))
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    )
+  } else if (!provisioned) {
+    main = <AccessWall />
+  } else if (pathname === '/admin' && !isOperator) {
+    main = (
+      <div className="flex flex-1 items-center justify-center text-[13px] text-mk-ink-subtle">
+        Redirecting…
+      </div>
+    )
+  } else {
+    main = children
+  }
 
   return (
     <div data-surface="light" className="relative flex h-dvh bg-mk-canvas font-mk-sans text-mk-ink">
@@ -163,7 +247,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         }`}
       >
         <div className="px-4 pb-5 pt-5 mk:px-5 mk:pb-6 mk:pt-7">
-          <Link href="/dashboard" onClick={() => setMobileOpen(false)}>
+          <Link href={provisioned ? '/dashboard' : '/'} onClick={() => setMobileOpen(false)}>
             <ProkuroWordmark size={22} markClassName="text-mk-ink" />
           </Link>
         </div>
@@ -201,9 +285,11 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{main}</div>
       </div>
-      <SettingsModal open={settingsOpen} pane={pane} onPaneChange={setPane} onClose={closeSettings} />
+      {provisioned ? (
+        <SettingsModal open={settingsOpen} pane={pane} onPaneChange={setPane} onClose={closeSettings} />
+      ) : null}
     </div>
   )
 }

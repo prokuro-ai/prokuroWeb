@@ -102,30 +102,21 @@ async function browserChecks(base) {
     const scheduleH = await page.locator('h1, h2').first().textContent().catch(() => '')
     ok(base, 'schedule loads', (scheduleH || '').trim().slice(0, 80))
 
-    // Pricing
-    await page.goto(base + '/pricing', { waitUntil: 'networkidle', timeout: 45000 })
-    const signIn = await page.locator('a', { hasText: /^Sign in$/i }).count()
-    if (signIn === 0) ok(base, 'pricing has no Sign in')
-    else fail(base, 'pricing has no Sign in', `count=${signIn}`)
-
-    // Click first plan CTA on home pricing section
+    // Talk to us (former public pricing grid)
     await page.goto(base + '/#pricing', { waitUntil: 'networkidle', timeout: 45000 })
-    const planCta = page.locator('#pricing a.btn').first()
-    if (await planCta.count()) {
-      const href = await planCta.getAttribute('href')
-      await planCta.click()
+    const talkCta = page.locator('#pricing a', { hasText: /Book a demo/i }).first()
+    if (await talkCta.count()) {
+      const href = await talkCta.getAttribute('href')
+      await talkCta.click()
       await page.waitForTimeout(1500)
       const url = page.url()
       if (url.includes('/schedule') || href === '/schedule' || href?.includes('schedule')) {
-        ok(base, 'pricing card CTA → schedule', `href=${href} url=${url}`)
-      } else if (url.includes('/pricing') && href === '/pricing') {
-        // self-serve would go pricing; with gate should be schedule
-        fail(base, 'pricing card CTA → schedule', `still self-serve path href=${href}`)
+        ok(base, 'talk-to-us CTA → schedule', `href=${href} url=${url}`)
       } else {
-        fail(base, 'pricing card CTA → schedule', `href=${href} url=${url}`)
+        fail(base, 'talk-to-us CTA → schedule', `href=${href} url=${url}`)
       }
     } else {
-      fail(base, 'pricing card CTA', 'no #pricing a.btn')
+      fail(base, 'talk-to-us CTA', 'no #pricing Book a demo link')
     }
 
     // Footer legal

@@ -32,6 +32,10 @@ NEXT_PUBLIC_COGNITO_DOMAIN=<prefix>.auth.us-west-2.amazoncognito.com
 
 `NEXT_PUBLIC_COGNITO_DOMAIN` enables Google redirect sign-in. The OAuth callback route is `/auth/callback`.
 
+**Local Admin Enable** must talk to a **local** gateway (`GATEWAY_URL=http://localhost:3000`). Do not Enable against the production ALB. Cognito is the production user pool, so a grant issued through prod would turn on a real account.
+
+Only `admin@prokuro.ai` can use the product until you Enable another email. If `BILLING_TABLE` is unset, grants live in gateway memory and reset on restart. If `.env` points `BILLING_TABLE` at the production table, Enable writes there — unset it or use a throwaway table for local tests.
+
 API routes:
 
 - `POST /api/parse` and `POST /api/analyze` proxy to the gateway when `NEXT_PUBLIC_GATEWAY_URL` is unset (local dev fallback)

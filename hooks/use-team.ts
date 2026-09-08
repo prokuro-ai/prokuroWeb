@@ -59,9 +59,7 @@ export function useTeam() {
   const hasRole = role != null
   const canManage = loaded && hasRole && (role === 'owner' || role === 'admin')
   const seatsUsed = team?.seats.used ?? 1
-  const seatsLimit = team?.seats.limit ?? 1
-  const canInvite =
-    canManage && team?.plan !== 'free' && seatsUsed < seatsLimit
+  const canInvite = canManage
 
   return {
     team,
@@ -73,6 +71,5 @@ export function useTeam() {
     canManage,
     canInvite,
     seatsUsed,
-    seatsLimit,
   }
 }

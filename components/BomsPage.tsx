@@ -235,7 +235,6 @@ export default function BomsPage() {
         open={uploadOpen}
         onClose={() => setUploadOpen(false)}
         onComplete={handleUploadComplete}
-        existingBomCount={boms.length}
       />
     </>
   )

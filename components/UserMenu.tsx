@@ -17,13 +17,21 @@ export function MarketingAuthActions() {
   if (loading) return null
 
   if (SELF_SERVE_ENABLED) {
-    const signedInTarget = user ? '/dashboard' : null
+    if (user) {
+      return (
+        <div className="nav-actions">
+          <Link className="btn btn--primary btn--nav" href="/dashboard">
+            Open app
+          </Link>
+        </div>
+      )
+    }
     return (
       <div className="nav-actions">
-        <Link href={signedInTarget ?? '/login'} className="nav-text-link">
+        <Link href="/login" className="nav-text-link">
           Login
         </Link>
-        <Link className="btn btn--primary btn--nav" href={signedInTarget ?? '/signup'}>
+        <Link className="btn btn--primary btn--nav" href="/signup">
           Try Prokuro
         </Link>
       </div>

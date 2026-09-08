@@ -81,20 +81,25 @@ function OverviewView() {
         description={statusLine}
         actions={
           items.length > 0 ? (
-            <div className="flex overflow-hidden rounded-[8px] border border-mk-line bg-mk-canvas p-0.5">
-              {(['job', 'bom'] as const).map((option) => (
+            <nav className="flex items-center gap-x-5" aria-label="Group this week">
+              {([
+                { id: 'job', label: 'By job' },
+                { id: 'bom', label: 'By BOM' },
+              ] as const).map((option) => (
                 <button
-                  key={option}
+                  key={option.id}
                   type="button"
-                  onClick={() => setGroupBy(option)}
-                  className={`px-3 py-1.5 text-[12px] font-medium transition-colors ${
-                    groupBy === option ? 'bg-mk-ink text-mk-canvas' : 'text-mk-ink-muted hover:text-mk-ink'
+                  onClick={() => setGroupBy(option.id)}
+                  className={`pb-0.5 text-[12px] transition-colors ${
+                    groupBy === option.id
+                      ? 'border-b border-mk-ink font-semibold text-mk-ink'
+                      : 'text-mk-ink-subtle hover:text-mk-ink'
                   }`}
                 >
-                  {option === 'job' ? 'By job' : 'By BOM'}
+                  {option.label}
                 </button>
               ))}
-            </div>
+            </nav>
           ) : null
         }
       />
