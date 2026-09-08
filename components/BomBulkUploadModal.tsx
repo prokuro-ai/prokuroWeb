@@ -461,27 +461,22 @@ export default function BomBulkUploadModal({
       {step === 'complete' ? (
         <ul className="space-y-2">
           {items.map((item) => (
-            <li
-              key={item.key}
-              className={`flex items-center gap-3 rounded-[8px] px-4 py-3 ${
-                item.status === 'failed' ? 'bg-mk-red/5' : 'bg-mk-green/5'
-              }`}
-            >
+            <li key={item.key} className="flex items-center gap-3 rounded-[8px] bg-mk-raised px-4 py-3">
               <StatusIcon status={item.status === 'failed' ? 'failed' : 'done'} active={false} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[13px] font-medium text-mk-ink">
                   {item.saved?.name ?? item.file.name}
                 </p>
                 {item.status === 'done' && item.saved ? (
-                  <p className="mk-data text-[11px] text-mk-green">
-                    {item.saved.lineCount.toLocaleString()} lines ·{' '}
+                  <p className="mt-0.5 text-[12px] text-mk-ink-muted">
+                    {item.saved.lineCount.toLocaleString()} parts
                     {item.saved.atRiskCount > 0
-                      ? `${item.saved.atRiskCount} at-risk`
-                      : 'no at-risk parts'}
+                      ? ` · ${item.saved.atRiskCount} need a call`
+                      : ' · nothing needs a call'}
                   </p>
                 ) : null}
                 {item.status === 'failed' && item.error ? (
-                  <p className="text-[12px] text-mk-red">{item.error}</p>
+                  <p className="mt-0.5 text-[12px] text-mk-red">{item.error}</p>
                 ) : null}
               </div>
             </li>

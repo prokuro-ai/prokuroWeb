@@ -47,7 +47,6 @@ export default function TeamPane() {
       <p className="text-[13px] text-mk-ink-muted">
         {planName(activePlan)}
         {seatsUsed != null ? ` · ${seatsUsed} of ${seatsLimit ?? '—'} seats` : ''}
-        {team ? ` · you are ${roleLabel(team.role).toLowerCase()}` : ''}
         {!canInvite && activePlan === 'free'
           ? '. Upgrade before inviting people.'
           : !canInvite && seatsLimit != null && seatsUsed != null && seatsUsed >= seatsLimit

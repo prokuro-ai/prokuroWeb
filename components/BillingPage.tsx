@@ -1,8 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { RefreshCw } from 'lucide-react'
 import { useAuth } from '@/components/AuthProvider'
 import { PricingModal } from '@/components/billing/PricingModal'
 import EmbeddedCheckoutDialog from '@/components/billing/EmbeddedCheckoutDialog'
@@ -42,20 +41,42 @@ export default function BillingPage() {
   const [checkoutSecret, setCheckoutSecret] = useState<string | null>(null)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
 
-  const loadBilling = async () => {
+  const loadBilling = useCallback(async () => {
     const status = await getBillingStatus()
     setBilling(status)
+    setBillingError(null)
     return status
-  }
+  }, [])
 
   useEffect(() => {
+    let cancelled = false
     loadBilling()
       .catch(() => {
-        setBilling(null)
-        setBillingError('Could not load billing status from the server')
+        if (!cancelled) {
+          setBilling(null)
+          setBillingError('Could not load billing status from the server')
+        }
       })
-      .finally(() => setBillingLoaded(true))
-  }, [])
+      .finally(() => {
+        if (!cancelled) setBillingLoaded(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [loadBilling])
+
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState !== 'visible') return
+      loadBilling().catch(() => {})
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
+    }
+  }, [loadBilling])
 
   useEffect(() => {
     const billingParam = searchParams.get('billing')
@@ -63,7 +84,7 @@ export default function BillingPage() {
     if (!billingParam && plansParam !== '1') return
 
     if (billingParam === 'success') {
-      setBillingNotice('Payment received. Refreshing your plan…')
+      setBillingNotice('Payment received. Updating your plan…')
       loadBilling()
         .then((status) => {
           setBillingNotice(`You're on the ${planTitle(status.plan)}.`)
@@ -82,7 +103,7 @@ export default function BillingPage() {
     next.delete('plans')
     const query = next.toString()
     router.replace(query ? `/billing?${query}` : '/billing', { scroll: false })
-  }, [searchParams, router])
+  }, [searchParams, router, loadBilling])
 
   const handleUpgrade = async (plan: 'growth' | 'scale') => {
     setBillingBusy(true)
@@ -212,7 +233,7 @@ export default function BillingPage() {
               ? billing.can_purchase
                 ? 'You can get quotes. Monthly buys and orders still count against this plan.'
                 : 'Quotes and orders stay locked until a paid plan is active.'
-              : 'Could not load your plan — refresh to retry.'}
+              : 'Could not load your plan.'}
           </p>
           <dl className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <Entitlement
@@ -238,32 +259,11 @@ export default function BillingPage() {
         </section>
 
         <section>
-          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="mk-app-heading text-mk-ink">This month</h2>
-              <p className="mt-0.5 text-[13px] text-mk-ink-muted">
-                Uploads, people on the account, and buys. Counters reset on the calendar month.
-              </p>
-            </div>
-            <button
-              type="button"
-              disabled={billingBusy}
-              onClick={() => {
-                setBillingBusy(true)
-                setBillingError(null)
-                loadBilling()
-                  .catch(() => {
-                    setBilling(null)
-                    setBillingError('Could not load billing status')
-                  })
-                  .finally(() => setBillingBusy(false))
-              }}
-              className={appGhostBtn}
-              aria-label="Refresh plan usage"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              Refresh
-            </button>
+          <div className="mb-4">
+            <h2 className="mk-app-heading text-mk-ink">This month</h2>
+            <p className="mt-0.5 text-[13px] text-mk-ink-muted">
+              Uploads, people on the account, and buys. Counters reset on the calendar month.
+            </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <UsageMeter
@@ -321,6 +321,7 @@ export default function BillingPage() {
         onClose={() => {
           setCheckoutOpen(false)
           setCheckoutSecret(null)
+          loadBilling().catch(() => {})
         }}
       />
     </div>
