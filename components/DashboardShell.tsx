@@ -133,17 +133,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         }}
         className="flex w-full items-center px-4 py-2.5 text-left text-[13px] font-medium text-mk-ink hover:bg-mk-raised"
       >
-        Profile
-      </button>
-      <button
-        type="button"
-        onClick={() => {
-          openSettings('team')
-          setProfileOpen(false)
-        }}
-        className="flex w-full items-center px-4 py-2.5 text-left text-[13px] font-medium text-mk-ink hover:bg-mk-raised"
-      >
-        Team
+        Settings
       </button>
       <div className="mx-3 my-1 h-px bg-mk-line" />
       <button
