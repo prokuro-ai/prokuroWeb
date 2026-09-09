@@ -35,11 +35,6 @@ const WORK_NAV: NavItem[] = [
     label: 'Buy',
     match: (pathname) => pathname === '/purchasing',
   },
-  {
-    href: '/billing',
-    label: 'Access',
-    match: (pathname) => pathname === '/billing',
-  },
 ]
 
 const ADMIN_NAV: NavItem = {

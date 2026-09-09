@@ -15,6 +15,9 @@ import {
 import { displayNameForUser, initialsForUser } from '@/lib/auth'
 import { inviteDeliveryNotice, memberDisplayName, memberInitials, planName, roleLabel } from './helpers'
 
+const roleField =
+  'h-10 min-w-[10.5rem] shrink-0 rounded-[8px] border border-mk-line bg-mk-canvas px-3 text-[13px] text-mk-ink focus:border-mk-accent focus:outline-none'
+
 export default function TeamPane() {
   const { user } = useAuth()
   const { team, reload: reloadTeam, canManage, canInvite, error: teamError } = useTeam()
@@ -32,7 +35,7 @@ export default function TeamPane() {
   const seatsUsed = team?.seats.used
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <p className="text-[13px] text-mk-ink-muted">
         {planName(true)}
         {seatsUsed != null ? ` · ${seatsUsed} ${seatsUsed === 1 ? 'person' : 'people'} on the account` : ''}
@@ -55,13 +58,13 @@ export default function TeamPane() {
         </p>
       ) : null}
 
-      <div className="divide-y divide-mk-line rounded-[8px] bg-mk-raised">
+      <div className="divide-y divide-mk-line overflow-hidden rounded-[8px] bg-mk-raised">
         {(team?.members ?? []).map((member) => (
-          <div key={member.user_id} className="flex items-center gap-3 px-4 py-3">
+          <div key={member.user_id} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-mk-ink text-xs font-semibold text-mk-canvas">
               {memberInitials(member)}
             </div>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 basis-[12rem]">
               <p className="truncate text-[13px] font-medium text-mk-ink">
                 {memberDisplayName(member)}
                 {member.user_id === team?.user_id ? ' (you)' : ''}
@@ -70,6 +73,7 @@ export default function TeamPane() {
             </div>
             {canManage && member.role !== 'owner' ? (
               <select
+                aria-label={`Role for ${memberDisplayName(member)}`}
                 value={member.role}
                 onChange={async (e) => {
                   const role = e.target.value as Exclude<TeamRole, 'owner'>
@@ -80,18 +84,18 @@ export default function TeamPane() {
                     setInviteError(err instanceof Error ? err.message : 'Could not update role')
                   }
                 }}
-                className="rounded-[8px] border border-mk-line bg-mk-canvas px-2 py-0.5 text-[11px] text-mk-ink"
+                className={roleField}
               >
                 <option value="read_only">Can view</option>
                 <option value="admin">Can edit</option>
               </select>
             ) : (
-              <span className="px-2 py-0.5 text-[11px] text-mk-ink-muted">{roleLabel(member.role)}</span>
+              <span className="shrink-0 text-[13px] text-mk-ink-muted">{roleLabel(member.role)}</span>
             )}
             {canManage && member.role !== 'owner' ? (
               <button
                 type="button"
-                className="text-[11px] font-medium text-mk-ink-subtle hover:text-mk-red"
+                className="shrink-0 text-[13px] font-medium text-mk-ink-subtle hover:text-mk-red"
                 onClick={async () => {
                   try {
                     await removeTeamMember(member.user_id)
@@ -116,16 +120,16 @@ export default function TeamPane() {
               <p className="truncate text-[13px] font-medium text-mk-ink">{displayName || user.email}</p>
               <p className="truncate text-[11px] text-mk-ink-subtle">{user.email}</p>
             </div>
-            <span className="text-[11px] text-mk-ink-muted">Owner</span>
+            <span className="shrink-0 text-[13px] text-mk-ink-muted">Owner</span>
           </div>
         ) : null}
 
         {(team?.invites ?? []).map((invite: TeamInvite) => (
-          <div key={invite.id} className="flex items-center gap-3 px-4 py-3">
+          <div key={invite.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-mk-amber/15 text-[10px] font-bold text-mk-amber">
               …
             </div>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 basis-[12rem]">
               <p className="truncate text-[13px] font-medium text-mk-ink">{invite.email}</p>
               <p className="truncate text-[11px] text-mk-ink-subtle">
                 Waiting · {roleLabel(invite.role)} · expires {new Date(invite.expires_at).toLocaleDateString()}
@@ -150,7 +154,7 @@ export default function TeamPane() {
             {canManage ? (
               <button
                 type="button"
-                className="text-[11px] font-medium text-mk-ink-subtle hover:text-mk-red"
+                className="shrink-0 text-[13px] font-medium text-mk-ink-subtle hover:text-mk-red"
                 onClick={async () => {
                   try {
                     await revokeTeamInvite(invite.id)
@@ -168,56 +172,66 @@ export default function TeamPane() {
       </div>
 
       {canInvite ? (
-        <div className="pt-1">
-          <p className="mb-1 text-[13px] font-medium text-mk-ink">Invite someone</p>
-          <p className="mb-3 text-[12px] text-mk-ink-muted">
-            They get an email with a link. Copy it yourself if the mail is slow.
-          </p>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <input
-              type="email"
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              placeholder="colleague@company.com"
-              className={`${appField} flex-1`}
-            />
-            <select
-              value={inviteRole}
-              onChange={(e) => setInviteRole(e.target.value as Exclude<TeamRole, 'owner'>)}
-              className={appField}
-            >
-              <option value="read_only">Can view</option>
-              <option value="admin">Can edit</option>
-            </select>
-            <button
-              type="button"
-              disabled={!inviteEmail.includes('@') || inviteBusy}
-              onClick={async () => {
-                setInviteBusy(true)
-                setInviteError(null)
-                setInviteNotice(null)
-                setLastAcceptUrl(null)
-                try {
-                  const invite = await createTeamInvite(inviteEmail.trim(), inviteRole)
-                  setInviteEmail('')
-                  if (invite.accept_url) setLastAcceptUrl(invite.accept_url)
-                  setInviteNotice(inviteDeliveryNotice(invite))
-                  await reloadTeam()
-                } catch (err) {
-                  setInviteError(err instanceof Error ? err.message : 'Invite failed')
-                } finally {
-                  setInviteBusy(false)
-                }
-              }}
-              className={appPrimaryBtn}
-            >
-              {inviteBusy ? 'Sending…' : 'Invite'}
-            </button>
+        <div className="space-y-4">
+          <div>
+            <p className="text-[13px] font-medium text-mk-ink">Invite someone</p>
+            <p className="mt-1 text-[12px] text-mk-ink-muted">
+              They get an email with a link. Copy it yourself if the mail is slow.
+            </p>
           </div>
-          {inviteNotice ? <p className="mt-2 text-[12px] text-mk-green">{inviteNotice}</p> : null}
-          {inviteError ? <p className="mt-2 text-[12px] text-mk-red">{inviteError}</p> : null}
+          <div className="space-y-3">
+            <label className="block">
+              <span className="mb-1.5 block text-[12px] font-medium text-mk-ink-subtle">Work email</span>
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                placeholder="colleague@company.com"
+                className={appField}
+              />
+            </label>
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="block">
+                <span className="mb-1.5 block text-[12px] font-medium text-mk-ink-subtle">Access</span>
+                <select
+                  value={inviteRole}
+                  onChange={(e) => setInviteRole(e.target.value as Exclude<TeamRole, 'owner'>)}
+                  className={roleField}
+                >
+                  <option value="read_only">Can view</option>
+                  <option value="admin">Can edit</option>
+                </select>
+              </label>
+              <button
+                type="button"
+                disabled={!inviteEmail.includes('@') || inviteBusy}
+                onClick={async () => {
+                  setInviteBusy(true)
+                  setInviteError(null)
+                  setInviteNotice(null)
+                  setLastAcceptUrl(null)
+                  try {
+                    const invite = await createTeamInvite(inviteEmail.trim(), inviteRole)
+                    setInviteEmail('')
+                    if (invite.accept_url) setLastAcceptUrl(invite.accept_url)
+                    setInviteNotice(inviteDeliveryNotice(invite))
+                    await reloadTeam()
+                  } catch (err) {
+                    setInviteError(err instanceof Error ? err.message : 'Invite failed')
+                  } finally {
+                    setInviteBusy(false)
+                  }
+                }}
+                className={`${appPrimaryBtn} shrink-0`}
+              >
+                {inviteBusy ? 'Sending…' : 'Invite'}
+              </button>
+            </div>
+          </div>
+          {inviteNotice ? <p className="text-[12px] text-mk-green">{inviteNotice}</p> : null}
+          {inviteError ? <p className="text-[12px] text-mk-red">{inviteError}</p> : null}
           {lastAcceptUrl ? (
-            <div className="mt-3 rounded-[8px] bg-mk-raised px-3 py-2">
+            <div className="rounded-[8px] bg-mk-raised px-3 py-2">
               <p className="text-[11px] font-medium text-mk-ink-muted">Invite link</p>
               <a
                 href={lastAcceptUrl}

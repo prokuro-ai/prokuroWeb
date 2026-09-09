@@ -1,11 +1,20 @@
 'use client'
 
 import { useEffect, type ReactNode } from 'react'
-import { User, Users, X } from 'lucide-react'
+import { BadgeCheck, CreditCard, User, Users, X } from 'lucide-react'
 import { appSheet } from '@/components/app/chrome'
+import BillingPane from './BillingPane'
+import PlanPane from './PlanPane'
 import ProfilePane from './ProfilePane'
 import TeamPane from './TeamPane'
 import type { SettingsPane } from './SettingsContext'
+
+const PANE_TITLE: Record<SettingsPane, string> = {
+  profile: 'Profile',
+  team: 'Team',
+  plan: 'Plan',
+  billing: 'Billing',
+}
 
 export default function SettingsModal({
   open,
@@ -37,7 +46,7 @@ export default function SettingsModal({
       }}
     >
       <div
-        className={`flex h-[min(40rem,86vh)] w-full max-w-3xl ${appSheet}`}
+        className={`flex h-[min(44rem,90vh)] w-full max-w-4xl ${appSheet}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="settings-title"
@@ -57,13 +66,25 @@ export default function SettingsModal({
               label="Team"
               onClick={() => onPaneChange('team')}
             />
+            <PaneButton
+              active={pane === 'plan'}
+              icon={<BadgeCheck className="h-3.5 w-3.5" />}
+              label="Plan"
+              onClick={() => onPaneChange('plan')}
+            />
+            <PaneButton
+              active={pane === 'billing'}
+              icon={<CreditCard className="h-3.5 w-3.5" />}
+              label="Billing"
+              onClick={() => onPaneChange('billing')}
+            />
           </nav>
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-3">
             <h2 id="settings-title" className="mk-app-heading text-mk-ink">
-              {pane === 'profile' ? 'Profile' : 'Team'}
+              {PANE_TITLE[pane]}
             </h2>
             <button
               type="button"
@@ -75,7 +96,15 @@ export default function SettingsModal({
             </button>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
-            {pane === 'profile' ? <ProfilePane /> : <TeamPane />}
+            {pane === 'profile' ? (
+              <ProfilePane />
+            ) : pane === 'team' ? (
+              <TeamPane />
+            ) : pane === 'plan' ? (
+              <PlanPane />
+            ) : (
+              <BillingPane />
+            )}
           </div>
         </div>
       </div>

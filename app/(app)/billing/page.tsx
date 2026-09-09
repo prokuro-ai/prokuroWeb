@@ -1,10 +1,17 @@
-import { Suspense } from 'react'
-import BillingPage from '@/components/BillingPage'
+'use client'
 
-export default function Page() {
-  return (
-    <Suspense fallback={null}>
-      <BillingPage />
-    </Suspense>
-  )
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useSettings } from '@/components/settings/SettingsContext'
+
+export default function BillingRedirectPage() {
+  const router = useRouter()
+  const { openSettings } = useSettings()
+
+  useEffect(() => {
+    openSettings('billing')
+    router.replace('/dashboard')
+  }, [openSettings, router])
+
+  return null
 }

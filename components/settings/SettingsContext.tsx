@@ -2,7 +2,13 @@
 
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
 
-export type SettingsPane = 'profile' | 'team'
+export type SettingsPane = 'profile' | 'team' | 'plan' | 'billing'
+
+export function settingsPaneFromQuery(value: string | null | undefined): SettingsPane {
+  if (value === 'team' || value === 'plan' || value === 'billing') return value
+  if (value === 'access') return 'plan'
+  return 'profile'
+}
 
 type SettingsContextValue = {
   open: boolean

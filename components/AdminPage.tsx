@@ -44,7 +44,7 @@ export default function AdminPage() {
     <div className={appPage}>
       <PageHeader
         title="Admin"
-        description="Enable a customer after the contract. Size BOMs and seats on the paper, not in this form."
+        description="Enable a customer after the contract."
       />
       <div className={appSection}>
         <div className={`${appSheet} max-w-xl px-5 py-5`}>
