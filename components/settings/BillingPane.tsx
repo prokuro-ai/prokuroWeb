@@ -2,11 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
-import { appField, appPrimaryBtn } from '@/components/app/chrome'
+import { appField } from '@/components/app/chrome'
 import { useTeam } from '@/hooks/use-team'
-import { SALES_EMAIL } from '@/lib/sales'
-
-const BILLING_MAILTO = `mailto:${SALES_EMAIL}?subject=${encodeURIComponent('Prokuro contract billing')}`
 
 function Field({
   label,
@@ -86,9 +83,7 @@ export default function BillingPane() {
           className="space-y-3"
           onSubmit={(event) => {
             event.preventDefault()
-            setNotice(
-              'Card payments are not connected yet. Email sales to pay this invoice. The card is not stored.',
-            )
+            setNotice('Card payments are not connected yet. The card is not stored.')
           }}
         >
           <Field
@@ -134,13 +129,13 @@ export default function BillingPane() {
             placeholder="94107"
             autoComplete="postal-code"
           />
-          <div className="flex flex-wrap items-center gap-3 pt-1">
-            <button type="submit" className={appPrimaryBtn}>
-              Pay contract
+          <div className="flex justify-end pt-1">
+            <button
+              type="submit"
+              className="inline-flex h-10 items-center justify-center rounded-[8px] bg-mk-accent px-4 text-[13px] font-medium text-mk-canvas transition-colors hover:bg-mk-accent-hover"
+            >
+              Pay
             </button>
-            <a href={BILLING_MAILTO} className="text-[13px] font-medium text-mk-accent">
-              Email an invoice instead
-            </a>
           </div>
           {notice ? <p className="text-[12px] text-mk-ink-muted">{notice}</p> : null}
         </form>
