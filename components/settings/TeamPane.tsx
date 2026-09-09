@@ -14,9 +14,7 @@ import {
 } from '@/lib/api'
 import { displayNameForUser, initialsForUser } from '@/lib/auth'
 import { inviteDeliveryNotice, memberDisplayName, memberInitials, planName, roleLabel } from './helpers'
-
-const roleField =
-  'h-10 min-w-[10.5rem] shrink-0 rounded-[8px] border border-mk-line bg-mk-canvas px-3 text-[13px] text-mk-ink focus:border-mk-accent focus:outline-none'
+import RoleSelect from './RoleSelect'
 
 export default function TeamPane() {
   const { user } = useAuth()
@@ -72,11 +70,10 @@ export default function TeamPane() {
               <p className="truncate text-[11px] text-mk-ink-subtle">{member.email || member.user_id}</p>
             </div>
             {canManage && member.role !== 'owner' ? (
-              <select
-                aria-label={`Role for ${memberDisplayName(member)}`}
+              <RoleSelect
                 value={member.role}
-                onChange={async (e) => {
-                  const role = e.target.value as Exclude<TeamRole, 'owner'>
+                label={`Role for ${memberDisplayName(member)}`}
+                onChange={async (role) => {
                   try {
                     await patchTeamMemberRole(member.user_id, role)
                     await reloadTeam()
@@ -84,11 +81,7 @@ export default function TeamPane() {
                     setInviteError(err instanceof Error ? err.message : 'Could not update role')
                   }
                 }}
-                className={roleField}
-              >
-                <option value="read_only">Can view</option>
-                <option value="admin">Can edit</option>
-              </select>
+              />
             ) : (
               <span className="shrink-0 text-[13px] text-mk-ink-muted">{roleLabel(member.role)}</span>
             )}
@@ -191,17 +184,10 @@ export default function TeamPane() {
               />
             </label>
             <div className="flex flex-wrap items-end gap-3">
-              <label className="block">
+              <div>
                 <span className="mb-1.5 block text-[12px] font-medium text-mk-ink-subtle">Access</span>
-                <select
-                  value={inviteRole}
-                  onChange={(e) => setInviteRole(e.target.value as Exclude<TeamRole, 'owner'>)}
-                  className={roleField}
-                >
-                  <option value="read_only">Can view</option>
-                  <option value="admin">Can edit</option>
-                </select>
-              </label>
+                <RoleSelect value={inviteRole} label="Access" align="start" onChange={setInviteRole} />
+              </div>
               <button
                 type="button"
                 disabled={!inviteEmail.includes('@') || inviteBusy}

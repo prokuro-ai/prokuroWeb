@@ -1,7 +1,6 @@
 'use client'
 
 import { Link } from '@/lib/navigation'
-import { useAuth } from '@/components/AuthProvider'
 import { SELF_SERVE_ENABLED } from '@/lib/access'
 import {
   APP_LINKS_ENABLED,
@@ -12,20 +11,7 @@ import {
 } from '@/lib/sales'
 
 export function MarketingAuthActions() {
-  const { user, loading } = useAuth()
-
-  if (loading) return null
-
   if (SELF_SERVE_ENABLED) {
-    if (user) {
-      return (
-        <div className="nav-actions">
-          <Link className="btn btn--primary btn--nav" href="/dashboard">
-            Open app
-          </Link>
-        </div>
-      )
-    }
     return (
       <div className="nav-actions">
         <Link href="/login" className="nav-text-link">

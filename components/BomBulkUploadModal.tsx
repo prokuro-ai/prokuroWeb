@@ -1,9 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { CheckCircle, Loader2, X, XCircle } from 'lucide-react'
+import { CheckCircle, Loader2, Upload, X, XCircle } from 'lucide-react'
 import { AppModal, ModalNotice } from '@/components/AppModal'
-import { appPrimaryBtn } from '@/components/app/chrome'
+import { appGhostBtn, appPrimaryBtn } from '@/components/app/chrome'
 import BomColumnMappingStep from '@/components/BomColumnMappingStep'
 import { analyzeFile, parseFile, saveBom } from '@/lib/api'
 import {
@@ -147,7 +147,7 @@ export default function BomBulkUploadModal({
         setParseResult(result)
         setMapping(buildColumnMappings(result))
         setHeaders(extractHeaders(result))
-        setPreview(previewRows(result))
+        setPreview(previewRows(result, 4))
         setStep('mapping')
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to parse file'
@@ -224,7 +224,7 @@ export default function BomBulkUploadModal({
         const updated = await parseFile(currentFile, { columnMapping })
         setParseResult(updated)
         setHeaders(extractHeaders(updated))
-        setPreview(previewRows(updated))
+        setPreview(previewRows(updated, 4))
       } catch {
         // Keep the last good preview if re-parse fails.
       } finally {
@@ -238,22 +238,43 @@ export default function BomBulkUploadModal({
   const doneCount = items.filter((item) => item.status === 'done').length
   const failedCount = items.filter((item) => item.status === 'failed').length
 
-  const modalTitle =
+  const header =
     step === 'select'
-      ? 'Upload'
+      ? {
+          eyebrow: 'New BOM',
+          title: 'Upload a BOM',
+          subtitle:
+            'Drop a CSV or Excel export. You can add more than one file. Next you will confirm which columns are part number, manufacturer, and quantity.',
+        }
       : step === 'mapping'
-        ? items.length > 1
-          ? `Columns · ${fileIndex + 1} of ${items.length}`
-          : 'Columns'
-        : failedCount > 0
-          ? `${doneCount} uploaded · ${failedCount} failed`
-          : doneCount === 1
-            ? 'Uploaded'
-            : `${doneCount} uploaded`
+        ? {
+            eyebrow: items.length > 1 ? `Columns · ${fileIndex + 1} of ${items.length}` : 'Columns',
+            title: 'Confirm columns',
+            subtitle:
+              'We guessed these from the header row. Part number is required. Skip anything that is not a BOM field.',
+          }
+        : {
+            eyebrow: 'Upload',
+            title:
+              failedCount > 0
+                ? `${doneCount} uploaded · ${failedCount} failed`
+                : doneCount === 1
+                  ? 'BOM uploaded'
+                  : `${doneCount} BOMs uploaded`,
+            subtitle:
+              failedCount > 0
+                ? 'Failed files were skipped. You can retry them from the BOMs list.'
+                : 'Open a BOM from the list to see what to buy, drop, or watch.',
+          }
+
+  const canAnalyze = !mappingValidationError(mapping)
 
   const footer =
     step === 'select' ? (
-      <div className="flex justify-end">
+      <div className="flex items-center justify-end gap-3">
+        <button type="button" onClick={handleClose} disabled={parsing} className={appGhostBtn}>
+          Cancel
+        </button>
         <button
           type="button"
           onClick={() => void handleContinue()}
@@ -270,20 +291,36 @@ export default function BomBulkUploadModal({
           )}
         </button>
       </div>
-    ) : step === 'complete' ? (
-      <div className="flex justify-end">
+    ) : step === 'mapping' ? (
+      <div className="flex items-center justify-end gap-3">
+        <button type="button" onClick={handleBackFromMapping} disabled={confirming} className={appGhostBtn}>
+          Back
+        </button>
+        <button
+          type="button"
+          onClick={() => void handleConfirmMapping()}
+          disabled={!canAnalyze || confirming}
+          className={appPrimaryBtn}
+        >
+          {confirming ? 'Analyzing…' : isLastFile ? 'Analyze' : 'Analyze next'}
+        </button>
+      </div>
+    ) : (
+      <div className="flex items-center justify-end gap-3">
         <button type="button" onClick={handleClose} className={appPrimaryBtn}>
           Done
         </button>
       </div>
-    ) : undefined
+    )
 
   return (
     <AppModal
       open={open}
       onClose={handleClose}
-      title={modalTitle}
-      maxWidth={step === 'mapping' ? 'lg' : 'md'}
+      eyebrow={header.eyebrow}
+      title={header.title}
+      subtitle={header.subtitle}
+      maxWidth={step === 'mapping' ? 'xl' : 'md'}
       closeDisabled={parsing || confirming}
       footer={footer}
     >
@@ -313,8 +350,8 @@ export default function BomBulkUploadModal({
               setDragOver(false)
               addFiles(e.dataTransfer.files)
             }}
-            className={`flex min-h-36 flex-col items-center justify-center rounded-[8px] bg-mk-raised px-6 py-8 text-center transition-colors ${
-              dragOver ? 'bg-mk-accent/5 ring-1 ring-inset ring-mk-accent' : ''
+            className={`flex min-h-44 flex-col items-center justify-center rounded-[8px] border border-dashed border-mk-line-strong bg-mk-raised px-6 py-10 text-center transition-colors ${
+              dragOver ? 'border-mk-accent bg-mk-accent/5' : ''
             }`}
           >
             <input
@@ -328,29 +365,37 @@ export default function BomBulkUploadModal({
                 e.target.value = ''
               }}
             />
-            <p className="text-[14px] text-mk-ink">Drop files or click to browse</p>
-            <p className="mt-1 text-[12px] text-mk-ink-subtle">CSV, Excel</p>
+            <Upload className="h-5 w-5 text-mk-ink-muted" aria-hidden />
+            <p className="mt-3 text-[15px] font-medium text-mk-ink">Drop files here or click to browse</p>
+            <p className="mt-2 max-w-[36ch] text-[13px] leading-relaxed text-mk-ink-muted">
+              CSV, XLSX, XLS, or TXT. We look for a part-number column first, then manufacturer and quantity.
+            </p>
           </div>
 
           {items.length > 0 ? (
-            <ul className="mt-3 max-h-52 divide-y divide-mk-line overflow-y-auto">
-              {items.map((item) => (
-                <li key={item.key} className="flex items-center gap-3 py-2.5">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] text-mk-ink">{item.file.name}</p>
-                    <p className="text-[11px] text-mk-ink-subtle">{formatFileSize(item.file.size)}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeItem(item.key)}
-                    className="rounded-[8px] p-1 text-mk-ink-subtle transition-colors hover:bg-mk-raised hover:text-mk-ink"
-                    aria-label={`Remove ${item.file.name}`}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <div className="mt-5">
+              <p className="text-[13px] font-medium text-mk-ink">
+                {items.length === 1 ? '1 file ready' : `${items.length} files ready`}
+              </p>
+              <ul className="mt-2 max-h-52 divide-y divide-mk-line overflow-y-auto rounded-[8px] bg-mk-raised px-4">
+                {items.map((item) => (
+                  <li key={item.key} className="flex items-center gap-3 py-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[13px] font-medium text-mk-ink">{item.file.name}</p>
+                      <p className="text-[12px] text-mk-ink-subtle">{formatFileSize(item.file.size)}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeItem(item.key)}
+                      className="rounded-[8px] p-1 text-mk-ink-subtle transition-colors hover:bg-mk-canvas hover:text-mk-ink"
+                      aria-label={`Remove ${item.file.name}`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ) : null}
         </>
       ) : null}
@@ -358,7 +403,6 @@ export default function BomBulkUploadModal({
       {step === 'mapping' && parseResult ? (
         <BomColumnMappingStep
           file={currentFile}
-          fileIndex={fileIndex}
           fileCount={items.length}
           parseResult={parseResult}
           mapping={mapping}
@@ -366,20 +410,16 @@ export default function BomBulkUploadModal({
           preview={preview}
           previewLoading={previewLoading}
           onMappingChange={setMapping}
-          onBack={handleBackFromMapping}
-          onConfirm={() => void handleConfirmMapping()}
-          confirming={confirming}
-          confirmLabel={isLastFile ? 'Analyze' : 'Analyze next'}
         />
       ) : null}
 
       {step === 'complete' ? (
-        <ul className="divide-y divide-mk-line">
+        <ul className="divide-y divide-mk-line rounded-[8px] bg-mk-raised px-4">
           {items.map((item) => (
-            <li key={item.key} className="flex items-center gap-3 py-2.5">
+            <li key={item.key} className="flex items-center gap-3 py-3">
               <StatusIcon status={item.status === 'failed' ? 'failed' : 'done'} />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] text-mk-ink">{item.saved?.name ?? item.file.name}</p>
+                <p className="truncate text-[13px] font-medium text-mk-ink">{item.saved?.name ?? item.file.name}</p>
                 {item.status === 'done' && item.saved ? (
                   <p className="text-[12px] text-mk-ink-subtle">
                     {item.saved.lineCount.toLocaleString()} parts
