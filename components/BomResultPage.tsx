@@ -11,7 +11,9 @@ import { appContainer, appPrimaryBtn, appToolbarBtn, appToolbarBtnOn } from '@/c
 import { Link } from '@/lib/navigation'
 import { getBom } from '@/lib/api'
 import { useTeam } from '@/hooks/use-team'
+import { usePageTitle } from '@/hooks/use-page-title'
 import { formatUploadedAt } from '@/lib/format'
+import { PAGE } from '@/lib/pageTitle'
 import { isPendingLine, portfolioBadgeFromSummary, shouldPollBom } from '@/lib/risk'
 import type { AnalyzedLine, AnalyzeResult, BomSummary } from '@/lib/types'
 
@@ -40,6 +42,13 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   const [editing, setEditing] = useState(false)
   const [pollStalled, setPollStalled] = useState(false)
   const [pollEpoch, setPollEpoch] = useState(0)
+
+  const tabTitle = !loaded
+    ? PAGE.bom
+    : result
+      ? summary?.name ?? result.source_filename
+      : PAGE.bomMissing
+  usePageTitle(tabTitle)
 
   const pollStartedAt = useRef<number | null>(null)
   const pollAttempt = useRef(0)

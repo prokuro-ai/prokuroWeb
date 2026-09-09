@@ -1,9 +1,10 @@
 import MarketingLanding from '@/components/marketing/LandingPage'
 import type { Metadata } from 'next'
+import { PAGE } from '@/lib/pageTitle'
 
 export const metadata: Metadata = {
   title: {
-    absolute: 'Prokuro AI | Procurement Agents That Work Your BOM',
+    absolute: PAGE.home,
   },
 }
 

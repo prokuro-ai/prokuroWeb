@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import localFont from 'next/font/local'
 import { Providers } from '@/components/Providers'
 import SelfServeRedirect from '@/components/SelfServeRedirect'
+import { PAGE, TITLE_SUFFIX } from '@/lib/pageTitle'
 import './globals.css'
 
 const plexSans = localFont({
@@ -51,8 +52,8 @@ const geist = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL('https://prokuro.ai'),
   title: {
-    default: 'Prokuro AI | Procurement Agents That Work Your BOM',
-    template: '%s | Prokuro AI',
+    default: PAGE.home,
+    template: `%s | ${TITLE_SUFFIX}`,
   },
   description:
     'Prokuro deploys procurement agents against your BOM. They screen every line, source in-stock parts across distributors, drive landed cost down, plan the buy against your build date, and clear trade exposure. You approve, they execute.',
@@ -65,14 +66,14 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: 'https://prokuro.ai',
     siteName: 'Prokuro',
-    title: 'Prokuro AI | Procurement Agents That Work Your BOM',
+    title: PAGE.home,
     description:
       'Upload a BOM. Agents screen every line, source in-stock parts across distributors, cut landed cost, plan the buy, and clear trade exposure.',
     images: [{ url: '/og.svg', width: 1200, height: 630, alt: 'Prokuro' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Prokuro AI | Procurement Agents That Work Your BOM',
+    title: PAGE.home,
     description:
       'Upload a BOM. Agents screen every line, source in-stock parts across distributors, cut landed cost, plan the buy, and clear trade exposure.',
     images: ['/og.svg'],

@@ -12,6 +12,7 @@ import { LogOut, Menu, X } from 'lucide-react'
 import { useMkDesktop } from '@/components/app/media'
 import { useSettings } from '@/components/settings/SettingsContext'
 import SettingsModal from '@/components/settings/SettingsModal'
+import { PAGE, normalizeAppPath } from '@/lib/pageTitle'
 
 type NavItem = {
   href: string
@@ -22,35 +23,30 @@ type NavItem = {
 const WORK_NAV: NavItem[] = [
   {
     href: '/dashboard',
-    label: 'This week',
+    label: PAGE.thisWeek,
     match: (pathname) => pathname === '/dashboard',
   },
   {
     href: '/boms',
-    label: 'BOMs',
+    label: PAGE.boms,
     match: (pathname) => pathname === '/boms' || pathname.startsWith('/bom'),
   },
   {
     href: '/purchasing',
-    label: 'Buy',
+    label: PAGE.buy,
     match: (pathname) => pathname === '/purchasing',
   },
 ]
 
 const ADMIN_NAV: NavItem = {
   href: '/admin',
-  label: 'Admin',
+  label: PAGE.admin,
   match: (pathname) => pathname === '/admin',
-}
-
-function normalizePath(pathname: string | null): string {
-  if (!pathname || pathname === '/') return '/'
-  return pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
 }
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const pathname = normalizePath(usePathname())
+  const pathname = normalizeAppPath(usePathname())
   const { user, loading: authLoading, refresh } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
