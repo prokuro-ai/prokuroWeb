@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowRight, CheckCircle, FileText, Loader2, XCircle } from 'lucide-react'
+import { CheckCircle, Loader2, X, XCircle } from 'lucide-react'
 import { AppModal, ModalNotice } from '@/components/AppModal'
 import { appPrimaryBtn } from '@/components/app/chrome'
 import BomColumnMappingStep from '@/components/BomColumnMappingStep'
@@ -238,57 +238,51 @@ export default function BomBulkUploadModal({
   const doneCount = items.filter((item) => item.status === 'done').length
   const failedCount = items.filter((item) => item.status === 'failed').length
 
-  const modalCopy =
+  const modalTitle =
     step === 'select'
-      ? {
-          eyebrow: 'New BOM',
-          title: 'Upload BOMs',
-          subtitle: 'Drop one or more CSV or Excel files to start monitoring risk.',
-        }
+      ? 'Upload'
       : step === 'mapping'
-        ? {
-            eyebrow: 'Column mapping',
-            title: 'Confirm columns',
-            subtitle: `Map each file before analysis (${fileIndex + 1} of ${items.length}).`,
-          }
-        : {
-            eyebrow: 'Upload complete',
-            title: 'All files processed',
-            subtitle: `${doneCount} saved${failedCount > 0 ? ` · ${failedCount} failed` : ''}.`,
-          }
+        ? items.length > 1
+          ? `Columns · ${fileIndex + 1} of ${items.length}`
+          : 'Columns'
+        : failedCount > 0
+          ? `${doneCount} uploaded · ${failedCount} failed`
+          : doneCount === 1
+            ? 'Uploaded'
+            : `${doneCount} uploaded`
 
   const footer =
     step === 'select' ? (
-      <button
-        type="button"
-        onClick={() => void handleContinue()}
-        disabled={items.length === 0 || parsing}
-        className={`${appPrimaryBtn} w-full`}
-      >
-        {parsing ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Detecting columns…
-          </>
-        ) : (
-          <>
-            Continue <ArrowRight className="h-4 w-4" />
-          </>
-        )}
-      </button>
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => void handleContinue()}
+          disabled={items.length === 0 || parsing}
+          className={appPrimaryBtn}
+        >
+          {parsing ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Reading…
+            </>
+          ) : (
+            'Continue'
+          )}
+        </button>
+      </div>
     ) : step === 'complete' ? (
-      <button type="button" onClick={handleClose} className={`${appPrimaryBtn} w-full`}>
-        Done
-      </button>
+      <div className="flex justify-end">
+        <button type="button" onClick={handleClose} className={appPrimaryBtn}>
+          Done
+        </button>
+      </div>
     ) : undefined
 
   return (
     <AppModal
       open={open}
       onClose={handleClose}
-      eyebrow={modalCopy.eyebrow}
-      title={modalCopy.title}
-      subtitle={modalCopy.subtitle}
+      title={modalTitle}
       maxWidth={step === 'mapping' ? 'lg' : 'md'}
       closeDisabled={parsing || confirming}
       footer={footer}
@@ -319,10 +313,8 @@ export default function BomBulkUploadModal({
               setDragOver(false)
               addFiles(e.dataTransfer.files)
             }}
-            className={`flex flex-col items-center justify-center rounded-[8px] border border-dashed px-8 py-10 text-center transition-colors ${
-              dragOver
-                ? 'border-mk-accent bg-mk-accent/5'
-                : 'border-mk-line-strong bg-mk-raised hover:border-mk-accent'
+            className={`flex min-h-36 flex-col items-center justify-center rounded-[8px] bg-mk-raised px-6 py-8 text-center transition-colors ${
+              dragOver ? 'bg-mk-accent/5 ring-1 ring-inset ring-mk-accent' : ''
             }`}
           >
             <input
@@ -336,114 +328,66 @@ export default function BomBulkUploadModal({
                 e.target.value = ''
               }}
             />
-            <p className="mk-eyebrow">Drop files</p>
-            <p className="mk-app-heading mt-2 text-mk-ink">Drop your BOMs here</p>
-            <p className="mt-1 text-[13px] text-mk-ink-muted">or click to browse · one or many files</p>
-            <div className="mt-4 flex flex-wrap justify-center gap-2">
-              {ACCEPTED.map((ext) => (
-                <span
-                  key={ext}
-                  className="rounded-[8px] border border-mk-line bg-mk-canvas px-2.5 py-1 font-mk-mono text-[11px] text-mk-ink-subtle"
-                >
-                  {ext}
-                </span>
-              ))}
-            </div>
+            <p className="text-[14px] text-mk-ink">Drop files or click to browse</p>
+            <p className="mt-1 text-[12px] text-mk-ink-subtle">CSV, Excel</p>
           </div>
 
           {items.length > 0 ? (
-            <ul className="mt-5 max-h-52 space-y-2 overflow-y-auto">
+            <ul className="mt-3 max-h-52 divide-y divide-mk-line overflow-y-auto">
               {items.map((item) => (
-                <li
-                  key={item.key}
-                  className="flex items-center gap-3 rounded-[8px] bg-mk-raised px-4 py-3"
-                >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-mk-canvas text-mk-ink-subtle">
-                    <FileText className="h-4 w-4" />
-                  </div>
+                <li key={item.key} className="flex items-center gap-3 py-2.5">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-medium text-mk-ink">{item.file.name}</p>
-                    <p className="mk-data text-[11px] text-mk-ink-subtle">{formatFileSize(item.file.size)}</p>
+                    <p className="truncate text-[13px] text-mk-ink">{item.file.name}</p>
+                    <p className="text-[11px] text-mk-ink-subtle">{formatFileSize(item.file.size)}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => removeItem(item.key)}
-                    className="shrink-0 px-2 py-1 text-[12px] font-medium text-mk-ink-subtle transition-colors hover:text-mk-ink"
+                    className="rounded-[8px] p-1 text-mk-ink-subtle transition-colors hover:bg-mk-raised hover:text-mk-ink"
+                    aria-label={`Remove ${item.file.name}`}
                   >
-                    Remove
+                    <X className="h-3.5 w-3.5" />
                   </button>
                 </li>
               ))}
             </ul>
           ) : null}
-
-          <ModalNotice tone="info" className="mt-5 mb-0">
-            Each file gets a column-mapping step before analysis. Needs at least an{' '}
-            <strong>MPN</strong> or <strong>Part Number</strong> column mapped.
-          </ModalNotice>
         </>
       ) : null}
 
       {step === 'mapping' && parseResult ? (
-        <>
-          {items.length > 1 ? (
-            <ul className="mb-4 space-y-1 rounded-[8px] bg-mk-raised p-2">
-              {items.map((item, index) => (
-                <li
-                  key={item.key}
-                  className={`flex items-center gap-2 rounded-[6px] px-2 py-1.5 font-mk-mono text-[11px] ${
-                    index === fileIndex
-                      ? 'bg-mk-canvas text-mk-accent'
-                      : item.status === 'done'
-                        ? 'text-mk-green'
-                        : item.status === 'failed'
-                          ? 'text-mk-red'
-                          : 'text-mk-ink-subtle'
-                  }`}
-                >
-                  <StatusIcon status={item.status} active={index === fileIndex} compact />
-                  <span className="truncate">{item.file.name}</span>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          <BomColumnMappingStep
-            file={currentFile}
-            fileIndex={fileIndex}
-            fileCount={items.length}
-            parseResult={parseResult}
-            mapping={mapping}
-            headers={headers}
-            preview={preview}
-            previewLoading={previewLoading}
-            onMappingChange={setMapping}
-            onBack={handleBackFromMapping}
-            onConfirm={() => void handleConfirmMapping()}
-            confirming={confirming}
-            confirmLabel={isLastFile ? 'Confirm & finish →' : 'Confirm & next file →'}
-          />
-        </>
+        <BomColumnMappingStep
+          file={currentFile}
+          fileIndex={fileIndex}
+          fileCount={items.length}
+          parseResult={parseResult}
+          mapping={mapping}
+          headers={headers}
+          preview={preview}
+          previewLoading={previewLoading}
+          onMappingChange={setMapping}
+          onBack={handleBackFromMapping}
+          onConfirm={() => void handleConfirmMapping()}
+          confirming={confirming}
+          confirmLabel={isLastFile ? 'Analyze' : 'Analyze next'}
+        />
       ) : null}
 
       {step === 'complete' ? (
-        <ul className="space-y-2">
+        <ul className="divide-y divide-mk-line">
           {items.map((item) => (
-            <li key={item.key} className="flex items-center gap-3 rounded-[8px] bg-mk-raised px-4 py-3">
-              <StatusIcon status={item.status === 'failed' ? 'failed' : 'done'} active={false} />
+            <li key={item.key} className="flex items-center gap-3 py-2.5">
+              <StatusIcon status={item.status === 'failed' ? 'failed' : 'done'} />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-medium text-mk-ink">
-                  {item.saved?.name ?? item.file.name}
-                </p>
+                <p className="truncate text-[13px] text-mk-ink">{item.saved?.name ?? item.file.name}</p>
                 {item.status === 'done' && item.saved ? (
-                  <p className="mt-0.5 text-[12px] text-mk-ink-muted">
+                  <p className="text-[12px] text-mk-ink-subtle">
                     {item.saved.lineCount.toLocaleString()} parts
-                    {item.saved.atRiskCount > 0
-                      ? ` · ${item.saved.atRiskCount} need a call`
-                      : ' · nothing needs a call'}
+                    {item.saved.atRiskCount > 0 ? ` · ${item.saved.atRiskCount} at risk` : ''}
                   </p>
                 ) : null}
                 {item.status === 'failed' && item.error ? (
-                  <p className="mt-0.5 text-[12px] text-mk-red">{item.error}</p>
+                  <p className="text-[12px] text-mk-red">{item.error}</p>
                 ) : null}
               </div>
             </li>
@@ -454,25 +398,12 @@ export default function BomBulkUploadModal({
   )
 }
 
-function StatusIcon({
-  status,
-  active,
-  compact = false,
-}: {
-  status: QueueItem['status'] | 'done' | 'failed'
-  active: boolean
-  compact?: boolean
-}) {
-  const size = compact ? 'h-3.5 w-3.5' : 'h-5 w-5'
-
+function StatusIcon({ status }: { status: QueueItem['status'] | 'done' | 'failed' }) {
   if (status === 'done') {
-    return <CheckCircle className={`${size} shrink-0 text-mk-green`} />
+    return <CheckCircle className="h-4 w-4 shrink-0 text-mk-green" />
   }
   if (status === 'failed') {
-    return <XCircle className={`${size} shrink-0 text-mk-red`} />
+    return <XCircle className="h-4 w-4 shrink-0 text-mk-red" />
   }
-  if (status === 'processing' || status === 'mapping' || active) {
-    return <Loader2 className={`${size} shrink-0 animate-spin text-mk-accent`} />
-  }
-  return <div className={`${size} shrink-0 rounded-full border-2 border-mk-line`} />
+  return <Loader2 className="h-4 w-4 shrink-0 animate-spin text-mk-accent" />
 }

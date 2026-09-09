@@ -34,7 +34,7 @@ NEXT_PUBLIC_COGNITO_DOMAIN=<prefix>.auth.us-west-2.amazoncognito.com
 
 **Local Admin Enable** must talk to a **local** gateway (`GATEWAY_URL=http://localhost:3000`). Do not Enable against the production ALB. Cognito is the production user pool, so a grant issued through prod would turn on a real account.
 
-Only `admin@prokuro.ai` can use the product until you Enable another email. If `BILLING_TABLE` is unset, grants live in gateway memory and reset on restart. If `.env` points `BILLING_TABLE` at the production table, Enable writes there — unset it or use a throwaway table for local tests.
+Any `@prokuro.ai` address is an operator (Admin + product access). Other emails wait until an operator Enables them. If `BILLING_TABLE` is unset, grants live in gateway memory and reset on restart. If `.env` points `BILLING_TABLE` at the production table, Enable writes there — unset it or use a throwaway table for local tests.
 
 API routes:
 
