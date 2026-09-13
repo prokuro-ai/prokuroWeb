@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import localFont from 'next/font/local'
 import { Providers } from '@/components/Providers'
 import SelfServeRedirect from '@/components/SelfServeRedirect'
+import { MARKETING_DESCRIPTION } from '@/lib/marketing-content'
 import { PAGE, TITLE_SUFFIX } from '@/lib/pageTitle'
 import './globals.css'
 
@@ -55,8 +56,7 @@ export const metadata: Metadata = {
     default: PAGE.home,
     template: `%s | ${TITLE_SUFFIX}`,
   },
-  description:
-    'Prokuro deploys procurement agents against your BOM. They screen every line, source in-stock parts across distributors, drive landed cost down, plan the buy against your build date, and clear trade exposure. You approve, they execute.',
+  description: MARKETING_DESCRIPTION,
   icons: {
     icon: [{ url: '/brand/prokuro-mark.svg', type: 'image/svg+xml' }],
   },
@@ -67,15 +67,13 @@ export const metadata: Metadata = {
     url: 'https://prokuro.ai',
     siteName: 'Prokuro',
     title: PAGE.home,
-    description:
-      'Upload a BOM. Agents screen every line, source in-stock parts across distributors, cut landed cost, plan the buy, and clear trade exposure.',
+    description: MARKETING_DESCRIPTION,
     images: [{ url: '/og.svg', width: 1200, height: 630, alt: 'Prokuro' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: PAGE.home,
-    description:
-      'Upload a BOM. Agents screen every line, source in-stock parts across distributors, cut landed cost, plan the buy, and clear trade exposure.',
+    description: MARKETING_DESCRIPTION,
     images: ['/og.svg'],
   },
 }

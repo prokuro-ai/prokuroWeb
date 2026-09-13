@@ -1,7 +1,7 @@
 {
   "name": "Prokuro",
   "short_name": "Prokuro",
-  "description": "AI procurement analyst for BOM risk",
+  "description": "Buy the board from the live BOM",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#070b11",

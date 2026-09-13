@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from '@/lib/navigation'
 import { ProkuroWordmark } from '@/components/brand/ProkuroLogo'
 import { MarketingAuthActions } from '@/components/UserMenu'
-import { MARKETING_NAV_LINKS } from '@/lib/marketing-content'
+import { MARKETING_NAV_LINKS, MARKETING_TAGLINE } from '@/lib/marketing-content'
 import { handleMarketingHashClick } from '@/lib/marketing-scroll'
 import { BOOK_DEMO_LABEL, SCHEDULE_DEMO_PATH } from '@/lib/sales'
 import { PRIVACY_PATH, TERMS_PATH } from '@/lib/legal'
@@ -45,7 +45,7 @@ export function MarketingFooter() {
               <ProkuroWordmark size={24} />
             </Link>
             <p className="mk-body mt-4 max-w-sm text-mk-ink-muted">
-              Procurement agents for hardware supply chains.
+              {MARKETING_TAGLINE}
             </p>
             <p className="mk-eyebrow mt-2">San Francisco, CA</p>
           </div>

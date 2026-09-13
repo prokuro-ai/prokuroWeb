@@ -4,12 +4,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Reveal from '@/components/marketing/motion/Reveal'
 
 const JOBS = [
-  { name: 'Screening', role: 'Finds the parts that will fail.' },
-  { name: 'Sourcing', role: 'Finds parts that are actually in stock at distributors.' },
-  { name: 'Cost', role: 'Cuts what the build actually costs.' },
-  { name: 'Planning', role: 'Tells you when to place the order.' },
-  { name: 'Compliance', role: 'Keeps tariffs and bans off the board.' },
-  { name: 'Buying', role: 'Turns the plan into a real PO.' },
+  { name: 'Screening', role: 'EOL, NRND, and MPNs we cannot match.' },
+  { name: 'Sourcing', role: 'Distributor stock you can actually buy.' },
+  { name: 'Cost', role: 'Unit price at your quantity, plus duty.' },
+  { name: 'Planning', role: 'When the PO has to go out to hit the build.' },
+  { name: 'Compliance', role: 'Duty and restricted parties, on the line.' },
+  { name: 'Buying', role: 'Approved lines, ready to place.' },
 ]
 
 const ROTATE_MS = 5000
@@ -39,9 +39,7 @@ export default function AgentsSection() {
     <section id="product" data-surface="dark" className="mk-section">
       <div className="mk-container">
         <Reveal>
-          <h2 className="mk-h2 max-w-[16ch]">
-            A team that does the work.
-          </h2>
+          <h2 className="mk-h2 max-w-[16ch]">What we run on each line.</h2>
         </Reveal>
 
         <ul className="mt-16 border-t border-mk-line">

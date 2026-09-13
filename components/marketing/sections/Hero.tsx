@@ -37,7 +37,7 @@ export default function HeroSection() {
         </h1>
 
         <motion.p
-          className="mk-lead mt-8 max-w-[30ch] text-mk-ink-muted"
+          className="mk-lead mt-8 max-w-[44ch] text-mk-ink-muted"
           initial={reduce ? false : { opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}

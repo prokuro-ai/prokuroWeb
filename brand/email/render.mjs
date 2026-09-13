@@ -25,7 +25,7 @@ const PERSON = {
   webLabel: 'prokuro.ai',
   linkedin: 'https://www.linkedin.com/company/prokuro/',
   location: 'San Francisco, CA',
-  tagline: 'Your AI procurement analyst for BOM risk',
+  tagline: 'Buy the board from the live BOM',
 }
 
 const NAVY = '#0f1b2d'

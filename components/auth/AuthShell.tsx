@@ -16,14 +16,14 @@ export default function AuthShell({ children }: { children: React.ReactNode }) {
           <Link href="/" className="mb-20 inline-flex self-start text-mk-ink">
             <ProkuroWordmark size={22} />
           </Link>
-          <h1 className="mk-h2 max-w-[14ch]">
+          <h1 className="mk-h2 max-w-[20ch]">
             {MARKETING_HEADLINE.map((line) => (
               <span key={line} className="block">
                 {line}
               </span>
             ))}
           </h1>
-          <p className="mk-lead mt-6 max-w-[32ch] text-mk-ink-muted">{MARKETING_LEAD}</p>
+          <p className="mk-lead mt-6 max-w-[40ch] text-mk-ink-muted">{MARKETING_LEAD}</p>
         </div>
       </aside>
 

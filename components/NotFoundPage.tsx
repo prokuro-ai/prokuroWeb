@@ -10,7 +10,7 @@ const QUICK_LINKS = [
   {
     href: '/',
     label: 'Home',
-    hint: 'Product overview, how it works, and pilot details.',
+    hint: 'What Prokuro does and how you start from a BOM.',
   },
   ...(isStaticPages
     ? ([

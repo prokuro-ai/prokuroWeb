@@ -4,7 +4,7 @@ import LoginPage from '@/components/LoginPage'
 import { PAGE, pageMetadata } from '@/lib/pageTitle'
 
 export const metadata: Metadata = pageMetadata(PAGE.login, {
-  description: 'Log in to Prokuro and run a BOM through screening, sourcing, and compliance agents.',
+  description: 'Log in to open a BOM and see what to buy.',
 })
 
 export default function LoginRoute() {

@@ -370,6 +370,21 @@ export async function getBillingStatus(): Promise<BillingAccountStatus> {
   return body as BillingAccountStatus
 }
 
+export type AccessGrantItem = {
+  email: string
+  status: 'waiting' | 'enabled'
+  account_id?: string | null
+  expires_at?: string | null
+}
+
+export async function listAccessGrants(): Promise<AccessGrantItem[]> {
+  const res = await fetch('/api/billing/grants', { headers: await authHeaders() })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  const items = (body as { items?: AccessGrantItem[] }).items
+  return Array.isArray(items) ? items : []
+}
+
 export async function createAccessGrant(
   email: string,
   expiresAt?: string,

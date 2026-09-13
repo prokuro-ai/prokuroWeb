@@ -10,9 +10,9 @@ export default function PricingSection() {
     <section id="pricing" data-surface="light" className="mk-section">
       <div className="mk-container">
         <Reveal>
-          <h2 className="mk-h2 max-w-[16ch]">See how Prokuro fits your workflow.</h2>
+          <h2 className="mk-h2 max-w-[16ch]">Bring a BOM. We&apos;ll run it.</h2>
           <p className="mk-lead mt-6 max-w-[36ch] text-mk-ink-muted">
-            A short call to learn how you buy and get your team onboarded.
+            Thirty minutes on a BOM from your stack.
           </p>
           <MagneticCta
             href={SCHEDULE_DEMO_PATH}

@@ -4,16 +4,16 @@ import Reveal from '@/components/marketing/motion/Reveal'
 
 const GROUPS = [
   {
-    label: 'Spreadsheets',
-    names: ['Excel', 'Google Sheets'],
-  },
-  {
     label: 'ERP',
     names: ['SAP', 'NetSuite', 'Dynamics 365'],
   },
   {
     label: 'Procurement',
     names: ['Coupa', 'SAP Ariba'],
+  },
+  {
+    label: 'Workbooks',
+    names: ['Excel', 'Google Sheets'],
   },
 ]
 
@@ -22,10 +22,10 @@ export default function IntegrationsSection() {
     <section id="stack" data-surface="dark" className="mk-section">
       <div className="mk-container">
         <Reveal>
-          <h2 className="mk-h2 max-w-[20ch]">Works with the systems that already hold the BOM.</h2>
+          <h2 className="mk-h2 max-w-[20ch]">Leave the BOM where it lives.</h2>
           <p className="mk-lead mt-6 max-w-[46ch] text-mk-ink-muted">
-            Start from a spreadsheet. Connect ERP and procurement when you want the live item
-            master. No rip-and-replace.
+            The item master in SAP, NetSuite, or Dynamics. The live list in Coupa or Ariba.
+            The workbook when that is still the BOM.
           </p>
         </Reveal>
 

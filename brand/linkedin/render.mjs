@@ -306,7 +306,7 @@ html, body { width: 1200px; height: 560px; overflow: hidden; background: #e9edf3
     <div class="photo">${markSvg(92)}</div>
     <div class="body">
       <p class="name">Prokuro</p>
-      <p class="sub">Your AI procurement analyst for BOM risk</p>
+      <p class="sub">Buy the board from the live BOM</p>
     </div>
     <p class="note">Desktop preview · photo covers the bottom-left of the banner</p>
   </div>
@@ -388,7 +388,7 @@ html, body { width: 1128px; height: 420px; overflow: hidden; background: #e9edf3
     <div class="logo">${markSvg(72)}</div>
     <div class="body">
       <p class="name">Prokuro</p>
-      <p class="sub">Your AI procurement analyst for BOM risk</p>
+      <p class="sub">Buy the board from the live BOM</p>
     </div>
     <p class="note">Company page preview · logo covers the left of the cover</p>
   </div>

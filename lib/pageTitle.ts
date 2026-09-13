@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 export const TITLE_SUFFIX = 'Prokuro AI'
 
 export const PAGE = {
-  home: 'Prokuro AI | Procurement Agents That Work Your BOM',
+  home: 'Prokuro | Buy the board from the live BOM',
   login: 'Log in',
   signup: 'Create an account',
   schedule: 'Book a demo',

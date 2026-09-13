@@ -5,7 +5,7 @@ import { PAGE, pageMetadata } from '@/lib/pageTitle'
 import { isStaticExport } from '@/lib/static-export'
 
 export const metadata: Metadata = pageMetadata(PAGE.schedule, {
-  description: 'Book a 30-minute walkthrough of Prokuro, your AI procurement analyst for BOM risk.',
+  description: 'Book 30 minutes on a real BOM.',
 })
 
 export default async function ScheduleRoute() {

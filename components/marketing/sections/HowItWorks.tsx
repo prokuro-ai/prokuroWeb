@@ -4,16 +4,16 @@ import Reveal from '@/components/marketing/motion/Reveal'
 
 const STEPS = [
   {
-    title: 'Hand over the BOM',
-    copy: 'Any column format, however messy. Prokuro maps it once and remembers.',
+    title: 'Connect the BOM',
+    copy: 'The item master in ERP, the live list in procurement, or the workbook that still holds it. We map it once.',
   },
   {
-    title: 'The agents go to work',
-    copy: 'Six agents run in parallel over one BOM context. What one learns, the rest act on.',
+    title: 'Run the lines',
+    copy: 'Stock, lifecycle, cost, lead time, and trade against that same BOM.',
   },
   {
-    title: 'You approve. They execute.',
-    copy: 'Each flagged line comes back with the action, the cost, and the source behind it.',
+    title: 'Place the buy',
+    copy: 'Each flagged line has an action, a cost, and where the number came from.',
   },
 ]
 
@@ -22,9 +22,9 @@ export default function HowItWorksSection() {
     <section id="how-it-works" data-surface="dark" className="mk-section">
       <div className="mk-container">
         <Reveal>
-          <h2 className="mk-h2 max-w-[18ch]">Three steps. Start from the file you have.</h2>
+          <h2 className="mk-h2 max-w-[20ch]">Start from the BOM you already run.</h2>
           <p className="mk-lead mt-6 max-w-[46ch] text-mk-ink-muted">
-            Spreadsheet today. ERP and procurement when you are ready.
+            The system of record stays put. We work against it.
           </p>
         </Reveal>
 
