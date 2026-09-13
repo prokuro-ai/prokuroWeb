@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import AppDateField from '@/components/app/AppDateField'
 import PageHeader from '@/components/app/PageHeader'
 import {
   appField,
@@ -182,17 +183,16 @@ export default function AdminPage() {
                 placeholder="buyer@company.com"
               />
             </label>
-            <label className="block max-w-xs">
+            <div className="max-w-xs">
               <span className="mb-1.5 block text-[12px] font-medium text-mk-ink-subtle">
                 Access ends (optional)
               </span>
-              <input
-                type="date"
+              <AppDateField
                 value={expiresAt}
-                onChange={(event) => setExpiresAt(event.target.value)}
-                className={appField}
+                onChange={setExpiresAt}
+                placeholder="No end date"
               />
-            </label>
+            </div>
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
