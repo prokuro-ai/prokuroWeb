@@ -76,6 +76,9 @@ export default function BomsPage() {
   )
   const filtered = searched.filter((b) => matchesBomFilter(b, filter))
   const totalAtRisk = boms.reduce((sum, bom) => sum + bom.atRiskCount, 0)
+  // Summaries only carry `unknownCount`, which covers both lines still being looked
+  // up and lines with no catalog match. Say "unscored" until the API separates them.
+  const totalUnscored = boms.reduce((sum, bom) => sum + (bom.unknownCount ?? 0), 0)
 
   const filterCounts: Record<BomFilter, number> = {
     All: searched.length,
@@ -88,9 +91,13 @@ export default function BomsPage() {
   const status =
     loading || boms.length === 0
       ? undefined
-      : totalAtRisk > 0
-        ? `${boms.length} BOM${boms.length === 1 ? '' : 's'} · ${totalAtRisk} parts need a call`
-        : `${boms.length} BOM${boms.length === 1 ? '' : 's'} · nothing needs a call`
+      : [
+          `${boms.length} BOM${boms.length === 1 ? '' : 's'}`,
+          totalAtRisk > 0
+            ? `${totalAtRisk} part${totalAtRisk === 1 ? '' : 's'} need a call`
+            : 'nothing needs a call',
+          ...(totalUnscored > 0 ? [`${totalUnscored.toLocaleString()} unscored`] : []),
+        ].join(' · ')
 
   return (
     <>
