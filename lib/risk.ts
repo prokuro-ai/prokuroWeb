@@ -15,6 +15,21 @@ export function hasPendingLines(result: AnalyzeResult): boolean {
   return result.lines.some(isPendingLine)
 }
 
+export function pendingLineCount(result: AnalyzeResult): number {
+  return result.lines.filter(isPendingLine).length
+}
+
+/**
+ * Pending lines score `unknown`, same as a resolved catalog miss. A buyer reads
+ * those as opposite things, so they never share the "Unmatched" wording.
+ */
+export const PENDING_LABEL = 'Checking'
+
+/** Sentence form of {@link PENDING_LABEL}, e.g. "3 still looking up". */
+export function stillLookingUpLabel(count: number): string {
+  return `${count.toLocaleString()} still looking up`
+}
+
 /** Poll while enrichment is pending. Briefs are filled by the gateway (heuristic/Bedrock). */
 export function shouldPollBom(result: AnalyzeResult): boolean {
   return hasPendingLines(result)
@@ -120,18 +135,28 @@ export function tariffLabel(line: AnalyzedLine): string {
 
 export type BomBand = 'Critical' | 'Watch' | 'Clear' | 'Unknown'
 
-const PORTFOLIO_BADGE: Record<BomBand, { label: string; cls: string; dot: string | null }> = {
+type PortfolioBadge = { label: string; cls: string; dot: string | null }
+
+const PORTFOLIO_BADGE: Record<BomBand, PortfolioBadge> = {
   Critical: { label: 'Needs a call', cls: 'bg-mk-red/10 text-mk-red', dot: 'bg-mk-red' },
   Watch: { label: 'Watch', cls: 'bg-mk-amber/10 text-mk-amber', dot: 'bg-mk-amber' },
   Clear: { label: 'Fine', cls: 'bg-mk-green/10 text-mk-green', dot: 'bg-mk-green' },
-  Unknown: { label: 'Unmatched', cls: 'text-mk-ink-subtle', dot: null },
+  // Summary counts cannot separate "still looking up" from "no catalog match",
+  // so the BOM-level word has to cover both until the API splits them.
+  Unknown: { label: 'Unscored', cls: 'text-mk-ink-subtle', dot: null },
+}
+
+export const PENDING_BADGE: PortfolioBadge = {
+  label: PENDING_LABEL,
+  cls: 'text-mk-ink-subtle',
+  dot: null,
 }
 
 export const BOM_BAND_LABEL: Record<BomBand, string> = {
   Critical: 'Needs a call',
   Watch: 'Watch',
   Clear: 'Fine',
-  Unknown: 'Unmatched',
+  Unknown: 'Unscored',
 }
 
 export function parseBomBand(value: string | undefined): BomBand {
