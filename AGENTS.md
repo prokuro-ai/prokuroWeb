@@ -8,6 +8,8 @@ Applies to `prokuroBackend`, `prokuroInfrastructureCDK`, and `prokuroWeb`. Keep 
 
 Every story gets a rough one-pager before implementation: what it does, which services and repos it touches, how it fits the current architecture, and the failure modes. Rough is fine — the point is that the team sees the architecture evolve instead of discovering it in a diff.
 
+In this repo they live in `design/`, **not** `docs/` — `docs/` is the generated GitHub Pages output and anything committed there is published on `prokuro.ai`.
+
 ### Verify on a real deployed stack
 
 A feature is not done because it worked locally or behind a throwaway UI. Deploy it and exercise it end to end on AWS. The expensive bugs are the ones that only surface when the CloudFormation stack is re-deployed against an evolved codebase.
