@@ -14,7 +14,14 @@ import { useTeam } from '@/hooks/use-team'
 import { usePageTitle } from '@/hooks/use-page-title'
 import { formatUploadedAt } from '@/lib/format'
 import { PAGE } from '@/lib/pageTitle'
-import { isPendingLine, portfolioBadgeFromSummary, shouldPollBom } from '@/lib/risk'
+import {
+  isPendingLine,
+  PENDING_BADGE,
+  pendingLineCount,
+  portfolioBadgeFromSummary,
+  shouldPollBom,
+  stillLookingUpLabel,
+} from '@/lib/risk'
 import type { AnalyzedLine, AnalyzeResult, BomSummary } from '@/lib/types'
 
 const POLL_INTERVALS_MS = [2000, 5000, 10000, 30000]
@@ -264,9 +271,11 @@ export default function BomResultPage({ id }: BomResultPageProps) {
     )
   }
 
-  const badge = portfolioBadgeFromSummary(result.summary)
   const flagged = (result.summary.red_count ?? 0) + (result.summary.yellow_count ?? 0)
-  const pendingCount = result.lines.filter(isPendingLine).length
+  const pendingCount = pendingLineCount(result)
+  // Nothing has come back yet, so the BOM is neither "Unscored" nor "Fine".
+  const badge =
+    pendingCount > 0 && flagged === 0 ? PENDING_BADGE : portfolioBadgeFromSummary(result.summary)
   const displayName = summary?.name ?? result.source_filename
   const uploadedLabel = summary?.uploadedAt
     ? formatUploadedAt(summary.uploadedAt)
@@ -274,7 +283,9 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   const callLine =
     flagged > 0
       ? `${flagged} part${flagged === 1 ? '' : 's'} need a call`
-      : 'Nothing needs a call'
+      : pendingCount > 0
+        ? stillLookingUpLabel(pendingCount)
+        : 'Nothing needs a call'
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden font-mk-sans">
@@ -371,8 +382,9 @@ export default function BomResultPage({ id }: BomResultPageProps) {
             <div className="mb-6 flex items-center gap-3 border border-mk-accent/25 bg-mk-canvas px-4 py-3">
               <Loader2 className="h-4 w-4 shrink-0 animate-spin text-mk-accent" aria-hidden />
               <p className="text-[13px] text-mk-ink">
-                Still matching <span className="font-semibold">{pendingCount}</span>{' '}
-                {pendingCount === 1 ? 'part' : 'parts'} to distributor data. This page updates as
+                Still looking up <span className="font-semibold">{pendingCount}</span>{' '}
+                {pendingCount === 1 ? 'part' : 'parts'} against distributor data.{' '}
+                {pendingCount === 1 ? 'It is' : 'They are'} not scored yet — this page updates as
                 results arrive.
               </p>
             </div>

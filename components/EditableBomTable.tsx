@@ -11,7 +11,7 @@ import {
   patchBomLine,
 } from '@/lib/api'
 import { appColHead, appSheet, appToolbarBtn } from '@/components/app/chrome'
-import { riskLabel, riskTone, stockHot, stockLabel } from '@/lib/bomLineDisplay'
+import { lineStatusLabel, riskTone, stockHot, stockLabel } from '@/lib/bomLineDisplay'
 import { isPendingLine, lifecycleLabel } from '@/lib/risk'
 import { Trash2, Plus } from 'lucide-react'
 
@@ -410,7 +410,7 @@ export default function EditableBomTable({
                     {stockLabel(line)}
                   </td>
                   <td className={`px-4 py-2.5 font-medium ${riskTone(line.risk_level)}`}>
-                    {riskLabel(line.risk_level)}
+                    {lineStatusLabel(line)}
                   </td>
                   <td className="px-3 py-2">
                     <button

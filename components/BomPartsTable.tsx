@@ -4,9 +4,9 @@ import { Fragment, useEffect, useMemo, useState } from 'react'
 import { ChevronDown, Search } from 'lucide-react'
 import { appColHead, appField, appSheet } from '@/components/app/chrome'
 import LineDetail from '@/components/app/LineDetail'
-import { leadLabel, riskLabel, riskTone, stockHot, stockLabel } from '@/lib/bomLineDisplay'
-import { isAtRisk, isPendingLine, lifecycleLabel, lineRiskLevel, tariffLabel } from '@/lib/risk'
-import type { AnalyzedLine, RiskLevel } from '@/lib/types'
+import { leadLabel, lineStatusLabel, riskTone, stockHot, stockLabel } from '@/lib/bomLineDisplay'
+import { isAtRisk, isPendingLine, lifecycleLabel, lineRiskLevel, PENDING_LABEL, tariffLabel } from '@/lib/risk'
+import type { AnalyzedLine } from '@/lib/types'
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -14,9 +14,18 @@ const FILTERS = [
   { id: 'yellow', label: 'Watch' },
   { id: 'green', label: 'Clear' },
   { id: 'unknown', label: 'Unmatched' },
+  { id: 'pending', label: PENDING_LABEL },
 ] as const
 
 type FilterId = (typeof FILTERS)[number]['id']
+
+/** Unmatched means enrichment answered and found nothing — pending lines are their own bucket. */
+function matchesFilter(line: AnalyzedLine, filter: FilterId): boolean {
+  if (filter === 'all') return true
+  if (filter === 'pending') return isPendingLine(line)
+  if (filter === 'unknown') return lineRiskLevel(line) === 'unknown' && !isPendingLine(line)
+  return lineRiskLevel(line) === filter
+}
 
 const COLS = ['Part', 'Manufacturer', 'Qty', 'Ref', 'Lifecycle', 'Stock', 'Lead', 'Duty', 'Risk'] as const
 const COLUMN_COUNT = COLS.length
@@ -41,15 +50,29 @@ export default function BomPartsTable({
   }, [initialExpanded])
 
   const counts = useMemo(() => {
-    const tally: Record<RiskLevel, number> = { red: 0, yellow: 0, green: 0, unknown: 0 }
-    for (const line of lines) tally[lineRiskLevel(line)] += 1
+    const tally: Record<Exclude<FilterId, 'all'>, number> = {
+      red: 0,
+      yellow: 0,
+      green: 0,
+      unknown: 0,
+      pending: 0,
+    }
+    for (const line of lines) {
+      if (isPendingLine(line)) tally.pending += 1
+      else tally[lineRiskLevel(line)] += 1
+    }
     return tally
   }, [lines])
+
+  // Polling resolves pending lines, which removes the tab the user is standing on.
+  useEffect(() => {
+    if (filter === 'pending' && counts.pending === 0) setFilter('all')
+  }, [filter, counts.pending])
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()
     return lines.filter((line) => {
-      if (filter !== 'all' && lineRiskLevel(line) !== filter) return false
+      if (!matchesFilter(line, filter)) return false
       if (!query) return true
       return [line.mpn, line.manufacturer, line.description, line.refdes]
         .filter(Boolean)
@@ -71,7 +94,7 @@ export default function BomPartsTable({
           />
         </div>
         <nav className="flex flex-wrap items-center gap-x-4 gap-y-1" aria-label="Filter parts">
-          {FILTERS.map((option) => {
+          {FILTERS.filter((option) => option.id !== 'pending' || counts.pending > 0).map((option) => {
             const count = option.id === 'all' ? lines.length : counts[option.id]
             return (
               <button
@@ -197,7 +220,7 @@ export default function BomPartsTable({
                     >
                       {duty}
                     </td>
-                    <td className={`px-4 py-2.5 font-medium ${riskTone(risk)}`}>{riskLabel(risk)}</td>
+                    <td className={`px-4 py-2.5 font-medium ${riskTone(risk)}`}>{lineStatusLabel(line)}</td>
                   </tr>
                   {expandable && open ? (
                     <tr id={detailId}>

@@ -66,13 +66,20 @@ function OverviewView() {
     })).filter((group) => group.rows.length > 0)
   }, [items, groupBy])
 
-  const statusLine = loading
-    ? null
-    : boms.length === 0
+  // Summaries only carry `unknownCount`, which covers both lines still being looked
+  // up and lines with no catalog match. Say "unscored" until the API separates them.
+  const totalUnscored = boms.reduce((sum, bom) => sum + (bom.unknownCount ?? 0), 0)
+
+  const statusLine =
+    loading || boms.length === 0
       ? null
-      : items.length === 0
-        ? `${boms.length} BOM${boms.length === 1 ? '' : 's'} · nothing needs a call`
-        : `${boms.length} BOM${boms.length === 1 ? '' : 's'} · ${items.length} part${items.length === 1 ? '' : 's'} need a call`
+      : [
+          `${boms.length} BOM${boms.length === 1 ? '' : 's'}`,
+          items.length === 0
+            ? 'nothing needs a call'
+            : `${items.length} part${items.length === 1 ? '' : 's'} need a call`,
+          ...(totalUnscored > 0 ? [`${totalUnscored.toLocaleString()} unscored`] : []),
+        ].join(' · ')
 
   return (
     <div className={appPage}>
@@ -129,8 +136,12 @@ function OverviewView() {
           />
         ) : items.length === 0 ? (
           <EmptyState
-            title="No parts need a call this week"
-            description="Open a BOM if you want to scan every line."
+            title={totalUnscored > 0 ? 'Nothing scored needs a call yet' : 'No parts need a call this week'}
+            description={
+              totalUnscored > 0
+                ? `${totalUnscored.toLocaleString()} line${totalUnscored === 1 ? ' is' : 's are'} not scored yet — still being looked up, or with no catalog match. Open a BOM to see which.`
+                : 'Open a BOM if you want to scan every line.'
+            }
             action={
               <button type="button" onClick={() => router.push('/boms')} className={appPrimaryBtn}>
                 Open BOMs
