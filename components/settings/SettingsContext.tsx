@@ -2,10 +2,11 @@
 
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
 
-export type SettingsPane = 'profile' | 'team' | 'plan' | 'billing'
+export type SettingsPane = 'profile' | 'team' | 'plan' | 'billing' | 'integrations'
 
 export function settingsPaneFromQuery(value: string | null | undefined): SettingsPane {
-  if (value === 'team' || value === 'plan' || value === 'billing') return value
+  if (value === 'team' || value === 'plan' || value === 'billing' || value === 'integrations') return value
+  if (value === 'google') return 'integrations'
   if (value === 'access') return 'plan'
   return 'profile'
 }

@@ -516,3 +516,91 @@ export async function acceptTeamInvite(token: string): Promise<{ account_id: str
   return body as { account_id: string; role: TeamRole }
 }
 
+function googlePath(accountId: string, suffix = '') {
+  return `/api/accounts/${encodeURIComponent(accountId)}/integrations/google${suffix}`
+}
+
+export type GoogleSheetsStatus = {
+  connected: boolean
+  configured?: boolean
+  status?: string
+  connected_by_user_id?: string
+  connected_by_email?: string | null
+  connected_at?: string
+}
+
+export type GoogleSpreadsheet = {
+  id: string
+  name: string
+  modified_at?: string | null
+}
+
+export type GoogleSheetTab = {
+  title: string
+  sheet_id: number
+  index: number
+}
+
+export async function getGoogleSheetsStatus(accountId: string): Promise<GoogleSheetsStatus> {
+  const res = await fetch(googlePath(accountId), { headers: await authHeaders() })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  return body as GoogleSheetsStatus
+}
+
+export async function startGoogleSheets(accountId: string): Promise<{ url: string }> {
+  const res = await fetch(googlePath(accountId, '/start'), { headers: await authHeaders() })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  const url = (body as { url?: string }).url
+  if (!url) throw new Error('Google did not return a redirect')
+  return { url }
+}
+
+export async function disconnectGoogleSheets(accountId: string): Promise<void> {
+  const res = await fetch(googlePath(accountId), {
+    method: 'DELETE',
+    headers: await authHeaders(),
+  })
+  if (!res.ok && res.status !== 204) {
+    const body: unknown = await readJsonBody(res)
+    throw new Error(await readErrorMessage(res, body))
+  }
+}
+
+export async function listGoogleSpreadsheets(accountId: string): Promise<GoogleSpreadsheet[]> {
+  const res = await fetch(googlePath(accountId, '/spreadsheets'), { headers: await authHeaders() })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  const items = (body as { spreadsheets?: GoogleSpreadsheet[] }).spreadsheets
+  return Array.isArray(items) ? items : []
+}
+
+export async function listGoogleTabs(accountId: string, spreadsheetId: string): Promise<GoogleSheetTab[]> {
+  const res = await fetch(
+    googlePath(accountId, `/spreadsheets/${encodeURIComponent(spreadsheetId)}/tabs`),
+    { headers: await authHeaders() },
+  )
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  const items = (body as { tabs?: GoogleSheetTab[] }).tabs
+  return Array.isArray(items) ? items : []
+}
+
+export async function importGoogleSheetTab(
+  accountId: string,
+  input: { spreadsheet_id: string; tab: string; name?: string },
+): Promise<{ filename: string; csv: string }> {
+  const res = await fetch(googlePath(accountId, '/import'), {
+    method: 'POST',
+    headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  const payload = body as { filename?: string; csv?: string }
+  if (!payload.csv) throw new Error('that sheet tab is empty')
+  return { filename: payload.filename || 'sheet.csv', csv: payload.csv }
+}
+
+

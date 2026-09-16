@@ -10,6 +10,46 @@ function missingGateway() {
   return NextResponse.json({ error: 'Backend is not configured (GATEWAY_URL is missing)' }, { status: 503 })
 }
 
+/** Follows a gateway 3xx by returning `{ url }` so the browser can navigate with a Bearer-authenticated start call. */
+export async function proxyAuthorizedRedirect(
+  req: NextRequest,
+  upstreamPath: string,
+): Promise<NextResponse> {
+  const targetUrl = gatewayProxyUrl(upstreamPath)
+  if (!targetUrl) return missingGateway()
+
+  const auth = req.headers.get('authorization')
+  if (!auth?.startsWith('Bearer ')) return unauthorized()
+
+  try {
+    const res = await fetch(targetUrl, {
+      method: 'GET',
+      headers: { Authorization: auth },
+      redirect: 'manual',
+    })
+    if (res.status >= 300 && res.status < 400) {
+      const url = res.headers.get('location')
+      if (!url) {
+        return NextResponse.json({ error: 'missing redirect' }, { status: 502 })
+      }
+      return NextResponse.json({ url })
+    }
+    if (res.status === 204 || res.status === 205) {
+      return new NextResponse(null, { status: res.status })
+    }
+    const body = await res.text()
+    const contentType = res.headers.get('Content-Type')
+    const responseHeaders = new Headers()
+    if (contentType) responseHeaders.set('Content-Type', contentType)
+    else if (body) responseHeaders.set('Content-Type', 'application/json')
+    return new NextResponse(body || null, { status: res.status, headers: responseHeaders })
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err)
+    console.error(`Gateway redirect proxy failed (${upstreamPath}) -> ${targetUrl}:`, detail)
+    return NextResponse.json({ error: 'Could not reach backend service' }, { status: 502 })
+  }
+}
+
 export async function proxyAuthorizedRequest(
   req: NextRequest,
   upstreamPath: string,

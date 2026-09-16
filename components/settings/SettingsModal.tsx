@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, type ReactNode } from 'react'
-import { BadgeCheck, CreditCard, User, Users, X } from 'lucide-react'
+import { BadgeCheck, CreditCard, Plug, User, Users, X } from 'lucide-react'
 import { appSheet } from '@/components/app/chrome'
 import BillingPane from './BillingPane'
+import IntegrationsPane from './IntegrationsPane'
 import PlanPane from './PlanPane'
 import ProfilePane from './ProfilePane'
 import TeamPane from './TeamPane'
@@ -14,6 +15,7 @@ const PANE_TITLE: Record<SettingsPane, string> = {
   team: 'Team',
   plan: 'Plan',
   billing: 'Billing',
+  integrations: 'Integrations',
 }
 
 export default function SettingsModal({
@@ -78,6 +80,12 @@ export default function SettingsModal({
               label="Billing"
               onClick={() => onPaneChange('billing')}
             />
+            <PaneButton
+              active={pane === 'integrations'}
+              icon={<Plug className="h-3.5 w-3.5" />}
+              label="Integrations"
+              onClick={() => onPaneChange('integrations')}
+            />
           </nav>
         </aside>
 
@@ -102,6 +110,8 @@ export default function SettingsModal({
               <TeamPane />
             ) : pane === 'plan' ? (
               <PlanPane />
+            ) : pane === 'integrations' ? (
+              <IntegrationsPane />
             ) : (
               <BillingPane />
             )}
