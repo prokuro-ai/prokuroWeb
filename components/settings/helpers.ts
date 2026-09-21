@@ -9,6 +9,12 @@ export function googleOauthNotice(flag: string | null | undefined): string | nul
   return null
 }
 
+export function googleOauthNoticeClass(flag: string | null | undefined): string {
+  if (flag === 'connected') return 'text-mk-green'
+  if (flag === 'denied' || flag === 'error') return 'text-mk-amber'
+  return 'text-mk-green'
+}
+
 export function planName(provisioned: boolean | undefined) {
   if (provisioned) return 'Enabled'
   return 'Waiting for access'

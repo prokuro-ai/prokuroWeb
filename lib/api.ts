@@ -529,6 +529,13 @@ export type GoogleSheetsStatus = {
   connected_at?: string
 }
 
+export class GoogleSheetsRevokedError extends Error {
+  constructor() {
+    super('google sheets access was revoked')
+    this.name = 'GoogleSheetsRevokedError'
+  }
+}
+
 export type GoogleSpreadsheet = {
   id: string
   name: string
@@ -571,6 +578,7 @@ export async function disconnectGoogleSheets(accountId: string): Promise<void> {
 export async function listGoogleSpreadsheets(accountId: string): Promise<GoogleSpreadsheet[]> {
   const res = await fetch(googlePath(accountId, '/spreadsheets'), { headers: await authHeaders() })
   const body: unknown = await readJsonBody(res)
+  if (res.status === 409) throw new GoogleSheetsRevokedError()
   if (!res.ok) throw new Error(await readErrorMessage(res, body))
   const items = (body as { spreadsheets?: GoogleSpreadsheet[] }).spreadsheets
   return Array.isArray(items) ? items : []
@@ -582,6 +590,7 @@ export async function listGoogleTabs(accountId: string, spreadsheetId: string): 
     { headers: await authHeaders() },
   )
   const body: unknown = await readJsonBody(res)
+  if (res.status === 409) throw new GoogleSheetsRevokedError()
   if (!res.ok) throw new Error(await readErrorMessage(res, body))
   const items = (body as { tabs?: GoogleSheetTab[] }).tabs
   return Array.isArray(items) ? items : []
@@ -597,6 +606,7 @@ export async function importGoogleSheetTab(
     body: JSON.stringify(input),
   })
   const body: unknown = await readJsonBody(res)
+  if (res.status === 409) throw new GoogleSheetsRevokedError()
   if (!res.ok) throw new Error(await readErrorMessage(res, body))
   const payload = body as { filename?: string; csv?: string }
   if (!payload.csv) throw new Error('that sheet tab is empty')

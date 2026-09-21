@@ -9,12 +9,13 @@ import {
   startGoogleSheets,
   type GoogleSheetsStatus,
 } from '@/lib/api'
-import { GOOGLE_OAUTH_FLAG_KEY, googleOauthNotice } from './helpers'
+import { GOOGLE_OAUTH_FLAG_KEY, googleOauthNotice, googleOauthNoticeClass } from './helpers'
 
 export default function IntegrationsPane() {
   const { team, canManage } = useTeam()
   const accountId = team?.account_id
   const [status, setStatus] = useState<GoogleSheetsStatus | null>(null)
+  const [oauthFlag, setOauthFlag] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -23,6 +24,7 @@ export default function IntegrationsPane() {
     const flag = sessionStorage.getItem(GOOGLE_OAUTH_FLAG_KEY)
     if (flag) {
       sessionStorage.removeItem(GOOGLE_OAUTH_FLAG_KEY)
+      setOauthFlag(flag)
       setNotice(googleOauthNotice(flag))
     }
   }, [])
@@ -47,6 +49,7 @@ export default function IntegrationsPane() {
   }
 
   const connected = Boolean(status?.connected)
+  const revoked = status?.status === 'revoked'
 
   const handleConnect = async () => {
     setBusy(true)
@@ -81,7 +84,7 @@ export default function IntegrationsPane() {
         spreadsheet this connecting admin can see.
       </p>
 
-      {notice ? <p className="text-[13px] text-mk-green">{notice}</p> : null}
+      {notice ? <p className={`text-[13px] ${googleOauthNoticeClass(oauthFlag)}`}>{notice}</p> : null}
       {error ? <p className="text-[13px] text-mk-red">{error}</p> : null}
 
       {status && status.configured === false ? (
@@ -92,7 +95,9 @@ export default function IntegrationsPane() {
           <p className="mt-1 text-[13px] text-mk-ink-muted">
             {connected
               ? `Connected${status?.connected_by_email ? ` by ${status.connected_by_email}` : ''}.`
-              : 'Not connected.'}
+              : revoked
+                ? 'Google access was revoked. Connect again to restore the account grant.'
+                : 'Not connected.'}
           </p>
           {canManage ? (
             <div className="mt-3">

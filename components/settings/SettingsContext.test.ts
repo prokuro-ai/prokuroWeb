@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { settingsPaneFromQuery } from './SettingsContext'
-import { googleOauthNotice } from './helpers'
+import { googleOauthNotice, googleOauthNoticeClass } from './helpers'
 
 describe('settingsPaneFromQuery', () => {
   it('maps known panes and treats access as plan', () => {
@@ -26,5 +26,11 @@ describe('googleOauthNotice', () => {
     expect(googleOauthNotice('denied')).toMatch(/denied/i)
     expect(googleOauthNotice('error')).toMatch(/could not connect/i)
     expect(googleOauthNotice(null)).toBeNull()
+  })
+
+  it('does not paint deny/error as success', () => {
+    expect(googleOauthNoticeClass('connected')).toBe('text-mk-green')
+    expect(googleOauthNoticeClass('denied')).toBe('text-mk-amber')
+    expect(googleOauthNoticeClass('error')).toBe('text-mk-amber')
   })
 })

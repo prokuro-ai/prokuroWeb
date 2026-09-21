@@ -6,6 +6,7 @@ import { appField, appGhostBtn } from '@/components/app/chrome'
 import { useSettings } from '@/components/settings/SettingsContext'
 import {
   getGoogleSheetsStatus,
+  GoogleSheetsRevokedError,
   importGoogleSheetTab,
   listGoogleSpreadsheets,
   listGoogleTabs,
@@ -39,12 +40,21 @@ export default function BomGoogleSheetImport({
       .then(async (status) => {
         if (cancelled) return
         setConnected(Boolean(status.connected))
+        if (status.status === 'revoked') {
+          setError('Google access was revoked. Ask an owner or admin to reconnect in Settings.')
+        }
         if (!status.connected) return
         const files = await listGoogleSpreadsheets(accountId)
         if (!cancelled) setSpreadsheets(files)
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load Google Sheets')
+        if (cancelled) return
+        if (err instanceof GoogleSheetsRevokedError) {
+          setConnected(false)
+          setError('Google access was revoked. Ask an owner or admin to reconnect in Settings.')
+          return
+        }
+        setError(err instanceof Error ? err.message : 'Could not load Google Sheets')
       })
     return () => {
       cancelled = true
@@ -94,7 +104,7 @@ export default function BomGoogleSheetImport({
   if (connected === false) {
     return (
       <p className="mt-4 text-[13px] text-mk-ink-muted">
-        Google Sheets is not connected.{' '}
+        {error ?? 'Google Sheets is not connected.'}{' '}
         {canManage ? (
           <button type="button" className="font-medium text-mk-accent" onClick={() => openSettings('integrations')}>
             Connect it in Settings
