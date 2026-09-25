@@ -48,20 +48,28 @@ export default function PlanPane() {
 
   const ends = formatPeriodEnd(billing?.admin_expires_at ?? billing?.current_period_end)
   const enabled = Boolean(billing?.provisioned || billing?.is_operator)
+  const pastDue = billing?.status === 'past_due'
+  const locked = pastDue && !enabled
   const statusLabel = billing?.is_operator
     ? 'Operator account. Customers are enabled from Admin.'
-    : enabled
-      ? ends
-        ? `This account is on through ${ends}.`
-        : 'This account is on.'
-      : 'This account is waiting to be enabled.'
+    : locked
+      ? 'Payment is still failing. This account is locked until the invoice is paid.'
+      : pastDue
+        ? `Payment failed${billing?.last_payment_failure ? `: ${billing.last_payment_failure}` : ''}. The account stays on while Stripe retries.`
+        : enabled
+          ? ends
+            ? `This account is on through ${ends}.`
+            : 'This account is on.'
+          : 'This account is waiting to be enabled.'
 
   return (
     <div className="space-y-5">
       {error ? <p className="text-[13px] text-mk-red">{error}</p> : null}
 
       <div>
-        <p className="text-[13px] font-medium text-mk-ink">{enabled ? 'Enabled' : 'Waiting for access'}</p>
+        <p className="text-[13px] font-medium text-mk-ink">
+          {locked ? 'Locked' : pastDue ? 'Past due' : enabled ? 'Enabled' : 'Waiting for access'}
+        </p>
         <p className="mt-1 text-[13px] text-mk-ink-muted">{statusLabel}</p>
       </div>
 

@@ -361,6 +361,8 @@ export type BillingAccountStatus = {
   stripe_customer_id?: string | null
   current_period_end?: string | null
   admin_expires_at?: string | null
+  last_payment_failure?: string | null
+  last_payment_at?: string | null
 }
 
 export async function getBillingStatus(): Promise<BillingAccountStatus> {
