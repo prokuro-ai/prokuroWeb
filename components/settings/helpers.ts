@@ -1,5 +1,20 @@
 import type { TeamRole } from '@/lib/api'
 
+export const GOOGLE_OAUTH_FLAG_KEY = 'prokuro.google'
+
+export function googleOauthNotice(flag: string | null | undefined): string | null {
+  if (flag === 'connected') return 'Google Sheets is connected for this account.'
+  if (flag === 'denied') return 'Google access was denied. Nothing was stored.'
+  if (flag === 'error') return 'Could not connect Google Sheets.'
+  return null
+}
+
+export function googleOauthNoticeClass(flag: string | null | undefined): string {
+  if (flag === 'connected') return 'text-mk-green'
+  if (flag === 'denied' || flag === 'error') return 'text-mk-amber'
+  return 'text-mk-green'
+}
+
 export function planName(provisioned: boolean | undefined) {
   if (provisioned) return 'Enabled'
   return 'Waiting for access'

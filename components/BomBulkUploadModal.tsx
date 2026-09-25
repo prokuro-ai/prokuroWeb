@@ -5,6 +5,7 @@ import { CheckCircle, Loader2, Upload, X, XCircle } from 'lucide-react'
 import { AppModal, ModalNotice } from '@/components/AppModal'
 import { appGhostBtn, appPrimaryBtn } from '@/components/app/chrome'
 import BomColumnMappingStep from '@/components/BomColumnMappingStep'
+import BomGoogleSheetImport from '@/components/BomGoogleSheetImport'
 import { analyzeFile, parseFile, saveBom } from '@/lib/api'
 import {
   buildColumnMappings,
@@ -35,6 +36,8 @@ type BomBulkUploadModalProps = {
   open: boolean
   onClose: () => void
   onComplete: (saved: BomSummary[]) => void
+  accountId?: string | null
+  canManage?: boolean
 }
 
 function queueKey(file: File) {
@@ -53,6 +56,8 @@ export default function BomBulkUploadModal({
   open,
   onClose,
   onComplete,
+  accountId,
+  canManage = false,
 }: BomBulkUploadModalProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const savedRef = useRef<BomSummary[]>([])
@@ -371,6 +376,18 @@ export default function BomBulkUploadModal({
               CSV, XLSX, XLS, or TXT. We look for a part-number column first, then manufacturer and quantity.
             </p>
           </div>
+
+          {accountId ? (
+            <>
+              <p className="mt-5 text-[13px] font-medium text-mk-ink">Or open a Google Sheet</p>
+              <BomGoogleSheetImport
+                accountId={accountId}
+                canManage={canManage}
+                disabled={parsing}
+                onFile={(file) => addFiles([file])}
+              />
+            </>
+          ) : null}
 
           {items.length > 0 ? (
             <div className="mt-5">

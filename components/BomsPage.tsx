@@ -54,7 +54,7 @@ function railColor(band: BomBand): string | null {
 export default function BomsPage() {
   const router = useRouter()
   const { boms, setBoms, loading, error } = useBoms()
-  const { canWrite } = useTeam()
+  const { canWrite, canManage, team } = useTeam()
   const [uploadOpen, setUploadOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<BomFilter>('All')
@@ -235,6 +235,8 @@ export default function BomsPage() {
         open={uploadOpen}
         onClose={() => setUploadOpen(false)}
         onComplete={handleUploadComplete}
+        accountId={team?.account_id}
+        canManage={canManage}
       />
     </>
   )
