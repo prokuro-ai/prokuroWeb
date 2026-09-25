@@ -1,4 +1,4 @@
-import { isPendingLine, leadTimeWeeks } from '@/lib/risk'
+import { isPendingLine, leadTimeWeeks, lineRiskLevel, PENDING_LABEL } from '@/lib/risk'
 import type { AnalyzedLine, RiskLevel } from '@/lib/types'
 
 export function stockLabel(line: AnalyzedLine): string {
@@ -26,6 +26,11 @@ export function riskLabel(level: RiskLevel | string | undefined): string {
   if (level === 'yellow') return 'Watch'
   if (level === 'unknown') return 'Unmatched'
   return 'Clear'
+}
+
+/** Risk column for one row. Splits "still looking up" out of the Unmatched bucket. */
+export function lineStatusLabel(line: AnalyzedLine): string {
+  return isPendingLine(line) ? PENDING_LABEL : riskLabel(lineRiskLevel(line))
 }
 
 export function riskTone(level: RiskLevel | string | undefined): string {

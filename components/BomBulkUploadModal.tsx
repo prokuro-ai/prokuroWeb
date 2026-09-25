@@ -15,6 +15,7 @@ import {
   previewRows,
 } from '@/lib/columnMapping'
 import { ACCEPTED, formatFileSize } from '@/components/BomUploadDropzone'
+import { pendingLineCount, stillLookingUpLabel } from '@/lib/risk'
 import type { BomSummary, ColumnMapping, ParseResult } from '@/lib/types'
 
 const ACCEPT_MIME =
@@ -28,6 +29,8 @@ type QueueItem = {
   status: 'ready' | 'mapping' | 'processing' | 'done' | 'failed'
   error?: string
   saved?: BomSummary
+  /** Lines the cache-only analyze could not resolve yet; the drain worker is still on them. */
+  pendingCount?: number
 }
 
 type UploadStep = 'select' | 'mapping' | 'complete'
@@ -202,7 +205,11 @@ export default function BomBulkUploadModal({
       const analyzeResult = await analyzeFile(item.file, { columnMapping })
       const bom = await saveBom(item.file, analyzeResult)
       savedRef.current.push(bom)
-      markItem(fileIndex, { status: 'done', saved: bom })
+      markItem(fileIndex, {
+        status: 'done',
+        saved: bom,
+        pendingCount: pendingLineCount(analyzeResult),
+      })
       await beginMappingForFile(fileIndex + 1, items)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Analysis failed'
@@ -242,6 +249,7 @@ export default function BomBulkUploadModal({
 
   const doneCount = items.filter((item) => item.status === 'done').length
   const failedCount = items.filter((item) => item.status === 'failed').length
+  const pendingTotal = items.reduce((sum, item) => sum + (item.pendingCount ?? 0), 0)
 
   const header =
     step === 'select'
@@ -269,7 +277,9 @@ export default function BomBulkUploadModal({
             subtitle:
               failedCount > 0
                 ? 'Failed files were skipped. You can retry them from the BOMs list.'
-                : 'Open a BOM from the list to see what to buy, drop, or watch.',
+                : pendingTotal > 0
+                  ? `${stillLookingUpLabel(pendingTotal)} against distributor data. Open a BOM — it fills in as results arrive.`
+                  : 'Open a BOM from the list to see what to buy, drop, or watch.',
           }
 
   const canAnalyze = !mappingValidationError(mapping)
@@ -441,6 +451,7 @@ export default function BomBulkUploadModal({
                   <p className="text-[12px] text-mk-ink-subtle">
                     {item.saved.lineCount.toLocaleString()} parts
                     {item.saved.atRiskCount > 0 ? ` · ${item.saved.atRiskCount} at risk` : ''}
+                    {item.pendingCount ? ` · ${stillLookingUpLabel(item.pendingCount)}` : ''}
                   </p>
                 ) : null}
                 {item.status === 'failed' && item.error ? (
