@@ -13,7 +13,7 @@ import { useTeam } from '@/hooks/use-team'
 import { listBoms } from '@/lib/api'
 import type { BomSummary } from '@/lib/types'
 import { formatUploadedAt } from '@/lib/format'
-import { BOM_BAND_LABEL, bomRiskBand, type BomBand } from '@/lib/risk'
+import { accountUnscored, BOM_BAND_LABEL, bomRiskBand, stillLookingUpLabel, type BomBand } from '@/lib/risk'
 import { Search } from 'lucide-react'
 
 const BOM_FILTERS = ['All', 'Critical', 'Watch', 'Unknown', 'Clear'] as const
@@ -76,9 +76,7 @@ export default function BomsPage() {
   )
   const filtered = searched.filter((b) => matchesBomFilter(b, filter))
   const totalAtRisk = boms.reduce((sum, bom) => sum + bom.atRiskCount, 0)
-  // Summaries only carry `unknownCount`, which covers both lines still being looked
-  // up and lines with no catalog match. Say "unscored" until the API separates them.
-  const totalUnscored = boms.reduce((sum, bom) => sum + (bom.unknownCount ?? 0), 0)
+  const { pending, noMatch } = accountUnscored(boms)
 
   const filterCounts: Record<BomFilter, number> = {
     All: searched.length,
@@ -96,7 +94,8 @@ export default function BomsPage() {
           totalAtRisk > 0
             ? `${totalAtRisk} part${totalAtRisk === 1 ? '' : 's'} need a call`
             : 'nothing needs a call',
-          ...(totalUnscored > 0 ? [`${totalUnscored.toLocaleString()} unscored`] : []),
+          ...(pending > 0 ? [stillLookingUpLabel(pending)] : []),
+          ...(noMatch > 0 ? [`${noMatch.toLocaleString()} with no catalog match`] : []),
         ].join(' · ')
 
   return (

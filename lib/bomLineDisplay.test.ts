@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { lineStatusLabel } from '@/lib/bomLineDisplay'
-import { isPendingLine, pendingLineCount, stillLookingUpLabel } from '@/lib/risk'
+import { accountUnscored, isPendingLine, pendingLineCount, stillLookingUpLabel } from '@/lib/risk'
 import type { AnalyzeResult, AnalyzedLine } from '@/lib/types'
 
 const base: AnalyzedLine = {
@@ -93,5 +93,27 @@ describe('stillLookingUpLabel', () => {
   it('reads as a count, not a risk verdict', () => {
     expect(stillLookingUpLabel(3)).toBe('3 still looking up')
     expect(stillLookingUpLabel(1200)).toBe('1,200 still looking up')
+  })
+})
+
+describe('accountUnscored', () => {
+  it('splits still-looking-up lines out of the unknown bucket', () => {
+    expect(
+      accountUnscored([
+        { unknownCount: 5, pendingCount: 2 },
+        { unknownCount: 1, pendingCount: 1 },
+      ]),
+    ).toEqual({ pending: 3, noMatch: 3 })
+  })
+
+  it('treats a missing pending count as all resolved misses', () => {
+    expect(accountUnscored([{ unknownCount: 4 }])).toEqual({ pending: 0, noMatch: 4 })
+  })
+
+  it('does not let pending exceed unknown', () => {
+    expect(accountUnscored([{ unknownCount: 1, pendingCount: 9 }])).toEqual({
+      pending: 1,
+      noMatch: 0,
+    })
   })
 })

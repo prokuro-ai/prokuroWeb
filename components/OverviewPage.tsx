@@ -12,7 +12,7 @@ import { useBoms } from '@/hooks/use-boms'
 import { useFlaggedLines } from '@/hooks/use-flagged-lines'
 import { BUYER_JOB_LABEL, BUYER_JOB_ORDER, buyerJob, lineFactChips } from '@/lib/buyerJob'
 import { decisionHeadline } from '@/lib/decision'
-import { lineRiskLevel } from '@/lib/risk'
+import { accountUnscored, lineRiskLevel, stillLookingUpLabel } from '@/lib/risk'
 import type { FlaggedLineItem } from '@/lib/types'
 
 type GroupBy = 'job' | 'bom'
@@ -24,7 +24,7 @@ function lineHref(item: FlaggedLineItem): string {
 function OverviewView() {
   const router = useRouter()
   const { boms, loading: bomsLoading, error: bomsError } = useBoms()
-  const { items, loading: flaggedLoading, error: flaggedError } = useFlaggedLines()
+  const { items, total: flaggedTotal, loading: flaggedLoading, error: flaggedError } = useFlaggedLines()
   const [groupBy, setGroupBy] = useState<GroupBy>('job')
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
 
@@ -66,19 +66,22 @@ function OverviewView() {
     })).filter((group) => group.rows.length > 0)
   }, [items, groupBy])
 
-  // Summaries only carry `unknownCount`, which covers both lines still being looked
-  // up and lines with no catalog match. Say "unscored" until the API separates them.
-  const totalUnscored = boms.reduce((sum, bom) => sum + (bom.unknownCount ?? 0), 0)
+  const { pending, noMatch } = accountUnscored(boms)
+  const callsLabel =
+    items.length === 0
+      ? 'nothing needs a call'
+      : flaggedTotal > items.length
+        ? `showing ${items.length} of ${flaggedTotal} parts that need a call`
+        : `${items.length} part${items.length === 1 ? '' : 's'} need a call`
 
   const statusLine =
     loading || boms.length === 0
       ? null
       : [
           `${boms.length} BOM${boms.length === 1 ? '' : 's'}`,
-          items.length === 0
-            ? 'nothing needs a call'
-            : `${items.length} part${items.length === 1 ? '' : 's'} need a call`,
-          ...(totalUnscored > 0 ? [`${totalUnscored.toLocaleString()} unscored`] : []),
+          callsLabel,
+          ...(pending > 0 ? [stillLookingUpLabel(pending)] : []),
+          ...(noMatch > 0 ? [`${noMatch.toLocaleString()} with no catalog match`] : []),
         ].join(' · ')
 
   return (
@@ -136,11 +139,13 @@ function OverviewView() {
           />
         ) : items.length === 0 ? (
           <EmptyState
-            title={totalUnscored > 0 ? 'Nothing scored needs a call yet' : 'No parts need a call this week'}
+            title={pending > 0 ? 'Nothing scored needs a call yet' : 'No parts need a call this week'}
             description={
-              totalUnscored > 0
-                ? `${totalUnscored.toLocaleString()} line${totalUnscored === 1 ? ' is' : 's are'} not scored yet — still being looked up, or with no catalog match. Open a BOM to see which.`
-                : 'Open a BOM if you want to scan every line.'
+              pending > 0
+                ? `${stillLookingUpLabel(pending)}. ${pending === 1 ? 'It is' : 'They are'} not scored yet. Open a BOM to watch them resolve.`
+                : noMatch > 0
+                  ? `${noMatch.toLocaleString()} line${noMatch === 1 ? '' : 's'} had no catalog match. Open a BOM to see which.`
+                  : 'Open a BOM if you want to scan every line.'
             }
             action={
               <button type="button" onClick={() => router.push('/boms')} className={appPrimaryBtn}>

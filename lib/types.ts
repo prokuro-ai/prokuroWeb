@@ -10,6 +10,8 @@ export interface BomSummary {
   overallRiskScore: number
   atRiskCount: number
   unknownCount?: number
+  /** Subset of `unknownCount` still awaiting enrichment. */
+  pendingCount?: number
   riskBand?: string
 }
 
@@ -23,6 +25,8 @@ export interface FlaggedLineItem {
 export interface FlaggedLines {
   accountId: string
   items: FlaggedLineItem[]
+  /** Flagged lines before the server cap. */
+  total?: number
 }
 
 export type LifecycleStatus = 'active' | 'nrnd' | 'eol' | 'discontinued' | 'unknown'
