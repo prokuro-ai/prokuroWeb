@@ -12,26 +12,34 @@ export function useFlaggedLines() {
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
-    setError(null)
-    listFlaggedLines()
-      .then((result) => {
-        if (!cancelled) {
-          setItems(result.items)
-          setTotal(result.total ?? result.items.length)
-          setError(null)
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Failed to load this week’s calls')
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
+    function load(initial: boolean) {
+      if (initial) setLoading(true)
+      setError(null)
+      listFlaggedLines()
+        .then((result) => {
+          if (!cancelled) {
+            setItems(result.items)
+            setTotal(result.total ?? result.items.length)
+            setError(null)
+          }
+        })
+        .catch((err) => {
+          if (!cancelled) {
+            setError(err instanceof Error ? err.message : 'Failed to load this week’s calls')
+          }
+        })
+        .finally(() => {
+          if (!cancelled && initial) setLoading(false)
+        })
+    }
+    load(true)
+    function onFocus() {
+      load(false)
+    }
+    window.addEventListener('focus', onFocus)
     return () => {
       cancelled = true
+      window.removeEventListener('focus', onFocus)
     }
   }, [])
 

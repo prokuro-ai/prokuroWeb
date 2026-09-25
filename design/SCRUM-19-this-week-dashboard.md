@@ -1,6 +1,6 @@
 # SCRUM-19 — "This week" dashboard revision
 
-**Status:** draft, for team discussion — not agreed yet
+**Status:** decided — ranked severity list, unresolved lines as a count, refresh on focus
 **Ticket:** SCRUM-19
 **Repos touched:** `prokuroWeb` (most of it), `prokuroGateway` in `prokuroBackend` (two small API changes)
 
@@ -70,8 +70,8 @@ Failure paths to cover: account with no BOMs, account where every line is still 
 
 Lead-time trend (we don't compute one), a per-line 1–10 score (only BOM-level `overall_risk_score` exists), and a catalog alternate-part finder (alternates come from the AML column in the customer's own file).
 
-## Open questions
+## Decisions
 
-- Is "this week" meant literally? If so, where does a need-by or build date come from — a field on the BOM, or a column in the uploaded file?
-- Do we cap the dashboard at a fixed number, or per BOM?
-- Should unresolved lines appear on this page at all, or only as a count?
+- "This week" is the ranked call list. No need-by date is stored, so it is not a calendar.
+- The cap is 10 lines for the whole account, reds first. The page defaults to that order. Job and BOM are optional groupings.
+- Lines still being looked up stay off this list. The header shows the pending count. A resolved catalog miss is a separate count.

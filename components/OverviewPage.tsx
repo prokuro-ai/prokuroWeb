@@ -15,7 +15,7 @@ import { decisionHeadline } from '@/lib/decision'
 import { accountUnscored, lineRiskLevel, stillLookingUpLabel } from '@/lib/risk'
 import type { FlaggedLineItem } from '@/lib/types'
 
-type GroupBy = 'job' | 'bom'
+type GroupBy = 'severity' | 'job' | 'bom'
 
 function lineHref(item: FlaggedLineItem): string {
   return `/bom/${encodeURIComponent(item.bomId)}?line=${item.line.row_index}`
@@ -25,7 +25,7 @@ function OverviewView() {
   const router = useRouter()
   const { boms, loading: bomsLoading, error: bomsError } = useBoms()
   const { items, total: flaggedTotal, loading: flaggedLoading, error: flaggedError } = useFlaggedLines()
-  const [groupBy, setGroupBy] = useState<GroupBy>('job')
+  const [groupBy, setGroupBy] = useState<GroupBy>('severity')
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
 
   useEffect(() => {
@@ -45,6 +45,9 @@ function OverviewView() {
   const error = flaggedError ?? bomsError
 
   const groups = useMemo(() => {
+    if (groupBy === 'severity') {
+      return [{ key: 'severity', label: 'Worst first', rows: items }]
+    }
     if (groupBy === 'bom') {
       const byBom = new Map<string, FlaggedLineItem[]>()
       for (const item of items) {
@@ -93,6 +96,7 @@ function OverviewView() {
           items.length > 0 ? (
             <nav className="flex items-center gap-x-5" aria-label="Group this week">
               {([
+                { id: 'severity', label: 'By severity' },
                 { id: 'job', label: 'By job' },
                 { id: 'bom', label: 'By BOM' },
               ] as const).map((option) => (
@@ -181,7 +185,7 @@ function OverviewView() {
                           risk={lineRiskLevel(item.line)}
                           headline={decisionHeadline(item.line)}
                           mpn={item.line.mpn}
-                          meta={groupBy === 'job' ? item.bomName : item.line.refdes ?? undefined}
+                          meta={groupBy === 'bom' ? item.line.refdes ?? undefined : item.bomName}
                           chips={lineFactChips(item.line)}
                           href={lineHref(item)}
                         />
