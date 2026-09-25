@@ -30,6 +30,16 @@ export function stillLookingUpLabel(count: number): string {
   return `${count.toLocaleString()} still looking up`
 }
 
+/** `pendingCount` is a subset of `unknownCount`. The rest are resolved misses. */
+export function accountUnscored(
+  boms: { unknownCount?: number; pendingCount?: number }[],
+): { pending: number; noMatch: number } {
+  const unknown = boms.reduce((sum, bom) => sum + (bom.unknownCount ?? 0), 0)
+  const pending = boms.reduce((sum, bom) => sum + (bom.pendingCount ?? 0), 0)
+  const pendingClamped = Math.min(Math.max(pending, 0), unknown)
+  return { pending: pendingClamped, noMatch: unknown - pendingClamped }
+}
+
 /** Poll while enrichment is pending. Briefs are filled by the gateway (heuristic/Bedrock). */
 export function shouldPollBom(result: AnalyzeResult): boolean {
   return hasPendingLines(result)

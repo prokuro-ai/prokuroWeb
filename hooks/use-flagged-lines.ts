@@ -6,6 +6,7 @@ import type { FlaggedLineItem } from '@/lib/types'
 
 export function useFlaggedLines() {
   const [items, setItems] = useState<FlaggedLineItem[]>([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -17,6 +18,7 @@ export function useFlaggedLines() {
       .then((result) => {
         if (!cancelled) {
           setItems(result.items)
+          setTotal(result.total ?? result.items.length)
           setError(null)
         }
       })
@@ -33,5 +35,5 @@ export function useFlaggedLines() {
     }
   }, [])
 
-  return { items, loading, error }
+  return { items, total, loading, error }
 }
