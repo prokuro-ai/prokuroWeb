@@ -22,11 +22,33 @@ export interface FlaggedLineItem {
   line: AnalyzedLine
 }
 
+/** Whole-account counts. Not limited to the capped call list. */
+export interface AccountSituation {
+  outOfStock: number
+  longLead: number
+  nrnd: number
+  discontinued: number
+  noAlternate: number
+  duty: number
+  entityList: number
+}
+
+export const EMPTY_ACCOUNT_SITUATION: AccountSituation = {
+  outOfStock: 0,
+  longLead: 0,
+  nrnd: 0,
+  discontinued: 0,
+  noAlternate: 0,
+  duty: 0,
+  entityList: 0,
+}
+
 export interface FlaggedLines {
   accountId: string
   items: FlaggedLineItem[]
   /** Flagged lines before the server cap. */
   total?: number
+  situation?: AccountSituation
 }
 
 export type LifecycleStatus = 'active' | 'nrnd' | 'eol' | 'discontinued' | 'unknown'

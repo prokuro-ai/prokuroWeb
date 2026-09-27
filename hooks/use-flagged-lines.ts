@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { listFlaggedLines } from '@/lib/api'
-import type { FlaggedLineItem } from '@/lib/types'
+import { EMPTY_ACCOUNT_SITUATION, type AccountSituation, type FlaggedLineItem } from '@/lib/types'
 
 export function useFlaggedLines() {
   const [items, setItems] = useState<FlaggedLineItem[]>([])
   const [total, setTotal] = useState(0)
+  const [situation, setSituation] = useState<AccountSituation>(EMPTY_ACCOUNT_SITUATION)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -20,6 +21,7 @@ export function useFlaggedLines() {
           if (!cancelled) {
             setItems(result.items)
             setTotal(result.total ?? result.items.length)
+            setSituation(result.situation ?? EMPTY_ACCOUNT_SITUATION)
             setError(null)
           }
         })
@@ -43,5 +45,5 @@ export function useFlaggedLines() {
     }
   }, [])
 
-  return { items, total, loading, error }
+  return { items, total, situation, loading, error }
 }
