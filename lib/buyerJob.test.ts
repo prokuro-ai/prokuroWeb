@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buyerJob, lineFactChips } from '@/lib/buyerJob'
+import { buyerJob } from '@/lib/buyerJob'
 import type { AnalyzedLine } from '@/lib/types'
 
 const base: AnalyzedLine = {
@@ -55,17 +55,5 @@ describe('buyerJob', () => {
 
   it('groups duty-only flags as tariff', () => {
     expect(buyerJob({ ...base, total_duty_pct: 25 })).toBe('tariff')
-  })
-})
-
-describe('lineFactChips', () => {
-  it('omits duty when none is present', () => {
-    const labels = lineFactChips(base).map((chip) => chip.label)
-    expect(labels).not.toContain('Duty')
-  })
-
-  it('includes duty when the line has a rate', () => {
-    const duty = lineFactChips({ ...base, total_duty_pct: 12.5 }).find((chip) => chip.label === 'Duty')
-    expect(duty?.value).toBe('12.5%')
   })
 })

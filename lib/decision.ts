@@ -36,7 +36,7 @@ function clipHeadline(text: string): string {
   return text.length > 160 ? `${text.slice(0, 157).trimEnd()}…` : text
 }
 
-/** Serif call for a row. Uses the stored headline when present; otherwise real line fields. */
+/** One-line call for a row. Uses the stored headline when present; otherwise real line fields. */
 export function decisionHeadline(line: AnalyzedLine): string {
   const structured = line.brief?.headline?.trim()
   if (structured) return clipHeadline(structured)

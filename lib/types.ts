@@ -22,33 +22,58 @@ export interface FlaggedLineItem {
   line: AnalyzedLine
 }
 
-/** Whole-account counts. Not limited to the capped call list. */
-export interface AccountSituation {
+export interface RiskMix {
+  red: number
+  yellow: number
+  green: number
+  /** Enrichment answered and found no catalog match. */
+  noMatch: number
+  /** Enrichment has not answered yet. */
+  pending: number
+}
+
+/** Scored lines only. */
+export interface Situation {
   outOfStock: number
+  /** Factory lead over 26 weeks. */
   longLead: number
   nrnd: number
+  /** EOL and discontinued. */
   discontinued: number
   noAlternate: number
   duty: number
   entityList: number
 }
 
-export const EMPTY_ACCOUNT_SITUATION: AccountSituation = {
-  outOfStock: 0,
-  longLead: 0,
-  nrnd: 0,
-  discontinued: 0,
-  noAlternate: 0,
-  duty: 0,
-  entityList: 0,
+/** Scored lines by factory lead. */
+export interface LeadTimes {
+  upTo4Weeks: number
+  upTo12Weeks: number
+  upTo26Weeks: number
+  upTo52Weeks: number
+  over52Weeks: number
+  unpublished: number
+}
+
+export interface LineTally {
+  mix: RiskMix
+  situation: Situation
+  lead: LeadTimes
+}
+
+export interface BoardTally extends LineTally {
+  bomId: string
+  bomName: string
 }
 
 export interface FlaggedLines {
   accountId: string
   items: FlaggedLineItem[]
   /** Flagged lines before the server cap. */
-  total?: number
-  situation?: AccountSituation
+  total: number
+  /** Every stored line in the account, not only `items`. */
+  account: LineTally
+  boards: BoardTally[]
 }
 
 export type LifecycleStatus = 'active' | 'nrnd' | 'eol' | 'discontinued' | 'unknown'

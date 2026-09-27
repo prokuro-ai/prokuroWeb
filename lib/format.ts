@@ -16,6 +16,11 @@ export function parseUploadedAt(value: string): Date | null {
   return Number.isNaN(date.getTime()) ? null : date
 }
 
+/** `plural(3, 'BOM')` → "3 BOMs". */
+export function plural(count: number, one: string, many = `${one}s`): string {
+  return `${count.toLocaleString()} ${count === 1 ? one : many}`
+}
+
 export function formatUploadedAt(value: string): string {
   const date = parseUploadedAt(value)
   if (!date) return '-'
