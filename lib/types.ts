@@ -127,6 +127,16 @@ export interface AnalyzedLine {
   entity_list_match?: boolean | null
   entity_list_notes?: string | null
   agent_brief?: string | null
+  brief?: LineBriefFields | null
+  risk_reasons?: string[]
+}
+
+export interface LineBriefFields {
+  headline: string
+  why?: string | null
+  next_action?: string | null
+  alternate?: string | null
+  cost_note?: string | null
 }
 
 export interface AnalyzeResult {

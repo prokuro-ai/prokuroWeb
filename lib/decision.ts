@@ -1,4 +1,5 @@
 import {
+  isAtRisk,
   isPendingLine,
   leadTimeWeeks,
   lifecycleLabel,
@@ -21,12 +22,29 @@ export function analystBrief(line: AnalyzedLine): string | null {
   return text ? text : null
 }
 
-/** Serif call for a row. Uses the stored brief when present; otherwise real line fields. */
+export function hasUsableBrief(line: AnalyzedLine): boolean {
+  const headline = line.brief?.headline?.trim()
+  if (headline) return true
+  return Boolean(analystBrief(line))
+}
+
+export function isBriefPending(line: AnalyzedLine): boolean {
+  return isAtRisk(line) && !isPendingLine(line) && !hasUsableBrief(line)
+}
+
+function clipHeadline(text: string): string {
+  return text.length > 160 ? `${text.slice(0, 157).trimEnd()}…` : text
+}
+
+/** Serif call for a row. Uses the stored headline when present; otherwise real line fields. */
 export function decisionHeadline(line: AnalyzedLine): string {
+  const structured = line.brief?.headline?.trim()
+  if (structured) return clipHeadline(structured)
+
   const brief = analystBrief(line)
   if (brief) {
     const first = brief.split(/(?<=[.!?])\s+/)[0]?.trim() || brief
-    return first.length > 160 ? `${first.slice(0, 157).trimEnd()}…` : first
+    return clipHeadline(first)
   }
   if (isPendingLine(line)) return 'Still matching this part to distributor data.'
   const life = line.lifecycle_status?.toLowerCase() ?? ''
@@ -44,6 +62,39 @@ export function decisionHeadline(line: AnalyzedLine): string {
     return `Estimated duty is ${line.total_duty_pct}%.`
   }
   return buildLineDecision(line).summary.replace(/^(Critical|Watch|Unknown|Clear):\s*/i, '')
+}
+
+export function whyThisScore(line: AnalyzedLine): string {
+  const reasons = line.risk_reasons?.map((reason) => reason.trim()).filter(Boolean) ?? []
+  if (reasons.length > 0) return reasons.join(' ')
+  const structuredWhy = line.brief?.why?.trim()
+  if (structuredWhy) return structuredWhy
+  if (isBriefPending(line)) {
+    return 'A procurement brief is being written for this line. This updates when the analyst finishes.'
+  }
+  const old = analystBrief(line)
+  if (old) return old
+  return buildLineDecision(line).whyScore
+}
+
+export function thisWeekNextAction(line: AnalyzedLine): string {
+  const next = line.brief?.next_action?.trim()
+  if (next) return next
+  if (isBriefPending(line)) {
+    return 'A procurement brief is being written for this line. This updates when the analyst finishes.'
+  }
+  return buildLineDecision(line).nextAction
+}
+
+export function thisWeekCostNote(line: AnalyzedLine): string {
+  const note = line.brief?.cost_note?.trim()
+  if (note) return note
+  return buildLineDecision(line).costNote
+}
+
+export function briefAlternate(line: AnalyzedLine): string | null {
+  const alternate = line.brief?.alternate?.trim()
+  return alternate ? alternate : null
 }
 
 function stockSentence(line: AnalyzedLine): string {

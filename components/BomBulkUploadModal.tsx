@@ -78,6 +78,7 @@ export default function BomBulkUploadModal({
   const [mapping, setMapping] = useState<ColumnMapping[]>([])
   const [headers, setHeaders] = useState<string[]>([])
   const [preview, setPreview] = useState<string[][]>([])
+  const [source, setSource] = useState<'file' | 'sheet'>('file')
 
   const reset = useCallback(() => {
     setStep('select')
@@ -93,6 +94,7 @@ export default function BomBulkUploadModal({
     setMapping([])
     setHeaders([])
     setPreview([])
+    setSource('file')
     savedRef.current = []
   }, [])
 
@@ -345,6 +347,28 @@ export default function BomBulkUploadModal({
 
       {step === 'select' ? (
         <>
+          <div className="mb-4 flex gap-1 rounded-[8px] bg-mk-raised p-1">
+            <button
+              type="button"
+              onClick={() => setSource('file')}
+              className={`flex-1 rounded-[6px] px-3 py-2 text-[13px] font-medium transition-colors ${
+                source === 'file' ? 'bg-mk-canvas text-mk-ink' : 'text-mk-ink-muted hover:text-mk-ink'
+              }`}
+            >
+              File
+            </button>
+            <button
+              type="button"
+              onClick={() => setSource('sheet')}
+              className={`flex-1 rounded-[6px] px-3 py-2 text-[13px] font-medium transition-colors ${
+                source === 'sheet' ? 'bg-mk-canvas text-mk-ink' : 'text-mk-ink-muted hover:text-mk-ink'
+              }`}
+            >
+              Google Sheet
+            </button>
+          </div>
+
+          {source === 'file' ? (
           <div
             role="button"
             tabIndex={0}
@@ -386,18 +410,16 @@ export default function BomBulkUploadModal({
               CSV, XLSX, XLS, or TXT. We look for a part-number column first, then manufacturer and quantity.
             </p>
           </div>
-
-          {accountId ? (
-            <>
-              <p className="mt-5 text-[13px] font-medium text-mk-ink">Or open a Google Sheet</p>
-              <BomGoogleSheetImport
-                accountId={accountId}
-                canManage={canManage}
-                disabled={parsing}
-                onFile={(file) => addFiles([file])}
-              />
-            </>
-          ) : null}
+          ) : accountId ? (
+            <BomGoogleSheetImport
+              accountId={accountId}
+              canManage={canManage}
+              disabled={parsing}
+              onFile={(file) => addFiles([file])}
+            />
+          ) : (
+            <p className="text-[13px] text-mk-ink-muted">Sign in to open a Google Sheet.</p>
+          )}
 
           {items.length > 0 ? (
             <div className="mt-5">

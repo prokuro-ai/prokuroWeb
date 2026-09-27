@@ -1,34 +1,38 @@
 'use client'
 
-import { analystBrief, buildLineDecision } from '@/lib/decision'
-import { isAtRisk, isPendingLine } from '@/lib/risk'
+import {
+  briefAlternate,
+  buildLineDecision,
+  thisWeekCostNote,
+  thisWeekNextAction,
+  whyThisScore,
+} from '@/lib/decision'
 import type { AnalyzedLine } from '@/lib/types'
 
 export default function LineDetail({ line }: { line: AnalyzedLine }) {
   const decision = buildLineDecision(line)
-  const brief = analystBrief(line)
-  const briefPending = isAtRisk(line) && !isPendingLine(line) && !brief
+  const suggested = briefAlternate(line)
 
   return (
     <div className="min-w-0 space-y-4">
       <div>
         <p className="mk-eyebrow">Why this score</p>
         <p className="mt-1.5 whitespace-pre-wrap break-words text-[13px] leading-relaxed text-mk-ink">
-          {brief ??
-            (briefPending
-              ? 'A procurement brief is being written for this line. This updates when the analyst finishes.'
-              : decision.whyScore)}
+          {whyThisScore(line)}
         </p>
       </div>
 
       <div>
         <p className="mk-eyebrow">This week</p>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-mk-ink">{decision.nextAction}</p>
-        <p className="mt-2 text-[12px] leading-relaxed text-mk-ink-muted">{decision.costNote}</p>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-mk-ink">{thisWeekNextAction(line)}</p>
+        <p className="mt-2 text-[12px] leading-relaxed text-mk-ink-muted">{thisWeekCostNote(line)}</p>
       </div>
 
       <div>
         <p className="mk-eyebrow">Alternates from your AML</p>
+        {suggested ? (
+          <p className="mt-1.5 text-[13px] leading-relaxed text-mk-ink">Suggested: {suggested}</p>
+        ) : null}
         {line.aml_candidates.length > 0 ? (
           <div className="mt-1.5 flex flex-wrap gap-1.5">
             {line.aml_candidates.map((mpn) => (

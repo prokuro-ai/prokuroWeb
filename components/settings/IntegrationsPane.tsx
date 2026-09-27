@@ -50,6 +50,19 @@ export default function IntegrationsPane() {
 
   const connected = Boolean(status?.connected)
   const revoked = status?.status === 'revoked'
+  const unconfigured = status?.configured === false
+
+  const statusLine = !status
+    ? 'Checking…'
+    : unconfigured
+      ? 'Not available on this server.'
+      : connected
+        ? status.connected_by_email
+          ? `Connected by ${status.connected_by_email}`
+          : 'Connected'
+        : revoked
+          ? 'Access was revoked. Connect again.'
+          : 'Not connected'
 
   const handleConnect = async () => {
     setBusy(true)
@@ -78,44 +91,37 @@ export default function IntegrationsPane() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <p className="text-[13px] text-mk-ink-muted">
-        One Google grant for the whole Prokuro account. Anyone who can upload a BOM can then open a
-        spreadsheet this connecting admin can see.
+        One Google connection for the account. Anyone who can upload a BOM can then open a spreadsheet
+        that connection can see.
       </p>
 
       {notice ? <p className={`text-[13px] ${googleOauthNoticeClass(oauthFlag)}`}>{notice}</p> : null}
       {error ? <p className="text-[13px] text-mk-red">{error}</p> : null}
 
-      {status && status.configured === false ? (
-        <p className="text-[13px] text-mk-ink-muted">Google Sheets is not configured on this server.</p>
-      ) : (
-        <div className="rounded-[8px] bg-mk-raised px-4 py-4">
-          <p className="text-[14px] font-medium text-mk-ink">Google Sheets</p>
-          <p className="mt-1 text-[13px] text-mk-ink-muted">
-            {connected
-              ? `Connected${status?.connected_by_email ? ` by ${status.connected_by_email}` : ''}.`
-              : revoked
-                ? 'Google access was revoked. Connect again to restore the account grant.'
-                : 'Not connected.'}
-          </p>
-          {canManage ? (
-            <div className="mt-3">
-              {connected ? (
-                <button type="button" onClick={() => void handleDisconnect()} disabled={busy} className={appGhostBtn}>
-                  Disconnect
-                </button>
-              ) : (
-                <button type="button" onClick={() => void handleConnect()} disabled={busy} className={appPrimaryBtn}>
-                  Connect Google
-                </button>
-              )}
-            </div>
-          ) : (
-            <p className="mt-3 text-[13px] text-mk-ink-muted">Only an owner or admin can connect or disconnect.</p>
-          )}
+      <div className="flex flex-wrap items-center gap-3 rounded-[8px] bg-mk-raised px-4 py-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-mk-ink text-[11px] font-semibold text-mk-canvas">
+          G
         </div>
-      )}
+        <div className="min-w-0 flex-1 basis-[12rem]">
+          <p className="text-[13px] font-medium text-mk-ink">Google Sheets</p>
+          <p className="truncate text-[11px] text-mk-ink-subtle">{statusLine}</p>
+        </div>
+        {canManage && status && !unconfigured ? (
+          connected ? (
+            <button type="button" onClick={() => void handleDisconnect()} disabled={busy} className={appGhostBtn}>
+              {busy ? 'Working…' : 'Disconnect'}
+            </button>
+          ) : (
+            <button type="button" onClick={() => void handleConnect()} disabled={busy} className={appPrimaryBtn}>
+              {busy ? 'Opening…' : 'Connect'}
+            </button>
+          )
+        ) : !canManage ? (
+          <p className="text-[12px] text-mk-ink-subtle">Owner or admin only</p>
+        ) : null}
+      </div>
     </div>
   )
 }

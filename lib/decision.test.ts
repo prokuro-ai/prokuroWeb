@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { analystBrief, buildLineDecision, decisionHeadline } from '@/lib/decision'
+import { cleanup, render, screen } from '@testing-library/react'
+import { afterEach } from 'vitest'
+import LineDetail from '@/components/app/LineDetail'
+import {
+  analystBrief,
+  buildLineDecision,
+  decisionHeadline,
+  isBriefPending,
+  thisWeekNextAction,
+  whyThisScore,
+} from '@/lib/decision'
 import type { AnalyzedLine } from '@/lib/types'
 
 const base: AnalyzedLine = {
@@ -66,7 +76,20 @@ describe('buildLineDecision', () => {
 })
 
 describe('decisionHeadline', () => {
-  it('uses the stored brief when present', () => {
+  it('uses the structured headline when present', () => {
+    expect(
+      decisionHeadline({
+        ...base,
+        agent_brief: 'Qualify the alternate. Stock will not cover the run.',
+        brief: {
+          headline: 'Place a last-time buy.',
+          why: 'Lifecycle is EOL.',
+        },
+      }),
+    ).toBe('Place a last-time buy.')
+  })
+
+  it('uses the first sentence of old free-text when there is no headline', () => {
     expect(
       decisionHeadline({
         ...base,
@@ -83,5 +106,99 @@ describe('decisionHeadline', () => {
         risk_level: 'red',
       }),
     ).toMatch(/obsolete/i)
+  })
+
+  it('does not invent a headline when a flagged line has no brief', () => {
+    const line: AnalyzedLine = {
+      ...base,
+      availability_status: 'outofstock',
+      total_avail: 0,
+      risk_level: 'yellow',
+    }
+    expect(isBriefPending(line)).toBe(true)
+    expect(decisionHeadline(line)).toBe("Can't buy this from tracked distributors.")
+  })
+})
+
+describe('whyThisScore', () => {
+  it('prefers risk reasons over a conflicting heuristic why', () => {
+    expect(
+      whyThisScore({
+        ...base,
+        availability_status: 'outofstock',
+        total_avail: 0,
+        risk_level: 'yellow',
+        risk_reasons: ['Out of stock at tracked distributors'],
+      }),
+    ).toBe('Out of stock at tracked distributors')
+  })
+
+  it('keeps old free-text readable when there is no structured brief', () => {
+    expect(
+      whyThisScore({
+        ...base,
+        risk_level: 'yellow',
+        availability_status: 'outofstock',
+        agent_brief: 'Stock is gone at Digi-Key and Mouser.',
+      }),
+    ).toBe('Stock is gone at Digi-Key and Mouser.')
+  })
+
+  it('says the brief is pending when flagged with no brief yet', () => {
+    const line: AnalyzedLine = {
+      ...base,
+      availability_status: 'outofstock',
+      total_avail: 0,
+      risk_level: 'yellow',
+    }
+    expect(whyThisScore(line)).toMatch(/being written/i)
+    expect(thisWeekNextAction(line)).toMatch(/being written/i)
+  })
+})
+
+afterEach(() => {
+  cleanup()
+})
+
+describe('LineDetail', () => {
+  it('renders structured brief sections instead of the raw paragraph', () => {
+    render(
+      <LineDetail
+        line={{
+          ...base,
+          availability_status: 'outofstock',
+          total_avail: 0,
+          risk_level: 'yellow',
+          agent_brief: 'Qualify the alternate. Stock will not cover the run.',
+          brief: {
+            headline: 'Qualify a second source.',
+            why: 'Stock is out at tracked distributors.',
+            next_action: 'Place a bridge buy this week.',
+            alternate: 'TPS62840DLCT',
+            cost_note: 'No duty on this line.',
+          },
+          risk_reasons: ['Out of stock at tracked distributors'],
+        }}
+      />,
+    )
+    expect(screen.getByText('Out of stock at tracked distributors')).toBeTruthy()
+    expect(screen.getByText('Place a bridge buy this week.')).toBeTruthy()
+    expect(screen.getByText('No duty on this line.')).toBeTruthy()
+    expect(screen.getByText(/TPS62840DLCT/)).toBeTruthy()
+    expect(screen.queryByText('Qualify the alternate. Stock will not cover the run.')).toBeNull()
+  })
+
+  it('shows pending copy when a flagged line has no brief', () => {
+    render(
+      <LineDetail
+        line={{
+          ...base,
+          availability_status: 'outofstock',
+          total_avail: 0,
+          risk_level: 'yellow',
+        }}
+      />,
+    )
+    expect(screen.getAllByText(/being written/i).length).toBeGreaterThan(0)
   })
 })
