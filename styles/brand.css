@@ -92,20 +92,22 @@
   --mk-ink: #0b1524;
   --mk-ink-muted: #26324a;
   --mk-ink-subtle: #45516a;
-  --mk-line: rgb(38 50 74 / 16%);
-  --mk-line-strong: rgb(38 50 74 / 32%);
+  --mk-line: rgb(38 50 74 / 13%);
+  --mk-line-strong: rgb(38 50 74 / 30%);
   --mk-red: #a3141a;
   --mk-amber: #854702;
   --mk-green: #0d6435;
   --mk-slate: #45516a;
   color: var(--mk-ink);
   background:
-    radial-gradient(90% 120% at 0% 0%, #eef2f6 0%, rgb(238 242 246 / 0%) 60%),
-    radial-gradient(70% 90% at 100% 0%, #e3e8ef 0%, rgb(227 232 239 / 0%) 65%),
-    radial-gradient(80% 110% at 100% 100%, #bfc8d4 0%, rgb(191 200 212 / 0%) 60%),
-    radial-gradient(60% 80% at 20% 100%, #ccd3dd 0%, rgb(204 211 221 / 0%) 70%),
-    var(--mk-canvas);
+    radial-gradient(55% 75% at 10% 0%, rgb(255 255 255 / 95%) 0%, rgb(255 255 255 / 0%) 70%),
+    radial-gradient(45% 60% at 70% 22%, rgb(255 255 255 / 70%) 0%, rgb(255 255 255 / 0%) 72%),
+    radial-gradient(40% 55% at 38% 78%, rgb(255 255 255 / 45%) 0%, rgb(255 255 255 / 0%) 75%),
+    radial-gradient(70% 90% at 100% 100%, #c3ccd8 0%, rgb(195 204 216 / 0%) 62%),
+    radial-gradient(55% 70% at 0% 100%, #cdd4de 0%, rgb(205 212 222 / 0%) 70%),
+    linear-gradient(180deg, #e8ecf1 0%, #d8dee6 100%);
   box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 90%),
     0 0 0 1px rgb(38 50 74 / 6%),
     0 2px 4px rgb(15 23 42 / 6%),
     0 12px 24px -6px rgb(15 23 42 / 12%),

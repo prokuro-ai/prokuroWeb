@@ -34,6 +34,14 @@ export const SITUATION_COLUMNS: {
   { key: 'duty', label: 'Duty on the line', short: 'Duty', tone: 'slate' },
 ]
 
+/** The account card groups exceptions by the kind of call they ask for. */
+export const SITUATION_GROUPS: { label: string; keys: (keyof Situation)[] }[] = [
+  { label: 'Supply', keys: ['outOfStock', 'longLead'] },
+  { label: 'Lifecycle', keys: ['discontinued', 'nrnd'] },
+  { label: 'Trade', keys: ['entityList', 'duty'] },
+  { label: 'Sourcing', keys: ['noAlternate'] },
+]
+
 /** Past the 26-week line is amber, past a year is red. */
 export const LEAD_BUCKETS: { key: Exclude<keyof LeadTimes, 'unpublished'>; label: string; tone: Tone }[] = [
   { key: 'upTo4Weeks', label: '0–4', tone: 'slate' },
