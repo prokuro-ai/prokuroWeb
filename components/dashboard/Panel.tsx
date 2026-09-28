@@ -22,7 +22,7 @@ export default function Panel({
         <h2 className="flex items-center gap-2 text-[14px] font-semibold text-mk-ink">
           {title}
           {count ? (
-            <span className="mk-data rounded-full bg-mk-raised-2 px-2 py-0.5 text-[11px] font-normal text-mk-ink-muted">
+            <span className="text-[13px] font-normal tabular-nums text-mk-ink-subtle">
               {count}
             </span>
           ) : null}

@@ -64,19 +64,19 @@ export default function BoardMatrix({ boards }: { boards: BoardTally[] }) {
                     >
                       {board.bomName}
                     </Link>
-                    <span className="mk-data mt-0.5 block text-[12px] text-mk-ink-subtle">
+                    <span className="mt-0.5 block text-[12px] tabular-nums text-mk-ink-subtle">
                       {total.toLocaleString()} parts
                     </span>
                   </td>
                   <td className="px-3 py-3 text-right">
                     <span
-                      className={`mk-data text-[14px] ${
+                      className={`text-[14px] font-medium tabular-nums ${
                         board.mix.red > 0 ? 'text-mk-red' : flagged > 0 ? 'text-mk-amber' : 'text-mk-ink-subtle'
                       }`}
                     >
                       {flagged.toLocaleString()}
                     </span>
-                    <span className="mk-data text-[11px] text-mk-ink-subtle"> {percent(flagged, total)}</span>
+                    <span className="text-[12px] tabular-nums text-mk-ink-subtle"> {percent(flagged, total)}</span>
                   </td>
                   {SITUATION_COLUMNS.map((column) => {
                     const count = board.situation[column.key]
@@ -84,7 +84,7 @@ export default function BoardMatrix({ boards }: { boards: BoardTally[] }) {
                     return (
                       <td key={column.key} className="px-1 py-3">
                         <span
-                          className="mk-data block text-center text-[13px]"
+                          className="block text-center text-[13px] tabular-nums"
                           style={{ color: quiet ? (count === 0 ? 'var(--mk-line-strong)' : 'var(--mk-ink)') : TONE_VAR[column.tone] }}
                         >
                           {count > 0 ? count.toLocaleString() : '·'}

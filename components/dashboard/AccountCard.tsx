@@ -1,12 +1,13 @@
-import { atRisk, LEAD_BUCKETS, MIX_SEGMENTS, mixTotal, percent, scoredTotal, SITUATION_COLUMNS, TONE_VAR } from '@/lib/dashboard'
+import { atRisk, LEAD_BUCKETS, MIX_SEGMENTS, mixTotal, percent, scoredTotal, SITUATION_COLUMNS, TONE_VAR, type Tone } from '@/lib/dashboard'
 import type { LeadTimes, LineTally } from '@/lib/types'
 
 /** Three of five buckets sit at or under 26 weeks. */
 const CUTOFF_AT = '60%'
 
-function toneColor(tone: keyof typeof TONE_VAR, quiet: boolean): string {
-  if (quiet) return 'var(--mk-ink-subtle)'
-  return TONE_VAR[tone]
+/** Zero reads as subtle. Slate counts are facts, not warnings, so they stay ink. */
+function countColor(tone: Tone, count: number): string {
+  if (count === 0) return 'var(--mk-ink-subtle)'
+  return tone === 'slate' || tone === 'pending' ? 'var(--mk-ink)' : TONE_VAR[tone]
 }
 
 function LeadScale({ lead }: { lead: LeadTimes }) {
@@ -17,24 +18,18 @@ function LeadScale({ lead }: { lead: LeadTimes }) {
     <figure>
       <figcaption className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-[12px] text-mk-ink-subtle">
         <span>Factory lead, weeks</span>
-        {lead.unpublished > 0 ? <span className="mk-data">{lead.unpublished} unpublished</span> : null}
+        {lead.unpublished > 0 ? <span className="tabular-nums">{lead.unpublished} unpublished</span> : null}
       </figcaption>
       <div className="mt-5 grid grid-cols-5">
-        {LEAD_BUCKETS.map((bucket, index) => {
-          const count = counts[index]
-          const late = bucket.tone !== 'slate'
-          return (
-            <span
-              key={bucket.key}
-              className="mk-data text-center text-[15px] leading-none sm:text-[18px]"
-              style={{
-                color: count === 0 ? 'var(--mk-ink-subtle)' : late ? TONE_VAR[bucket.tone] : 'var(--mk-ink)',
-              }}
-            >
-              {count.toLocaleString()}
-            </span>
-          )
-        })}
+        {LEAD_BUCKETS.map((bucket, index) => (
+          <span
+            key={bucket.key}
+            className="text-center text-[16px] font-medium leading-none tabular-nums mk:text-[18px]"
+            style={{ color: countColor(bucket.tone, counts[index]) }}
+          >
+            {counts[index].toLocaleString()}
+          </span>
+        ))}
       </div>
       <div className="relative mt-4 h-3">
         <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-mk-line-strong" />
@@ -47,15 +42,15 @@ function LeadScale({ lead }: { lead: LeadTimes }) {
           />
         ))}
         <span
-          className="mk-data absolute top-1/2 -translate-x-1/2 -translate-y-1/2 bg-mk-canvas px-1.5 text-[10px] text-mk-ink"
+          className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 bg-mk-canvas px-1.5 text-[11px] font-medium tabular-nums text-mk-ink"
           style={{ left: CUTOFF_AT }}
         >
           26
         </span>
       </div>
-      <div className="mt-1 grid grid-cols-5">
+      <div className="mt-1.5 grid grid-cols-5">
         {LEAD_BUCKETS.map((bucket) => (
-          <span key={bucket.key} className="mk-data whitespace-nowrap text-center text-[10px] text-mk-ink-subtle sm:text-[11px]">
+          <span key={bucket.key} className="whitespace-nowrap text-center text-[11px] tabular-nums text-mk-ink-subtle mk:text-[12px]">
             {bucket.label}
           </span>
         ))}
@@ -65,9 +60,9 @@ function LeadScale({ lead }: { lead: LeadTimes }) {
   )
 }
 
-const pad = 'px-4 py-5 sm:px-6 sm:py-6 mk:px-7 mk:py-7'
+const pad = 'px-5 py-6 mk:px-7 mk:py-7'
 
-/** Account readout. Same figures as before, set as type on a slate card. */
+/** Account readout on a raised grey card. */
 export default function AccountCard({ account }: { account: LineTally }) {
   const { mix, situation, lead } = account
   const total = mixTotal(mix)
@@ -75,28 +70,29 @@ export default function AccountCard({ account }: { account: LineTally }) {
   const scored = scoredTotal(mix)
 
   return (
-    <section aria-label="Account" className="mk-account-card relative overflow-hidden rounded-[8px] shadow-[0_1px_2px_rgb(15_27_45/6%),0_12px_32px_rgb(15_27_45/8%)]">
-      <div className={`relative grid ${scored > 0 ? 'sm:grid-cols-2' : ''}`}>
-        <div className={`${pad} ${scored > 0 ? 'border-b border-mk-line sm:border-r sm:border-b-0' : ''}`}>
-          <p>
-            <span
-              className={`mk-data text-[clamp(2.75rem,12vw,4.25rem)] leading-none ${
-                flagged > 0 ? 'text-mk-red' : 'text-mk-green'
-              }`}
-            >
-              {flagged.toLocaleString()}
-            </span>
+    <section aria-label="Account" className="mk-account-card overflow-hidden rounded-[10px]">
+      <div className={`grid ${scored > 0 ? 'mk:grid-cols-2' : ''}`}>
+        <div className={`${pad} ${scored > 0 ? 'border-b border-mk-line mk:border-r mk:border-b-0' : ''}`}>
+          <p
+            className={`text-[clamp(3rem,11vw,4.5rem)] font-semibold leading-none tracking-[-0.03em] tabular-nums ${
+              flagged > 0 ? 'text-mk-red' : 'text-mk-green'
+            }`}
+          >
+            {flagged.toLocaleString()}
           </p>
-          <p className="mt-2 text-[15px] text-mk-ink sm:mt-3">{flagged === 1 ? 'part needs' : 'parts need'} a call</p>
-          <p className="mk-data mt-1 text-[13px] text-mk-ink-subtle">
+          <p className="mt-3 text-[15px] font-medium text-mk-ink">{flagged === 1 ? 'part needs' : 'parts need'} a call</p>
+          <p className="mt-1 text-[13px] tabular-nums text-mk-ink-subtle">
             {percent(flagged, total)} of {total.toLocaleString()}
           </p>
 
-          <ul className="mt-6 border-t border-mk-line sm:mt-8">
+          <ul className="mt-7 border-t border-mk-line">
             {MIX_SEGMENTS.map((segment) => (
-              <li key={segment.key} className="flex items-baseline justify-between gap-3 border-b border-mk-line py-2 sm:gap-4 sm:py-2.5">
+              <li key={segment.key} className="flex items-baseline justify-between gap-4 border-b border-mk-line py-2.5">
                 <span className="text-[13px] text-mk-ink-muted">{segment.label}</span>
-                <span className="mk-data shrink-0 text-[15px]" style={{ color: toneColor(segment.tone, mix[segment.key] === 0) }}>
+                <span
+                  className="shrink-0 text-[15px] font-medium tabular-nums"
+                  style={{ color: countColor(segment.tone, mix[segment.key]) }}
+                >
                   {mix[segment.key].toLocaleString()}
                 </span>
               </li>
@@ -112,21 +108,14 @@ export default function AccountCard({ account }: { account: LineTally }) {
                 <li
                   key={column.key}
                   title={`${percent(count, scored)} of ${scored.toLocaleString()} scored parts`}
-                  className="flex items-baseline justify-between gap-3 border-b border-mk-line py-2.5 first:pt-0 sm:gap-4 sm:py-3"
+                  className="flex items-baseline justify-between gap-4 border-b border-mk-line py-3 first:pt-0"
                 >
-                  <span className="min-w-0 text-[13px] leading-snug text-mk-ink-muted sm:text-[14px]">{column.label}</span>
-                  <span className="flex shrink-0 items-baseline gap-2 sm:gap-3">
-                    <span className="mk-data text-[12px] text-mk-ink-subtle">{percent(count, scored)}</span>
+                  <span className="min-w-0 text-[14px] leading-snug text-mk-ink-muted">{column.label}</span>
+                  <span className="flex shrink-0 items-baseline gap-3">
+                    <span className="text-[12px] tabular-nums text-mk-ink-subtle">{percent(count, scored)}</span>
                     <span
-                      className="mk-data min-w-10 text-right text-[18px] leading-none sm:text-[20px]"
-                      style={{
-                        color:
-                          count === 0
-                            ? 'var(--mk-ink-subtle)'
-                            : column.tone === 'slate'
-                              ? 'var(--mk-ink)'
-                              : TONE_VAR[column.tone],
-                      }}
+                      className="min-w-10 text-right text-[20px] font-semibold leading-none tabular-nums"
+                      style={{ color: countColor(column.tone, count) }}
                     >
                       {count.toLocaleString()}
                     </span>
@@ -139,7 +128,7 @@ export default function AccountCard({ account }: { account: LineTally }) {
       </div>
 
       {scored > 0 ? (
-        <div className="relative border-t border-mk-line px-4 py-5 sm:px-6 mk:px-7">
+        <div className="border-t border-mk-line px-5 py-6 mk:px-7">
           <LeadScale lead={lead} />
         </div>
       ) : null}
