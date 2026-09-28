@@ -81,30 +81,28 @@
 }
 
 /**
- * This week account card: a neutral grey raised off the white page.
- * Tokens are local so the marketing bench keeps its own palette. Every hue
- * clears 4.5:1 against the card.
+ * This week account card: a stone grey lifted off the white page by its shadow.
+ * Risk hues are a step darker than the page palette so they clear 4.5:1 on the grey.
  */
 .mk-account-card {
-  --mk-canvas: #474d56;
-  --mk-raised: #525962;
-  --mk-raised-2: #5d646e;
-  --mk-ink: #f5f6f8;
-  --mk-ink-muted: #dadee4;
-  --mk-ink-subtle: #bcc2cb;
-  --mk-line: #59606a;
-  --mk-line-strong: #6e7680;
-  --mk-red: #ffa6aa;
-  --mk-amber: #f7c98b;
-  --mk-green: #93e2bb;
-  --mk-slate: #d5dae1;
+  --mk-canvas: #e3e6ea;
+  --mk-raised: #d9dde2;
+  --mk-raised-2: #cfd4db;
+  --mk-ink: #0f1b2d;
+  --mk-ink-muted: #44516a;
+  --mk-ink-subtle: #5d6a80;
+  --mk-line: #cdd2d9;
+  --mk-line-strong: #aab2bd;
+  --mk-red: #b91c22;
+  --mk-amber: #945204;
+  --mk-green: #137342;
+  --mk-slate: #5d6a80;
   background-color: var(--mk-canvas);
   color: var(--mk-ink);
-  color-scheme: dark;
   box-shadow:
-    0 1px 2px rgb(15 23 42 / 10%),
-    0 8px 16px -4px rgb(15 23 42 / 14%),
-    0 28px 56px -16px rgb(15 23 42 / 30%);
+    0 1px 2px rgb(15 23 42 / 8%),
+    0 8px 16px -4px rgb(15 23 42 / 10%),
+    0 28px 56px -16px rgb(15 23 42 / 22%);
 }
 
 /**

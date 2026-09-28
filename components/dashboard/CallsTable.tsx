@@ -8,7 +8,7 @@ import { BUYER_JOB_LABEL, BUYER_JOB_ORDER, buyerJob } from '@/lib/buyerJob'
 import { decisionHeadline } from '@/lib/decision'
 import { plural } from '@/lib/format'
 import { Link } from '@/lib/navigation'
-import { leadTimeWeeks, lifecycleLabel, lineRiskLevel, stillLookingUpLabel } from '@/lib/risk'
+import { isLongLead, lifecycleLabel, lineRiskLevel, stillLookingUpLabel } from '@/lib/risk'
 import type { FlaggedLineItem } from '@/lib/types'
 
 type GroupBy = 'severity' | 'job' | 'bom'
@@ -41,7 +41,6 @@ function CallRow({ item, showBom }: { item: FlaggedLineItem; showBom: boolean })
   const { line } = item
   const risk = lineRiskLevel(line)
   const life = lifecycleLabel(line.lifecycle_status)
-  const weeks = leadTimeWeeks(line)
 
   return (
     <Link
@@ -66,7 +65,7 @@ function CallRow({ item, showBom }: { item: FlaggedLineItem; showBom: boolean })
         <span className="text-mk-ink-subtle mk:hidden">Stock </span>
         {stockLabel(line)}
       </span>
-      <span className={`tabular-nums mk:text-right ${weeks != null && weeks > 26 ? 'text-mk-amber' : 'text-mk-ink-muted'}`}>
+      <span className={`tabular-nums mk:text-right ${isLongLead(line) ? 'text-mk-amber' : 'text-mk-ink-muted'}`}>
         <span className="text-mk-ink-subtle mk:hidden">Lead </span>
         {leadLabel(line)}
       </span>

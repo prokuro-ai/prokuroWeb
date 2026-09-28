@@ -107,7 +107,7 @@ describe('OverviewPage', () => {
     render(<OverviewPage />)
     const calls = screen.getByRole('region', { name: 'Calls this week' })
     expect(within(calls).getByText('2 of 15')).toBeTruthy()
-    expect(within(calls).getByText('LM7805CT')).toBeTruthy()
+    expect(within(calls).getByText('LM7805CT · Acme')).toBeTruthy()
 
     await userEvent.setup().click(within(calls).getByRole('button', { name: 'By job' }))
     expect(within(calls).getByText('Going obsolete')).toBeTruthy()

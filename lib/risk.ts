@@ -139,6 +139,11 @@ export function leadTimeWeeks(line: AnalyzedLine): number | null {
   return line.factory_lead_days != null ? Math.round(line.factory_lead_days / 7) : null
 }
 
+/** Past 26 weeks (182 days). Matches LONG_LEAD_DAYS in the gateway's flagged tally. */
+export function isLongLead(line: AnalyzedLine): boolean {
+  return line.factory_lead_days != null && line.factory_lead_days > 182
+}
+
 export function tariffLabel(line: AnalyzedLine): string {
   return line.total_duty_pct != null && line.total_duty_pct > 0 ? `${line.total_duty_pct}%` : '-'
 }
