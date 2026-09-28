@@ -31,6 +31,7 @@ function OverviewView() {
     <div className={appPage}>
       <PageHeader
         title="What to do this week"
+        serif
         description={
           feed && hasBoms ? (
             <>

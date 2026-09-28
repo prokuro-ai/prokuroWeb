@@ -258,7 +258,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   if (!result) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center p-6 text-center font-mk-sans">
-        <h1 className="mk-app-title text-mk-ink">
+        <h1 className="mk-app-title-sans text-mk-ink">
           {error ? 'Could not load this BOM' : 'BOM not found'}
         </h1>
         <p className="mt-2 text-[13px] text-mk-ink-muted">
@@ -344,7 +344,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
               </Link>
               <div className="min-w-0 flex-1 basis-[min(100%,16rem)]">
                 <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-                  <h1 className="mk-app-title max-w-full truncate text-mk-ink">
+                  <h1 className="mk-app-title-sans max-w-full truncate text-mk-ink">
                     {displayName}
                   </h1>
                   <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-[12px] ${badge.cls}`}>

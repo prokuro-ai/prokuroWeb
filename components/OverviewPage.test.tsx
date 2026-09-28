@@ -2,60 +2,35 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import OverviewPage from '@/components/OverviewPage'
-import { EMPTY_ACCOUNT_SITUATION, type AnalyzedLine, type BomSummary, type FlaggedLineItem } from '@/lib/types'
+import type { AnalyzedLine, BoardTally, FlaggedLineItem, FlaggedLines, LineTally } from '@/lib/types'
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
   useSearchParams: () => new URLSearchParams(),
 }))
 
-const boms: BomSummary[] = [
-  bom('bom-quiet', 'Quiet Board', 100, 5, 'Watch'),
-  bom('bom-clear', 'Clear Board', 40, 0, 'Clear'),
-  bom('bom-hot', 'Hot Board', 20, 10, 'Critical'),
-]
-
-const items: FlaggedLineItem[] = [
-  item('bom-hot', 'Hot Board', line(3, 'LM7805CT', 'red', { lifecycle_status: 'eol' })),
-  item('bom-quiet', 'Quiet Board', line(7, 'STM32F103', 'yellow', { availability_status: 'outofstock' })),
-]
-
-vi.mock('@/hooks/use-boms', () => ({
-  useBoms: () => ({ boms, loading: false, error: null }),
-}))
-
-vi.mock('@/hooks/use-flagged-lines', () => ({
-  useFlaggedLines: () => ({
-    items,
-    total: 15,
-    situation: { ...EMPTY_ACCOUNT_SITUATION, outOfStock: 4, discontinued: 2, noAlternate: 31 },
-    loading: false,
-    error: null,
-  }),
-}))
-
-function bom(id: string, name: string, lineCount: number, atRiskCount: number, riskBand: string): BomSummary {
+function tally(mix: Partial<LineTally['mix']>, situation: Partial<LineTally['situation']> = {}): LineTally {
   return {
-    id,
-    name,
-    filename: `${id}.csv`,
-    uploadedAt: '2026-09-01T00:00:00Z',
-    version: 1,
-    lineCount,
-    overallRiskScore: 0,
-    atRiskCount,
-    unknownCount: 0,
-    pendingCount: 0,
-    riskBand,
+    mix: { red: 0, yellow: 0, green: 0, noMatch: 0, pending: 0, ...mix },
+    situation: {
+      outOfStock: 0,
+      longLead: 0,
+      nrnd: 0,
+      discontinued: 0,
+      noAlternate: 0,
+      duty: 0,
+      entityList: 0,
+      ...situation,
+    },
+    lead: { upTo4Weeks: 3, upTo12Weeks: 2, upTo26Weeks: 0, upTo52Weeks: 1, over52Weeks: 0, unpublished: 0 },
   }
 }
 
-function line(
-  row_index: number,
-  mpn: string,
-  risk_level: AnalyzedLine['risk_level'],
-  extra: Partial<AnalyzedLine> = {},
-): AnalyzedLine {
+function board(bomId: string, bomName: string, t: LineTally): BoardTally {
+  return { bomId, bomName, ...t }
+}
+
+function line(row_index: number, mpn: string, risk_level: AnalyzedLine['risk_level'], extra: Partial<AnalyzedLine> = {}): AnalyzedLine {
   return {
     row_index,
     mpn,
@@ -78,32 +53,64 @@ function item(bomId: string, bomName: string, analyzed: AnalyzedLine): FlaggedLi
   return { bomId, bomName, bomVersion: 1, line: analyzed }
 }
 
+const feed: FlaggedLines = {
+  accountId: 'account-a',
+  total: 15,
+  account: tally({ red: 4, yellow: 11, green: 140, pending: 5 }, { outOfStock: 4, discontinued: 2, noAlternate: 31 }),
+  boards: [
+    board('bom-quiet', 'Quiet Board', tally({ yellow: 5, green: 95 })),
+    board('bom-clear', 'Clear Board', tally({ green: 40 })),
+    board('bom-hot', 'Hot Board', tally({ red: 4, yellow: 6, green: 5, pending: 5 }, { outOfStock: 4 })),
+  ],
+  items: [
+    item('bom-hot', 'Hot Board', line(3, 'LM7805CT', 'red', { lifecycle_status: 'eol' })),
+    item('bom-quiet', 'Quiet Board', line(7, 'STM32F103', 'yellow', { availability_status: 'outofstock' })),
+  ],
+}
+
+vi.mock('@/hooks/use-flagged-lines', () => ({
+  useFlaggedLines: () => ({ feed, loading: false, error: null }),
+}))
+
 describe('OverviewPage', () => {
   afterEach(() => cleanup())
 
-  it('shows whole-account counts including zeros', () => {
+  it('summarises every part, not just the capped calls', () => {
     render(<OverviewPage />)
-    const glance = screen.getByRole('region', { name: 'Account at a glance' })
-    expect(within(glance).getByText('Need a call').nextSibling?.textContent).toBe('15')
-    expect(within(glance).getByText('No alternate on file').nextSibling?.textContent).toBe('31')
-    expect(within(glance).getByText('Entity list hit').nextSibling?.textContent).toBe('0')
+    expect(screen.getByText('3 BOMs · 160 parts · 5 still looking up')).toBeTruthy()
+    const account = screen.getByRole('region', { name: 'Account' })
+    expect(within(account).getByText('15')).toBeTruthy()
+    expect(within(account).getByText('parts need a call')).toBeTruthy()
+    expect(within(account).getByText('9% of 160')).toBeTruthy()
   })
 
-  it('ranks boards by share at risk and leaves clear boards off', () => {
+  it('shows whole-account exceptions against scored parts, zeros included', () => {
     render(<OverviewPage />)
-    const links = screen.getAllByRole('link').filter((link) => link.getAttribute('href')?.match(/^\/bom\/[^?]+$/))
-    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/bom/bom-hot', '/bom/bom-quiet'])
-    expect(screen.getByText('10 of 20')).toBeTruthy()
-    expect(screen.queryByText('Clear Board')).toBeNull()
+    const account = screen.getByRole('region', { name: 'Account' })
+    const noAlt = within(account).getByText('No alternate on file').closest('li')!
+    expect(within(noAlt).getByText('31')).toBeTruthy()
+    expect(noAlt.getAttribute('title')).toBe('20% of 155 scored parts')
+    const entity = within(account).getByText('Entity list hit').closest('li')!
+    expect(within(entity).getByText('0')).toBeTruthy()
+  })
+
+  it('ranks boards by share of parts needing a call, clear boards last', () => {
+    render(<OverviewPage />)
+    const boards = screen.getByRole('region', { name: 'Boards' })
+    const names = within(boards)
+      .getAllByRole('link')
+      .map((link) => link.textContent)
+    expect(names).toEqual(['Hot Board', 'Quiet Board', 'Clear Board'])
   })
 
   it('lists calls with the capped total and groups them by job', async () => {
     render(<OverviewPage />)
-    expect(screen.getByText('Showing the worst 2 of 15')).toBeTruthy()
-    expect(screen.getByText('LM7805CT', { exact: false })).toBeTruthy()
+    const calls = screen.getByRole('region', { name: 'Calls this week' })
+    expect(within(calls).getByText('2 of 15')).toBeTruthy()
+    expect(within(calls).getByText('LM7805CT')).toBeTruthy()
 
-    await userEvent.setup().click(screen.getByRole('button', { name: 'By job' }))
-    expect(screen.getByText('Going obsolete')).toBeTruthy()
-    expect(screen.getByText("Can't buy")).toBeTruthy()
+    await userEvent.setup().click(within(calls).getByRole('button', { name: 'By job' }))
+    expect(within(calls).getByText('Going obsolete')).toBeTruthy()
+    expect(within(calls).getByText("Can't buy")).toBeTruthy()
   })
 })

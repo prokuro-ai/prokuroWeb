@@ -12,11 +12,17 @@ import {
   rankBoards,
   SITUATION_COLUMNS,
   TONE_VAR,
+  type Tone,
 } from '@/lib/dashboard'
 import { Link } from '@/lib/navigation'
 import type { BoardTally, Situation } from '@/lib/types'
 
 const PREVIEW = 8
+
+/** Tone darkened toward ink so it stays readable on its own tint. */
+const INK_ON_TINT: Record<Tone, string> = Object.fromEntries(
+  Object.entries(TONE_VAR).map(([tone, color]) => [tone, `color-mix(in srgb, ${color} 70%, var(--mk-ink))`]),
+) as Record<Tone, string>
 
 export default function BoardMatrix({ boards }: { boards: BoardTally[] }) {
   const [showAll, setShowAll] = useState(false)
@@ -33,7 +39,7 @@ export default function BoardMatrix({ boards }: { boards: BoardTally[] }) {
   return (
     <Panel
       title="Boards"
-      detail="Largest share of parts needing a call first. Darker cells hold more parts."
+      count={ranked.length.toLocaleString()}
       footer={
         ranked.length > PREVIEW ? (
           <button type="button" onClick={() => setShowAll((open) => !open)} className={appTextBtn}>
@@ -59,6 +65,11 @@ export default function BoardMatrix({ boards }: { boards: BoardTally[] }) {
                   title={column.label}
                   className={`${appColHead} w-[4.75rem] px-1 py-2.5 text-center`}
                 >
+                  <span
+                    className="mr-1 inline-block h-1.5 w-1.5 rounded-full align-middle"
+                    style={{ background: TONE_VAR[column.tone] }}
+                    aria-hidden
+                  />
                   {column.short}
                 </th>
               ))}
@@ -83,26 +94,29 @@ export default function BoardMatrix({ boards }: { boards: BoardTally[] }) {
                   </td>
                   <td className="px-3 py-2.5">
                     <span className="flex items-center gap-3">
-                      <span className="flex h-1.5 flex-1 overflow-hidden rounded-full bg-mk-raised-2" aria-hidden>
+                      <span className="flex h-2 flex-1 gap-px overflow-hidden rounded-full bg-mk-raised-2" aria-hidden>
                         {total > 0
                           ? MIX_SEGMENTS.filter((s) => board.mix[s.key] > 0).map((segment) => (
                               <span
                                 key={segment.key}
                                 style={{
-                                  width: `${(board.mix[segment.key] / total) * 100}%`,
+                                  flexGrow: board.mix[segment.key],
+                                  flexBasis: 0,
                                   background: TONE_VAR[segment.tone],
                                 }}
                               />
                             ))
                           : null}
                       </span>
-                      <span
-                        className={`mk-data w-[4.5rem] shrink-0 text-right text-[13px] ${
-                          flagged > 0 ? 'text-mk-ink' : 'text-mk-ink-subtle'
-                        }`}
-                      >
-                        {flagged.toLocaleString()}
-                        <span className="text-[11px] text-mk-ink-subtle"> {percent(flagged, total)}</span>
+                      <span className="w-[4.75rem] shrink-0 text-right">
+                        <span
+                          className={`mk-data text-[14px] ${
+                            board.mix.red > 0 ? 'text-mk-red' : flagged > 0 ? 'text-mk-amber' : 'text-mk-ink-subtle'
+                          }`}
+                        >
+                          {flagged.toLocaleString()}
+                        </span>
+                        <span className="mk-data text-[11px] text-mk-ink-subtle"> {percent(flagged, total)}</span>
                       </span>
                     </span>
                   </td>
@@ -112,9 +126,12 @@ export default function BoardMatrix({ boards }: { boards: BoardTally[] }) {
                       <td key={column.key} className="px-1 py-1.5">
                         <span
                           className={`mk-data block rounded-[6px] py-1.5 text-center text-[13px] ${
-                            count > 0 ? 'text-mk-ink' : 'text-mk-line-strong'
+                            count === 0 ? 'text-mk-line-strong' : column.tone === 'slate' ? 'text-mk-ink' : 'font-medium'
                           }`}
-                          style={{ background: heatFill(column.tone, count, columnMax[column.key]) }}
+                          style={{
+                            background: heatFill(column.tone, count, columnMax[column.key]),
+                            color: count > 0 && column.tone !== 'slate' ? INK_ON_TINT[column.tone] : undefined,
+                          }}
                         >
                           {count > 0 ? count.toLocaleString() : '·'}
                         </span>

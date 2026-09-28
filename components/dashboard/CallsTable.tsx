@@ -19,7 +19,7 @@ const GROUP_OPTIONS: { id: GroupBy; label: string }[] = [
   { id: 'bom', label: 'By BOM' },
 ]
 
-const cols = 'mk:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_4.5rem_6.5rem_4rem_4rem_5rem]'
+const cols = 'mk:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_4.5rem_6.5rem_4rem_4rem_5.75rem]'
 
 type Group = { key: string; label: string | null; rows: FlaggedLineItem[] }
 
@@ -79,7 +79,15 @@ function CallRow({ item, showBom }: { item: FlaggedLineItem; showBom: boolean })
         <span className="text-mk-ink-subtle mk:hidden">Duty </span>
         <span className="mk-data">{duty === '-' ? '—' : duty}</span>
       </span>
-      <span className={`text-[13px] font-medium ${riskTone(risk)}`}>{lineStatusLabel(line)}</span>
+      <span>
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[12px] font-medium ${riskTone(risk)}`}
+          style={rail ? { background: `color-mix(in srgb, ${rail} 12%, transparent)` } : undefined}
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
+          {lineStatusLabel(line)}
+        </span>
+      </span>
     </Link>
   )
 }
@@ -98,12 +106,12 @@ export default function CallsTable({
   const [groupBy, setGroupBy] = useState<GroupBy>('severity')
   const groups = useMemo(() => groupCalls(items, groupBy), [items, groupBy])
 
-  const detail =
+  const count =
     items.length === 0
       ? undefined
       : total > items.length
-        ? `The worst ${items.length} of ${total.toLocaleString()}`
-        : plural(items.length, 'part')
+        ? `${items.length} of ${total.toLocaleString()}`
+        : items.length.toLocaleString()
 
   const empty =
     pending > 0
@@ -115,19 +123,19 @@ export default function CallsTable({
   return (
     <Panel
       title="Calls this week"
-      detail={detail}
+      count={count}
       actions={
         items.length > 0 ? (
-          <nav className="flex items-center gap-x-5" aria-label="Group calls">
+          <nav className="flex w-fit items-center rounded-[8px] bg-mk-raised p-0.5" aria-label="Group calls">
             {GROUP_OPTIONS.map((option) => (
               <button
                 key={option.id}
                 type="button"
                 onClick={() => setGroupBy(option.id)}
                 aria-pressed={groupBy === option.id}
-                className={`pb-0.5 text-[12px] transition-colors ${
+                className={`rounded-[6px] px-2.5 py-1 text-[12px] font-medium transition-colors ${
                   groupBy === option.id
-                    ? 'border-b border-mk-ink font-semibold text-mk-ink'
+                    ? 'bg-mk-canvas text-mk-ink shadow-[0_1px_2px_rgb(15_27_45/10%)]'
                     : 'text-mk-ink-subtle hover:text-mk-ink'
                 }`}
               >

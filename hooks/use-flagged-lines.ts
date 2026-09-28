@@ -15,10 +15,13 @@ export function useFlaggedLines() {
       if (initial) setLoading(true)
       listFlaggedLines()
         .then((result) => {
-          if (!cancelled) {
-            setFeed(result)
-            setError(null)
+          if (cancelled) return
+          if (!result.account || !Array.isArray(result.boards)) {
+            setError('The server has not been updated for this page yet. Try again in a few minutes.')
+            return
           }
+          setFeed(result)
+          setError(null)
         })
         .catch((err) => {
           if (!cancelled) {
