@@ -18,7 +18,7 @@ export default function Panel({
 }) {
   return (
     <section aria-label={title} className={`${appSheet} flex flex-col ${className}`}>
-      <header className="flex flex-col gap-2 border-b border-mk-line px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between mk:px-5">
+      <header className="flex flex-col gap-3 border-b border-mk-line px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:py-3.5 mk:px-5">
         <h2 className="flex items-center gap-2 text-[14px] font-semibold text-mk-ink">
           {title}
           {count ? (

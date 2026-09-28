@@ -48,7 +48,7 @@ function CallRow({ item, showBom }: { item: FlaggedLineItem; showBom: boolean })
   return (
     <Link
       href={`/bom/${encodeURIComponent(item.bomId)}?line=${item.line.row_index}`}
-      className={`group relative grid grid-cols-1 items-center gap-1.5 border-b border-mk-line/70 px-4 py-3 last:border-b-0 hover:bg-mk-raised/60 mk:gap-3 mk:px-5 ${cols}`}
+      className={`group relative grid grid-cols-1 items-center gap-2 border-b border-mk-line/70 px-4 py-3.5 last:border-b-0 hover:bg-mk-raised/60 mk:gap-3 mk:px-5 mk:py-3 ${cols}`}
     >
       {rail ? <span className="absolute inset-y-0 left-0 w-0.5" style={{ background: rail }} aria-hidden /> : null}
       <span className="min-w-0">
@@ -126,14 +126,14 @@ export default function CallsTable({
       count={count}
       actions={
         items.length > 0 ? (
-          <nav className="flex w-fit items-center rounded-[8px] bg-mk-raised p-0.5" aria-label="Group calls">
+          <nav className="flex w-full max-w-full items-center rounded-[8px] bg-mk-raised p-0.5 sm:w-fit" aria-label="Group calls">
             {GROUP_OPTIONS.map((option) => (
               <button
                 key={option.id}
                 type="button"
                 onClick={() => setGroupBy(option.id)}
                 aria-pressed={groupBy === option.id}
-                className={`rounded-[6px] px-2.5 py-1 text-[12px] font-medium transition-colors ${
+                className={`flex-1 rounded-[6px] px-2 py-1 text-center text-[12px] font-medium transition-colors sm:flex-none sm:px-2.5 ${
                   groupBy === option.id
                     ? 'bg-mk-canvas text-mk-ink shadow-[0_1px_2px_rgb(15_27_45/10%)]'
                     : 'text-mk-ink-subtle hover:text-mk-ink'

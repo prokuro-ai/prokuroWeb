@@ -27,10 +27,13 @@ export default function BoardMatrix({ boards }: { boards: BoardTally[] }) {
       }
     >
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px] border-collapse text-left">
+        <table className="w-full min-w-[760px] border-collapse text-left">
           <thead>
             <tr className="border-b border-mk-line">
-              <th scope="col" className={`${appColHead} px-4 py-2.5 mk:px-5`}>
+              <th
+                scope="col"
+                className={`${appColHead} sticky left-0 z-10 bg-mk-canvas px-4 py-2.5 shadow-[4px_0_8px_-6px_rgb(15_27_45/25%)] mk:px-5`}
+              >
                 BOM
               </th>
               <th scope="col" className={`${appColHead} w-[7rem] px-3 py-2.5 text-right`}>
@@ -53,8 +56,8 @@ export default function BoardMatrix({ boards }: { boards: BoardTally[] }) {
               const total = mixTotal(board.mix)
               const flagged = atRisk(board.mix)
               return (
-                <tr key={board.bomId} className="border-b border-mk-line/70 last:border-b-0 hover:bg-mk-raised/60">
-                  <td className="max-w-0 px-4 py-2.5 mk:px-5">
+                <tr key={board.bomId} className="group border-b border-mk-line/70 last:border-b-0 hover:bg-mk-raised/60">
+                  <td className="sticky left-0 z-10 max-w-0 min-w-[9rem] bg-mk-canvas px-4 py-3 shadow-[4px_0_8px_-6px_rgb(15_27_45/25%)] group-hover:bg-mk-raised sm:min-w-[12rem] mk:px-5">
                     <Link
                       href={`/bom/${encodeURIComponent(board.bomId)}`}
                       className="block truncate text-[14px] font-medium text-mk-ink hover:text-mk-accent"

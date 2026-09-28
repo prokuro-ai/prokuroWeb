@@ -81,6 +81,28 @@
 }
 
 /**
+ * This week account card. A slate, not the near-black marketing bench.
+ * Tokens are local so the marketing surface stays as it is.
+ */
+.mk-account-card {
+  --mk-canvas: #4a596c;
+  --mk-raised: #556680;
+  --mk-raised-2: #62748f;
+  --mk-ink: #f7f9fc;
+  --mk-ink-muted: #e3eaf3;
+  --mk-ink-subtle: #d0dae6;
+  --mk-line: rgb(255 255 255 / 14%);
+  --mk-line-strong: rgb(255 255 255 / 28%);
+  --mk-red: #ff9499;
+  --mk-amber: #f2bc74;
+  --mk-green: #79d9aa;
+  --mk-slate: #d0dae8;
+  background-color: var(--mk-canvas);
+  color: var(--mk-ink);
+  color-scheme: dark;
+}
+
+/**
  * Dark surface — the bench.
  * Risk hues are lifted in luminance and pulled down in saturation. The light
  * values are far too dark to read here: #a25a05 in particular is a brown that

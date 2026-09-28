@@ -15,7 +15,7 @@ function LeadScale({ lead }: { lead: LeadTimes }) {
 
   return (
     <figure>
-      <figcaption className="flex items-baseline justify-between gap-3 text-[12px] text-mk-ink-subtle">
+      <figcaption className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-[12px] text-mk-ink-subtle">
         <span>Factory lead, weeks</span>
         {lead.unpublished > 0 ? <span className="mk-data">{lead.unpublished} unpublished</span> : null}
       </figcaption>
@@ -26,7 +26,7 @@ function LeadScale({ lead }: { lead: LeadTimes }) {
           return (
             <span
               key={bucket.key}
-              className="mk-data text-center text-[18px] leading-none"
+              className="mk-data text-center text-[15px] leading-none sm:text-[18px]"
               style={{
                 color: count === 0 ? 'var(--mk-ink-subtle)' : late ? TONE_VAR[bucket.tone] : 'var(--mk-ink)',
               }}
@@ -55,7 +55,7 @@ function LeadScale({ lead }: { lead: LeadTimes }) {
       </div>
       <div className="mt-1 grid grid-cols-5">
         {LEAD_BUCKETS.map((bucket) => (
-          <span key={bucket.key} className="mk-data text-center text-[11px] text-mk-ink-subtle">
+          <span key={bucket.key} className="mk-data whitespace-nowrap text-center text-[10px] text-mk-ink-subtle sm:text-[11px]">
             {bucket.label}
           </span>
         ))}
@@ -65,7 +65,9 @@ function LeadScale({ lead }: { lead: LeadTimes }) {
   )
 }
 
-/** Account readout. Same figures as before, set as type on the bench instead of a chart. */
+const pad = 'px-4 py-5 sm:px-6 sm:py-6 mk:px-7 mk:py-7'
+
+/** Account readout. Same figures as before, set as type on a slate card. */
 export default function AccountCard({ account }: { account: LineTally }) {
   const { mix, situation, lead } = account
   const total = mixTotal(mix)
@@ -73,33 +75,28 @@ export default function AccountCard({ account }: { account: LineTally }) {
   const scored = scoredTotal(mix)
 
   return (
-    <section
-      data-surface="dark"
-      aria-label="Account"
-      className="relative overflow-hidden rounded-[8px] shadow-[var(--mk-shadow)]"
-    >
-      <div className="mk-grain pointer-events-none absolute inset-0 opacity-40" aria-hidden />
-      <div className={`relative grid ${scored > 0 ? 'lg:grid-cols-2' : ''}`}>
-        <div
-          className={`px-6 py-7 mk:px-8 mk:py-8 ${
-            scored > 0 ? 'border-b border-mk-line lg:border-r lg:border-b-0' : ''
-          }`}
-        >
-          <p className="flex items-baseline gap-x-3">
-            <span className={`mk-data text-[4.25rem] leading-none ${flagged > 0 ? 'text-mk-red' : 'text-mk-green'}`}>
+    <section aria-label="Account" className="mk-account-card relative overflow-hidden rounded-[8px] shadow-[0_1px_2px_rgb(15_27_45/6%),0_12px_32px_rgb(15_27_45/8%)]">
+      <div className={`relative grid ${scored > 0 ? 'sm:grid-cols-2' : ''}`}>
+        <div className={`${pad} ${scored > 0 ? 'border-b border-mk-line sm:border-r sm:border-b-0' : ''}`}>
+          <p>
+            <span
+              className={`mk-data text-[clamp(2.75rem,12vw,4.25rem)] leading-none ${
+                flagged > 0 ? 'text-mk-red' : 'text-mk-green'
+              }`}
+            >
               {flagged.toLocaleString()}
             </span>
           </p>
-          <p className="mt-3 text-[15px] text-mk-ink">{flagged === 1 ? 'part needs' : 'parts need'} a call</p>
+          <p className="mt-2 text-[15px] text-mk-ink sm:mt-3">{flagged === 1 ? 'part needs' : 'parts need'} a call</p>
           <p className="mk-data mt-1 text-[13px] text-mk-ink-subtle">
             {percent(flagged, total)} of {total.toLocaleString()}
           </p>
 
-          <ul className="mt-8 border-t border-mk-line">
+          <ul className="mt-6 border-t border-mk-line sm:mt-8">
             {MIX_SEGMENTS.map((segment) => (
-              <li key={segment.key} className="flex items-baseline justify-between gap-4 border-b border-mk-line py-2.5">
+              <li key={segment.key} className="flex items-baseline justify-between gap-3 border-b border-mk-line py-2 sm:gap-4 sm:py-2.5">
                 <span className="text-[13px] text-mk-ink-muted">{segment.label}</span>
-                <span className="mk-data text-[15px]" style={{ color: toneColor(segment.tone, mix[segment.key] === 0) }}>
+                <span className="mk-data shrink-0 text-[15px]" style={{ color: toneColor(segment.tone, mix[segment.key] === 0) }}>
                   {mix[segment.key].toLocaleString()}
                 </span>
               </li>
@@ -108,20 +105,20 @@ export default function AccountCard({ account }: { account: LineTally }) {
         </div>
 
         {scored > 0 ? (
-          <ul className="px-6 py-7 mk:px-8 mk:py-8">
+          <ul className={pad}>
             {SITUATION_COLUMNS.map((column) => {
               const count = situation[column.key]
               return (
                 <li
                   key={column.key}
                   title={`${percent(count, scored)} of ${scored.toLocaleString()} scored parts`}
-                  className="flex items-baseline justify-between gap-4 border-b border-mk-line py-3 first:pt-0"
+                  className="flex items-baseline justify-between gap-3 border-b border-mk-line py-2.5 first:pt-0 sm:gap-4 sm:py-3"
                 >
-                  <span className="text-[14px] text-mk-ink-muted">{column.label}</span>
-                  <span className="flex items-baseline gap-3">
+                  <span className="min-w-0 text-[13px] leading-snug text-mk-ink-muted sm:text-[14px]">{column.label}</span>
+                  <span className="flex shrink-0 items-baseline gap-2 sm:gap-3">
                     <span className="mk-data text-[12px] text-mk-ink-subtle">{percent(count, scored)}</span>
                     <span
-                      className="mk-data w-12 text-right text-[20px] leading-none"
+                      className="mk-data min-w-10 text-right text-[18px] leading-none sm:text-[20px]"
                       style={{
                         color:
                           count === 0
@@ -142,7 +139,7 @@ export default function AccountCard({ account }: { account: LineTally }) {
       </div>
 
       {scored > 0 ? (
-        <div className="relative border-t border-mk-line px-6 py-6 mk:px-8">
+        <div className="relative border-t border-mk-line px-4 py-5 sm:px-6 mk:px-7">
           <LeadScale lead={lead} />
         </div>
       ) : null}

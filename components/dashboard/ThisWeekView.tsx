@@ -7,7 +7,7 @@ export default function ThisWeekView({ feed }: { feed: FlaggedLines }) {
   const { account, boards } = feed
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-5 mk:space-y-6">
       <AccountCard account={account} />
       <BoardMatrix boards={boards} />
       <CallsTable
