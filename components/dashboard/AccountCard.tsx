@@ -41,8 +41,9 @@ function LeadScale({ lead }: { lead: LeadTimes }) {
             aria-hidden
           />
         ))}
+        <span className="absolute inset-y-0 w-px -translate-x-1/2 bg-mk-ink" style={{ left: CUTOFF_AT }} aria-hidden />
         <span
-          className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 bg-mk-canvas px-1.5 text-[11px] font-medium tabular-nums text-mk-ink"
+          className="absolute bottom-full mb-1 -translate-x-1/2 text-[11px] font-semibold tabular-nums text-mk-ink"
           style={{ left: CUTOFF_AT }}
         >
           26

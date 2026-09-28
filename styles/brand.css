@@ -81,28 +81,35 @@
 }
 
 /**
- * This week account card: a stone grey lifted off the white page by its shadow.
- * Risk hues are a step darker than the page palette so they clear 4.5:1 on the grey.
+ * This week account card: a cloudy slate grey lifted off the white page.
+ * Ink and risk hues are set against the darkest patch of the cloud, so every
+ * label clears 4.5:1 wherever it lands.
  */
 .mk-account-card {
-  --mk-canvas: #e3e6ea;
-  --mk-raised: #d9dde2;
-  --mk-raised-2: #cfd4db;
-  --mk-ink: #0f1b2d;
-  --mk-ink-muted: #44516a;
-  --mk-ink-subtle: #5d6a80;
-  --mk-line: #cdd2d9;
-  --mk-line-strong: #aab2bd;
-  --mk-red: #b91c22;
-  --mk-amber: #945204;
-  --mk-green: #137342;
-  --mk-slate: #5d6a80;
-  background-color: var(--mk-canvas);
+  --mk-canvas: #d8dee6;
+  --mk-raised: #cdd4de;
+  --mk-raised-2: #c2cad6;
+  --mk-ink: #0b1524;
+  --mk-ink-muted: #26324a;
+  --mk-ink-subtle: #45516a;
+  --mk-line: rgb(38 50 74 / 16%);
+  --mk-line-strong: rgb(38 50 74 / 32%);
+  --mk-red: #a3141a;
+  --mk-amber: #854702;
+  --mk-green: #0d6435;
+  --mk-slate: #45516a;
   color: var(--mk-ink);
+  background:
+    radial-gradient(90% 120% at 0% 0%, #eef2f6 0%, rgb(238 242 246 / 0%) 60%),
+    radial-gradient(70% 90% at 100% 0%, #e3e8ef 0%, rgb(227 232 239 / 0%) 65%),
+    radial-gradient(80% 110% at 100% 100%, #bfc8d4 0%, rgb(191 200 212 / 0%) 60%),
+    radial-gradient(60% 80% at 20% 100%, #ccd3dd 0%, rgb(204 211 221 / 0%) 70%),
+    var(--mk-canvas);
   box-shadow:
-    0 1px 2px rgb(15 23 42 / 8%),
-    0 8px 16px -4px rgb(15 23 42 / 10%),
-    0 28px 56px -16px rgb(15 23 42 / 22%);
+    0 0 0 1px rgb(38 50 74 / 6%),
+    0 2px 4px rgb(15 23 42 / 6%),
+    0 12px 24px -6px rgb(15 23 42 / 12%),
+    0 32px 64px -20px rgb(15 23 42 / 26%);
 }
 
 /**
