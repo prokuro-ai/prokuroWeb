@@ -16,6 +16,8 @@ A feature is not done because it worked locally or behind a throwaway UI. Deploy
 
 Deploys bill by the hour. Get a go-ahead before deploying, and when verification is finished, destroy the stack or scale the Fargate service to 0 — and say which one you did.
 
+When testing the deployed app, log in with a `@prokuro.ai` account. Those addresses are operators in the gateway and skip the “waiting for access” gate. A normal address such as Gmail stays locked until a Prokuro admin enables it. Do not use a `@prokuro.ai` login to test the billing lock: an operator account never locks.
+
 ### Small PRs, cross-reviewed
 
 Story → tasks → one small PR per task, opened after the design doc. Never push to `main` directly; branch as `feat/<short-name>`. Whoever picks up a feature asks the other person for a sanity check before merge. Large PRs hide small mistakes — that is the entire reason for this rule.
