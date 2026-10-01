@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Prokuro.ai flyer, front and back</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+@font-face { font-family: "Geist"; src: url("app/fonts/geist-sans-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; }
+@font-face { font-family: "Geist"; src: url("app/fonts/geist-sans-latin-500-normal.woff2") format("woff2"); font-weight: 500; font-style: normal; }
+@font-face { font-family: "Geist"; src: url("app/fonts/geist-sans-latin-600-normal.woff2") format("woff2"); font-weight: 600; font-style: normal; }
+@font-face { font-family: "JetBrains Mono"; src: url("app/fonts/jetbrains-mono-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; }
+@font-face { font-family: "JetBrains Mono"; src: url("app/fonts/jetbrains-mono-latin-500-normal.woff2") format("woff2"); font-weight: 500; font-style: normal; }
+@page { size: 8.75in 5.75in; margin: 0; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #b7c0cb; font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif; }
+.label { width: 8.75in; margin: 18px auto 0; font: 600 12px/1 "IBM Plex Sans", sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: #4f5d73; }
+.sheet { width: 8.75in; height: 5.75in; margin: 6px auto 28px; position: relative; overflow: hidden; page-break-after: always; break-after: page; }
+.sheet:last-of-type { page-break-after: auto; }
+.trim { position: absolute; inset: 0.125in; padding: 0.28in 0.32in 0.22in; display: flex; flex-direction: column; }
+.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+.brand { display: flex; align-items: center; gap: 8px; }
+.brand strong { font-size: 18px; font-weight: 700; letter-spacing: -0.03em; }
+h1 { margin: 8px 0 0; font-size: 32px; line-height: 1.02; font-weight: 700; letter-spacing: -0.03em; max-width: 11ch; }
+.cta { display: flex; align-items: center; gap: 14px; }
+.url { margin: 0 0 4px; font-size: 18px; font-weight: 700; letter-spacing: -0.03em; text-align: right; }
+.contact { margin: 0; font-size: 14px; font-weight: 600; line-height: 1.35; max-width: 22ch; text-align: right; }
+.qr { width: 1.15in; height: 1.15in; background: #fff; padding: 5px; border-radius: 6px; flex: none; }
+.qr svg { width: 100%; height: 100%; display: block; }
+.tagline { margin: 12px 0 10px; text-align: center; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; color: #8aa2ff; }
+.card { border-radius: 8px; overflow: hidden; background: #fff; color: #0f1b2d; font-family: "Geist", "IBM Plex Sans", sans-serif; box-shadow: 0 1px 2px rgb(15 27 45 / 5%), 0 8px 24px rgb(15 27 45 / 6%); }
+.panelhead { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 18px; border-bottom: 1px solid #dde4ee; }
+.panelhead h2 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+.panelhead p { margin: 2px 0 0; font-size: 12px; color: #7a8598; }
+.tabs { display: flex; align-items: center; gap: 18px; }
+.tabs span { font-size: 12px; color: #7a8598; padding-bottom: 1px; }
+.tabs .on { color: #0f1b2d; font-weight: 600; border-bottom: 1px solid #0f1b2d; }
+.cols { display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(0, 0.85fr) 3.7rem 6.1rem 3.5rem 3.3rem 4.7rem; column-gap: 12px; align-items: center; padding: 0 18px; }
+.cols.head { padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #dde4ee; font-size: 12px; font-weight: 500; color: #7a8598; }
+.row { position: relative; display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(0, 0.85fr) 3.7rem 6.1rem 3.5rem 3.3rem 4.7rem; column-gap: 12px; align-items: center; padding: 9px 18px; border-bottom: 1px solid #dde4ee; font-size: 13px; color: #4f5d73; }
+.row:last-child { border-bottom: 0; }
+.rail { position: absolute; left: 0; top: 0; bottom: 0; width: 2px; }
+.row.tone-red .rail { background: #c62026; }
+.row.tone-amber .rail { background: #a25a05; }
+.call { margin: 0; font-size: 14px; font-weight: 500; line-height: 1.3; letter-spacing: -0.01em; color: #0f1b2d; }
+.meta { margin: 3px 0 0; font-size: 12px; color: #7a8598; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mpn { font-family: "JetBrains Mono", ui-monospace, monospace; }
+.data { font-family: "JetBrains Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+.r { text-align: right; }
+.hot { color: #c62026; }
+.warm { color: #a25a05; }
+.risk { font-weight: 500; }
+.red { color: #c62026; }
+.amber { color: #a25a05; }
+.front { background: #0f1b2d; color: #eef3fa; }
+.front h1 { font-size: 28px; margin-top: 6px; }
+.front .tagline { margin: 8px 0; font-size: 18px; }
+.front .url { color: #8aa2ff; }
+.front .contact { color: #c5d0de; }
+.back { background: #ffffff; color: #0f1b2d; }
+.back .trim { justify-content: flex-start; }
+.back .foot { margin-top: auto; }
+.back h1 { max-width: none; font-size: 32px; }
+.back .lead { margin: 8px 0 0; font-size: 16px; color: #4f5d73; max-width: 52ch; }
+.jobs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-top: 28px; }
+.job { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
+.job svg { width: 28px; height: 28px; color: #2b4fff; }
+.job b { font-size: 14px; line-height: 1.2; }
+.job span { font-size: 12px; color: #4f5d73; line-height: 1.3; white-space: nowrap; }
+.team { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding-top: 16px; border-top: 1px solid #dde4ee; }
+.team p { margin: 0; font-size: 16px; }
+.who { font-weight: 700; display: block; }
+.role { display: block; margin-top: 2px; font-size: 13px; color: #4f5d73; font-weight: 500; }
+.mail { display: block; margin-top: 4px; font-size: 13px; font-weight: 600; color: #2b4fff; letter-spacing: -0.01em; }
+.pedigree { margin: 14px 0 0; font-size: 14px; color: #4f5d73; }
+.back .url { margin-top: 8px; text-align: left; color: #2b4fff; font-size: 18px; }
+@media print { html, body { background: #fff; } .label { display: none; } .sheet { margin: 0; } }
+</style>
+</head>
+<body>
+<p class="label">Front</p>
+<article class="sheet front">
+  <div class="trim">
+    <div class="top">
+      <div>
+        <div class="brand"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="28" height="28" fill="none" aria-hidden="true"><mask id="mark-front" maskUnits="userSpaceOnUse" x="0" y="0" width="32" height="32"><rect width="32" height="32" fill="#fff"/><path d="M0 20.5 H13.5 L23 11 V0" stroke="#000" stroke-width="4" stroke-linejoin="miter" fill="none"/></mask><path d="M11 3 H29 V21 L21 29 H3 V11 Z" fill="#eef3fa" mask="url(#mark-front)"/></svg><strong>Prokuro.ai</strong></div>
+        <h1>Know what's about to break in your BOM</h1>
+      </div>
+      <div class="cta">
+        <div>
+          <p class="url">prokuro.ai</p>
+          <p class="contact">Book a live demo.<br>Bring a real BOM.<br>We run it live.</p>
+        </div>
+        <div class="qr" aria-label="Book a demo at prokuro.ai/schedule"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 148 148" class="segno"><g transform="scale(4)"><path fill="#fff" d="M0 0h37v37h-37z"/><path class="qrline" stroke="#0f1b2d" d="M2 2.5h7m4 0h4m1 0h5m1 0h1m1 0h1m1 0h7m-33 1h1m5 0h1m1 0h1m2 0h1m2 0h1m2 0h1m1 0h1m1 0h2m3 0h1m5 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m6 0h3m1 0h1m1 0h1m2 0h1m1 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h2m2 0h4m1 0h1m1 0h3m1 0h1m2 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h2m1 0h2m1 0h1m2 0h2m1 0h4m2 0h1m1 0h3m1 0h1m-33 1h1m5 0h1m1 0h1m3 0h3m1 0h1m3 0h1m1 0h2m2 0h1m5 0h1m-33 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-23 1h1m2 0h1m1 0h4m4 0h2m-23 1h1m2 0h4m1 0h1m7 0h3m3 0h2m1 0h5m-30 1h4m3 0h5m1 0h1m1 0h4m1 0h6m2 0h3m-31 1h1m3 0h1m1 0h2m1 0h2m3 0h1m3 0h4m1 0h1m1 0h2m1 0h1m1 0h1m-32 1h1m1 0h2m2 0h1m1 0h3m1 0h2m1 0h1m1 0h3m1 0h1m1 0h4m-28 1h4m2 0h2m6 0h1m1 0h1m1 0h2m1 0h4m1 0h4m1 0h2m-32 1h1m2 0h1m3 0h6m1 0h1m2 0h1m1 0h7m2 0h1m2 0h1m-30 1h2m1 0h1m2 0h1m2 0h6m2 0h1m2 0h6m1 0h1m1 0h1m-33 1h2m2 0h1m4 0h4m2 0h1m2 0h2m2 0h2m1 0h2m-27 1h1m1 0h6m1 0h2m2 0h1m1 0h2m3 0h1m1 0h2m2 0h2m1 0h1m-30 1h1m6 0h1m3 0h1m3 0h1m2 0h4m1 0h1m2 0h2m2 0h1m1 0h1m-30 1h2m1 0h1m2 0h1m1 0h1m1 0h2m1 0h3m4 0h1m5 0h2m1 0h1m-32 1h1m5 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m5 0h1m2 0h1m2 0h1m-28 1h1m3 0h3m1 0h1m1 0h1m1 0h1m1 0h1m3 0h1m2 0h1m3 0h1m-25 1h2m4 0h2m1 0h1m1 0h1m1 0h1m1 0h2m7 0h1m4 0h1m-33 1h2m2 0h4m1 0h1m1 0h2m2 0h3m1 0h3m1 0h1m1 0h2m2 0h1m2 0h1m-31 1h2m4 0h1m2 0h1m4 0h3m1 0h1m1 0h1m4 0h3m1 0h1m-32 1h7m1 0h1m2 0h1m2 0h1m3 0h3m2 0h7m1 0h2m-25 1h6m2 0h1m3 0h2m2 0h1m3 0h5m-33 1h7m1 0h1m1 0h1m1 0h2m2 0h2m2 0h1m3 0h1m1 0h1m1 0h1m3 0h1m-33 1h1m5 0h1m1 0h3m2 0h5m2 0h2m1 0h2m3 0h2m1 0h2m-33 1h1m1 0h3m1 0h1m2 0h4m1 0h2m3 0h1m1 0h1m1 0h6m-29 1h1m1 0h3m1 0h1m4 0h3m4 0h4m3 0h1m1 0h5m-32 1h1m1 0h3m1 0h1m1 0h2m1 0h5m1 0h1m2 0h1m1 0h2m4 0h1m2 0h2m-33 1h1m5 0h1m2 0h2m2 0h4m2 0h2m1 0h4m-26 1h7m2 0h1m1 0h2m3 0h3m1 0h1m3 0h1m1 0h1m1 0h3m1 0h1"/></g></svg></div>
+      </div>
+    </div>
+    <p class="tagline">Upload your BOM. See what to buy, drop, or watch.</p>
+    <div class="card">
+      <header class="panelhead">
+        <div>
+          <h2>Calls this week</h2>
+          <p>3 parts</p>
+        </div>
+        <nav class="tabs" aria-hidden="true"><span class="on">Worst first</span><span>By job</span><span>By BOM</span></nav>
+      </header>
+      <div class="cols head"><span>Call</span><span>BOM</span><span>Lifecycle</span><span class="r">Stock</span><span class="r">Lead</span><span class="r">Duty</span><span>Risk</span></div>
+      <div class="row tone-red">
+        <span class="rail"></span>
+        <div><p class="call">Going obsolete. Plan the last buy or an alternate.</p><p class="meta"><span class="mpn">LM7805CT</span> · Texas Instruments</p></div>
+        <span>Power</span>
+        <span class="hot">EOL</span>
+        <span class="r data hot">Out of stock</span>
+        <span class="r data">—</span>
+        <span class="r data">—</span>
+        <span class="risk red">Critical</span>
+      </div>
+      <div class="row tone-amber">
+        <span class="rail"></span>
+        <div><p class="call">Not recommended for new designs.</p><p class="meta"><span class="mpn">MAX232CSE+</span> · Analog Devices</p></div>
+        <span>IO board</span>
+        <span class="hot">NRND</span>
+        <span class="r data">840</span>
+        <span class="r data">16 wk</span>
+        <span class="r data hot">7.5%</span>
+        <span class="risk amber">Watch</span>
+      </div>
+      <div class="row tone-amber">
+        <span class="rail"></span>
+        <div><p class="call">Factory lead is about 32 weeks.</p><p class="meta"><span class="mpn">STM32F103C8T6</span> · ST</p></div>
+        <span>Main</span>
+        <span>Active</span>
+        <span class="r data">1,240</span>
+        <span class="r data warm">32 wk</span>
+        <span class="r data">—</span>
+        <span class="risk amber">Watch</span>
+      </div>
+    </div>
+  </div>
+</article>
+<p class="label">Back</p>
+<article class="sheet back">
+  <div class="trim">
+    <div class="brand"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="28" height="28" fill="none" aria-hidden="true"><mask id="mark-back" maskUnits="userSpaceOnUse" x="0" y="0" width="32" height="32"><rect width="32" height="32" fill="#fff"/><path d="M0 20.5 H13.5 L23 11 V0" stroke="#000" stroke-width="4" stroke-linejoin="miter" fill="none"/></mask><path d="M11 3 H29 V21 L21 29 H3 V11 Z" fill="#0f1b2d" mask="url(#mark-back)"/></svg><strong>Prokuro.ai</strong></div>
+    <h1>Six checks on every line.</h1>
+    <p class="lead">A part still being checked is not a miss. You get a next step, not a data dump.</p>
+    <div class="jobs"><div class="job"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 7h16M4 12h10M4 17h7"/><circle cx="17" cy="16" r="3"/><path d="M19.2 18.2 21 20"/></svg><b>Screening</b><span>EOL and NRND</span></div>
+<div class="job"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 7.5 12 3l9 4.5v9L12 21 3 16.5v-9Z"/><path d="M12 12 3 7.5M12 12l9-4.5M12 12v9"/></svg><b>Sourcing</b><span>Stock you can buy</span></div>
+<div class="job"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 3v18M16.5 7.5c0-1.7-2-3-4.5-3S7.5 5.8 7.5 7.5 9.5 10.5 12 10.5s4.5 1.3 4.5 3-2 3-4.5 3-4.5-1.3-4.5-3"/></svg><b>Cost</b><span>Price plus duty</span></div>
+<div class="job"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg><b>Planning</b><span>When to order</span></div>
+<div class="job"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 3 5 6v6c0 4.2 2.8 7.2 7 9 4.2-1.8 7-4.8 7-9V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></svg><b>Compliance</b><span>Restricted parties</span></div>
+<div class="job"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="9" cy="19" r="1.2"/><circle cx="17" cy="19" r="1.2"/><path d="M3 5h2l2.2 9.2a1 1 0 0 0 1 .8H17a1 1 0 0 0 1-.8L19.5 8H7"/></svg><b>Buying</b><span>Lines that are clear</span></div></div>
+    <div class="foot">
+      <div class="team">
+        <p><span class="who">Yusuf Morsi</span><span class="role">CEO</span><span class="mail">yusuf@prokuro.ai</span></p>
+        <p><span class="who">Mounir Issa</span><span class="role">CTO</span><span class="mail">mounir@prokuro.ai</span></p>
+        <p><span class="who">Abdulrahman Sinjab</span><span class="role">Solutions Engineer</span><span class="mail">sinjab@prokuro.ai</span></p>
+      </div>
+      <p class="pedigree">Bring a BOM. Leave with the lines that need a call.</p>
+      <p class="url">prokuro.ai</p>
+    </div>
+  </div>
+</article>
+</body></html>
