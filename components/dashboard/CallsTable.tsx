@@ -8,7 +8,7 @@ import { BUYER_JOB_LABEL, BUYER_JOB_ORDER, buyerJob } from '@/lib/buyerJob'
 import { decisionHeadline } from '@/lib/decision'
 import { plural } from '@/lib/format'
 import { Link } from '@/lib/navigation'
-import { leadTimeWeeks, lifecycleLabel, lineRiskLevel, stillLookingUpLabel, tariffLabel } from '@/lib/risk'
+import { isLongLead, lifecycleLabel, lineRiskLevel, stillLookingUpLabel } from '@/lib/risk'
 import type { FlaggedLineItem } from '@/lib/types'
 
 type GroupBy = 'severity' | 'job' | 'bom'
@@ -19,7 +19,7 @@ const GROUP_OPTIONS: { id: GroupBy; label: string }[] = [
   { id: 'bom', label: 'By BOM' },
 ]
 
-const cols = 'mk:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_4.5rem_6.5rem_4rem_4rem_5rem]'
+const cols = 'mk:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_4.5rem_6.5rem_4rem_5.5rem]'
 
 type Group = { key: string; label: string | null; rows: FlaggedLineItem[] }
 
@@ -41,45 +41,35 @@ function CallRow({ item, showBom }: { item: FlaggedLineItem; showBom: boolean })
   const { line } = item
   const risk = lineRiskLevel(line)
   const life = lifecycleLabel(line.lifecycle_status)
-  const duty = tariffLabel(line)
-  const weeks = leadTimeWeeks(line)
-  const rail = risk === 'red' ? 'var(--mk-red)' : risk === 'yellow' ? 'var(--mk-amber)' : null
 
   return (
     <Link
       href={`/bom/${encodeURIComponent(item.bomId)}?line=${item.line.row_index}`}
-      className={`group relative grid grid-cols-1 items-center gap-1.5 border-b border-mk-line/70 px-4 py-3 last:border-b-0 hover:bg-mk-raised/60 mk:gap-3 mk:px-5 ${cols}`}
+      className={`group grid grid-cols-1 items-center gap-2 border-b border-mk-line px-4 py-3.5 text-[13px] last:border-b-0 hover:bg-mk-raised/70 mk:gap-4 mk:px-5 mk:py-3 ${cols}`}
     >
-      {rail ? <span className="absolute inset-y-0 left-0 w-0.5" style={{ background: rail }} aria-hidden /> : null}
       <span className="min-w-0">
         <span className="line-clamp-2 text-[14px] font-medium leading-snug text-mk-ink group-hover:text-mk-accent">
           {decisionHeadline(line)}
         </span>
         <span className="mt-1 block truncate text-[12px] text-mk-ink-subtle">
-          <span className="mk-data">{line.mpn || '—'}</span>
+          {line.mpn || '—'}
           {line.manufacturer ? ` · ${line.manufacturer}` : null}
         </span>
       </span>
-      <span className="min-w-0 truncate text-[13px] text-mk-ink-muted">
-        {showBom ? item.bomName : line.refdes || '—'}
-      </span>
-      <span className={`text-[13px] ${life === 'EOL' || life === 'NRND' ? 'text-mk-red' : 'text-mk-ink-muted'}`}>
+      <span className="min-w-0 truncate text-mk-ink-muted">{showBom ? item.bomName : line.refdes || '—'}</span>
+      <span className={life === 'EOL' || life === 'NRND' ? 'text-mk-red' : 'text-mk-ink-muted'}>
         <span className="text-mk-ink-subtle mk:hidden">Lifecycle </span>
         {life}
       </span>
-      <span className={`text-[13px] mk:text-right ${stockHot(line) ? 'text-mk-red' : 'text-mk-ink-muted'}`}>
+      <span className={`tabular-nums mk:text-right ${stockHot(line) ? 'text-mk-red' : 'text-mk-ink-muted'}`}>
         <span className="text-mk-ink-subtle mk:hidden">Stock </span>
-        <span className="mk-data">{stockLabel(line)}</span>
+        {stockLabel(line)}
       </span>
-      <span className={`text-[13px] mk:text-right ${weeks != null && weeks > 26 ? 'text-mk-amber' : 'text-mk-ink-muted'}`}>
+      <span className={`tabular-nums mk:text-right ${isLongLead(line) ? 'text-mk-amber' : 'text-mk-ink-muted'}`}>
         <span className="text-mk-ink-subtle mk:hidden">Lead </span>
-        <span className="mk-data">{leadLabel(line)}</span>
+        {leadLabel(line)}
       </span>
-      <span className={`text-[13px] mk:text-right ${duty !== '-' ? 'text-mk-red' : 'text-mk-ink-muted'}`}>
-        <span className="text-mk-ink-subtle mk:hidden">Duty </span>
-        <span className="mk-data">{duty === '-' ? '—' : duty}</span>
-      </span>
-      <span className={`text-[13px] font-medium ${riskTone(risk)}`}>{lineStatusLabel(line)}</span>
+      <span className={`font-medium ${riskTone(risk)}`}>{lineStatusLabel(line)}</span>
     </Link>
   )
 }
@@ -98,12 +88,12 @@ export default function CallsTable({
   const [groupBy, setGroupBy] = useState<GroupBy>('severity')
   const groups = useMemo(() => groupCalls(items, groupBy), [items, groupBy])
 
-  const detail =
+  const count =
     items.length === 0
       ? undefined
       : total > items.length
-        ? `The worst ${items.length} of ${total.toLocaleString()}`
-        : plural(items.length, 'part')
+        ? `${items.length} of ${total.toLocaleString()}`
+        : items.length.toLocaleString()
 
   const empty =
     pending > 0
@@ -115,19 +105,19 @@ export default function CallsTable({
   return (
     <Panel
       title="Calls this week"
-      detail={detail}
+      count={count}
       actions={
         items.length > 0 ? (
-          <nav className="flex items-center gap-x-5" aria-label="Group calls">
+          <nav className="flex w-full max-w-full items-center rounded-[8px] bg-mk-raised p-0.5 sm:w-fit" aria-label="Group calls">
             {GROUP_OPTIONS.map((option) => (
               <button
                 key={option.id}
                 type="button"
                 onClick={() => setGroupBy(option.id)}
                 aria-pressed={groupBy === option.id}
-                className={`pb-0.5 text-[12px] transition-colors ${
+                className={`flex-1 rounded-[6px] px-2 py-1 text-center text-[12px] font-medium transition-colors sm:flex-none sm:px-2.5 ${
                   groupBy === option.id
-                    ? 'border-b border-mk-ink font-semibold text-mk-ink'
+                    ? 'bg-mk-canvas text-mk-ink shadow-[0_1px_2px_rgb(15_27_45/10%)]'
                     : 'text-mk-ink-subtle hover:text-mk-ink'
                 }`}
               >
@@ -147,13 +137,12 @@ export default function CallsTable({
         </div>
       ) : (
         <>
-          <div className={`hidden gap-3 border-b border-mk-line px-5 py-2.5 mk:grid ${cols}`}>
+          <div className={`hidden gap-4 border-b border-mk-line px-5 py-2.5 mk:grid ${cols}`}>
             <span className={appColHead}>Call</span>
             <span className={appColHead}>{groupBy === 'bom' ? 'Ref' : 'BOM'}</span>
             <span className={appColHead}>Lifecycle</span>
             <span className={`${appColHead} text-right`}>Stock</span>
             <span className={`${appColHead} text-right`}>Lead</span>
-            <span className={`${appColHead} text-right`}>Duty</span>
             <span className={appColHead}>Risk</span>
           </div>
           {groups.map((group) => (
@@ -161,7 +150,7 @@ export default function CallsTable({
               {group.label ? (
                 <div className="flex items-baseline gap-2 border-b border-mk-line bg-mk-raised px-4 py-2 mk:px-5">
                   <span className="text-[12px] font-semibold text-mk-ink">{group.label}</span>
-                  <span className="mk-data text-[12px] text-mk-ink-subtle">{group.rows.length}</span>
+                  <span className="text-[12px] tabular-nums text-mk-ink-subtle">{group.rows.length}</span>
                 </div>
               ) : null}
               {group.rows.map((item) => (

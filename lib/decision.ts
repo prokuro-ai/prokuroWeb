@@ -1,5 +1,6 @@
 import {
   isAtRisk,
+  isLongLead,
   isPendingLine,
   leadTimeWeeks,
   lifecycleLabel,
@@ -56,12 +57,16 @@ export function decisionHeadline(line: AnalyzedLine): string {
   }
   if (life === 'nrnd') return 'Not recommended for new designs.'
   if (avail === 'outofstock') return "Can't buy this from tracked distributors."
-  const weeks = leadTimeWeeks(line)
-  if (weeks != null && weeks > 30) return `Factory lead is about ${weeks} weeks.`
+  if (isLongLead(line)) return `Factory lead is about ${leadTimeWeeks(line)} weeks.`
   if (line.total_duty_pct != null && line.total_duty_pct > 0) {
     return `Estimated duty is ${line.total_duty_pct}%.`
   }
-  return buildLineDecision(line).summary.replace(/^(Critical|Watch|Unknown|Clear):\s*/i, '')
+  const reason = line.risk_reasons?.map((text) => text.trim()).find(Boolean)
+  if (reason) return clipHeadline(/[.!?]$/.test(reason) ? reason : `${reason}.`)
+  const risk = lineRiskLevel(line)
+  if (risk === 'red') return 'Supply risk needs action before the next build.'
+  if (risk === 'yellow') return 'Flagged for review before the next order.'
+  return 'No urgent flags on this line.'
 }
 
 export function whyThisScore(line: AnalyzedLine): string {
@@ -161,7 +166,7 @@ export function buildLineDecision(line: AnalyzedLine): LineDecision {
   if (risk === 'red') {
     summary = `Critical: ${life.toLowerCase() === 'unknown' ? 'supply' : life} risk needs action before the next production run.`
   } else if (risk === 'yellow') {
-    summary = `Watch: monitor this line — ${life.toLowerCase() === 'active' ? 'lead time, stock, or tariff' : life} signals are elevated.`
+    summary = `Watch: ${life.toLowerCase() === 'active' ? 'lead time, stock, or tariff' : life} signals are elevated on this line.`
   } else if (risk === 'unknown') {
     summary = 'Unknown: not enough distributor data to score this line yet.'
   } else {

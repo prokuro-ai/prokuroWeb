@@ -3,14 +3,14 @@ import { appSheet } from '@/components/app/chrome'
 
 export default function Panel({
   title,
-  detail,
+  count,
   actions,
   footer,
   className = '',
   children,
 }: {
   title: string
-  detail?: ReactNode
+  count?: string
   actions?: ReactNode
   footer?: ReactNode
   className?: string
@@ -18,11 +18,15 @@ export default function Panel({
 }) {
   return (
     <section aria-label={title} className={`${appSheet} flex flex-col ${className}`}>
-      <header className="flex flex-col gap-2 border-b border-mk-line px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between mk:px-5">
-        <div className="min-w-0">
-          <h2 className="text-[14px] font-semibold text-mk-ink">{title}</h2>
-          {detail ? <p className="mt-0.5 text-[12px] text-mk-ink-subtle">{detail}</p> : null}
-        </div>
+      <header className="flex flex-col gap-3 border-b border-mk-line px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:py-3.5 mk:px-5">
+        <h2 className="flex items-center gap-2 text-[14px] font-semibold text-mk-ink">
+          {title}
+          {count ? (
+            <span className="text-[13px] font-normal tabular-nums text-mk-ink-subtle">
+              {count}
+            </span>
+          ) : null}
+        </h2>
         {actions}
       </header>
       <div className="flex-1">{children}</div>

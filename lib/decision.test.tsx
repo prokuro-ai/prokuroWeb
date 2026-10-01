@@ -118,6 +118,19 @@ describe('decisionHeadline', () => {
     expect(isBriefPending(line)).toBe(true)
     expect(decisionHeadline(line)).toBe("Can't buy this from tracked distributors.")
   })
+
+  it('calls out lead past 26 weeks, the same cut the dashboard counts', () => {
+    expect(decisionHeadline({ ...base, factory_lead_days: 196, risk_level: 'yellow' })).toBe(
+      'Factory lead is about 28 weeks.',
+    )
+  })
+
+  it('falls back to the scorer reason, then a plain sentence', () => {
+    expect(decisionHeadline({ ...base, risk_level: 'yellow', risk_reasons: ['Single source at tracked distributors'] })).toBe(
+      'Single source at tracked distributors.',
+    )
+    expect(decisionHeadline({ ...base, risk_level: 'yellow' })).toBe('Flagged for review before the next order.')
+  })
 })
 
 describe('whyThisScore', () => {

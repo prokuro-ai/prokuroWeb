@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import EmptyState from '@/components/app/EmptyState'
 import PageHeader from '@/components/app/PageHeader'
 import PageLoading from '@/components/app/PageLoading'
-import { appPage, appPrimaryBtn, appSection } from '@/components/app/chrome'
+import { appPage, appPrimaryBtn } from '@/components/app/chrome'
 import ThisWeekView from '@/components/dashboard/ThisWeekView'
 import { useFlaggedLines } from '@/hooks/use-flagged-lines'
 import { mixTotal } from '@/lib/dashboard'
@@ -31,6 +31,7 @@ function OverviewView() {
     <div className={appPage}>
       <PageHeader
         title="What to do this week"
+        serif
         description={
           feed && hasBoms ? (
             <>
@@ -41,7 +42,7 @@ function OverviewView() {
         }
       />
 
-      <div className={appSection}>
+      <div className="mk-container max-w-[1180px] pt-4 pb-8 mk:pt-5 mk:pb-12">
         {loading && !feed ? (
           <PageLoading />
         ) : !feed ? (
