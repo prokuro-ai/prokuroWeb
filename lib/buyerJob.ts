@@ -1,3 +1,4 @@
+import { isLongLead } from '@/lib/risk'
 import type { AnalyzedLine } from '@/lib/types'
 
 export type BuyerJob = 'cant_buy' | 'obsolete' | 'tariff' | 'unmatched' | 'other'
@@ -19,7 +20,7 @@ export function buyerJob(line: AnalyzedLine): BuyerJob {
 
   if (match === 'none' || avail === 'nomatch') return 'unmatched'
   if (life === 'eol' || life === 'discontinued' || life === 'nrnd') return 'obsolete'
-  if (avail === 'outofstock' || (line.factory_lead_days != null && line.factory_lead_days > 210)) {
+  if (avail === 'outofstock' || isLongLead(line)) {
     return 'cant_buy'
   }
   if (line.total_duty_pct != null && line.total_duty_pct > 0) return 'tariff'

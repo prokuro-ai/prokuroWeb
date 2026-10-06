@@ -56,4 +56,9 @@ describe('buyerJob', () => {
   it('groups duty-only flags as tariff', () => {
     expect(buyerJob({ ...base, total_duty_pct: 25 })).toBe('tariff')
   })
+
+  it('groups factory lead past 26 weeks as cannot buy', () => {
+    expect(buyerJob({ ...base, factory_lead_days: 183, risk_level: 'yellow' })).toBe('cant_buy')
+    expect(buyerJob({ ...base, factory_lead_days: 182, risk_level: 'green' })).toBe('other')
+  })
 })

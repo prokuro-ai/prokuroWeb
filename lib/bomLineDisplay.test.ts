@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { lineStatusLabel } from '@/lib/bomLineDisplay'
-import { accountUnscored, isPendingLine, pendingLineCount, stillLookingUpLabel } from '@/lib/risk'
+import { MIX_SEGMENTS } from '@/lib/dashboard'
+import { accountUnscored, BOM_BAND_LABEL, isPendingLine, pendingLineCount, stillLookingUpLabel } from '@/lib/risk'
 import type { AnalyzeResult, AnalyzedLine } from '@/lib/types'
 
 const base: AnalyzedLine = {
@@ -115,5 +116,15 @@ describe('accountUnscored', () => {
       pending: 1,
       noMatch: 0,
     })
+  })
+})
+
+describe('BOM_BAND_LABEL', () => {
+  it('uses the same status words as the parts table and mix readout', () => {
+    expect(BOM_BAND_LABEL.Critical).toBe('Critical')
+    expect(BOM_BAND_LABEL.Watch).toBe('Watch')
+    expect(BOM_BAND_LABEL.Clear).toBe('Clear')
+    expect(MIX_SEGMENTS.find((segment) => segment.key === 'red')?.label).toBe(BOM_BAND_LABEL.Critical)
+    expect(MIX_SEGMENTS.find((segment) => segment.key === 'green')?.label).toBe(BOM_BAND_LABEL.Clear)
   })
 })

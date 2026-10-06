@@ -273,7 +273,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
 
   const flagged = (result.summary.red_count ?? 0) + (result.summary.yellow_count ?? 0)
   const pendingCount = pendingLineCount(result)
-  // Nothing has come back yet, so the BOM is neither "Unscored" nor "Fine".
+  // Nothing has come back yet, so the BOM is neither "Unscored" nor "Clear".
   const badge =
     pendingCount > 0 && flagged === 0 ? PENDING_BADGE : portfolioBadgeFromSummary(result.summary)
   const displayName = summary?.name ?? result.source_filename

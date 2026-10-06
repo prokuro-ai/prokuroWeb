@@ -59,7 +59,7 @@ type RiskPresentation = {
 
 export const RISK_PRESENTATION: Record<RiskLevel, RiskPresentation> = {
   red: {
-    label: 'Needs a call',
+    label: 'Critical',
     row: 'bg-[rgb(198_32_38_/_4%)] hover:bg-[rgb(198_32_38_/_7%)]',
     rail: 'shadow-[inset_3px_0_0_#c62026]',
     bar: 'bg-[#c62026]',
@@ -79,7 +79,7 @@ export const RISK_PRESENTATION: Record<RiskLevel, RiskPresentation> = {
     fill: 55,
   },
   green: {
-    label: 'Fine',
+    label: 'Clear',
     row: '',
     rail: '',
     bar: 'bg-[#167c48]',
@@ -153,9 +153,9 @@ export type BomBand = 'Critical' | 'Watch' | 'Clear' | 'Unknown'
 type PortfolioBadge = { label: string; cls: string; dot: string | null }
 
 const PORTFOLIO_BADGE: Record<BomBand, PortfolioBadge> = {
-  Critical: { label: 'Needs a call', cls: 'bg-mk-red/10 text-mk-red', dot: 'bg-mk-red' },
+  Critical: { label: 'Critical', cls: 'bg-mk-red/10 text-mk-red', dot: 'bg-mk-red' },
   Watch: { label: 'Watch', cls: 'bg-mk-amber/10 text-mk-amber', dot: 'bg-mk-amber' },
-  Clear: { label: 'Fine', cls: 'bg-mk-green/10 text-mk-green', dot: 'bg-mk-green' },
+  Clear: { label: 'Clear', cls: 'bg-mk-green/10 text-mk-green', dot: 'bg-mk-green' },
   // Summary counts cannot separate "still looking up" from "no catalog match",
   // so the BOM-level word has to cover both until the API splits them.
   Unknown: { label: 'Unscored', cls: 'text-mk-ink-subtle', dot: null },
@@ -168,9 +168,9 @@ export const PENDING_BADGE: PortfolioBadge = {
 }
 
 export const BOM_BAND_LABEL: Record<BomBand, string> = {
-  Critical: 'Needs a call',
+  Critical: 'Critical',
   Watch: 'Watch',
-  Clear: 'Fine',
+  Clear: 'Clear',
   Unknown: 'Unscored',
 }
 
