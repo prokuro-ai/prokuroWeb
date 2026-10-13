@@ -1,4 +1,4 @@
-import type { BoardTally, LeadTimes, RiskMix, Situation } from '@/lib/types'
+import type { BoardTally, RiskMix, Situation } from '@/lib/types'
 
 export type Tone = 'red' | 'amber' | 'green' | 'slate' | 'pending'
 
@@ -32,15 +32,6 @@ export const SITUATION_COLUMNS: {
   { key: 'nrnd', label: 'Not for new designs', short: 'NRND', tone: 'amber' },
   { key: 'noAlternate', label: 'No alternate on file', short: 'No alt', tone: 'slate' },
   { key: 'duty', label: 'Duty on the line', short: 'Duty', tone: 'slate' },
-]
-
-/** Past the 26-week line is amber, past a year is red. */
-export const LEAD_BUCKETS: { key: Exclude<keyof LeadTimes, 'unpublished'>; label: string; tone: Tone }[] = [
-  { key: 'upTo4Weeks', label: '0–4', tone: 'slate' },
-  { key: 'upTo12Weeks', label: '5–12', tone: 'slate' },
-  { key: 'upTo26Weeks', label: '13–26', tone: 'slate' },
-  { key: 'upTo52Weeks', label: '27–52', tone: 'amber' },
-  { key: 'over52Weeks', label: '52+', tone: 'red' },
 ]
 
 export function mixTotal(mix: RiskMix): number {
