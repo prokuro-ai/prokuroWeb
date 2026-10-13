@@ -1,119 +1,137 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { placeOrder, quotePurchase } from '@/lib/api'
+import { useBuyBoards } from '@/hooks/use-buy-boards'
 import { useTeam } from '@/hooks/use-team'
 import PageHeader from '@/components/app/PageHeader'
-import { appField, appGhostBtn, appPage, appPrimaryBtn, appSection, appSheet } from '@/components/app/chrome'
-import type {
-  PlaceOrderResponse,
-  PurchaseProviderId,
-  PurchaseStatus,
-  QuoteLineResult,
-  QuoteResponse,
-} from '@/lib/types'
+import CartPanel from '@/components/buy/CartPanel'
+import PartsCatalog from '@/components/buy/PartsCatalog'
+import {
+  appContainer,
+  appField,
+  appGhostBtn,
+  appPage,
+  appQtyField,
+  appSheet,
+  appTextBtn,
+} from '@/components/app/chrome'
+import {
+  addToCart,
+  buildCatalog,
+  buildSuggestions,
+  CART_STORAGE_KEY,
+  cartLineFrom,
+  DISMISSED_STORAGE_KEY,
+  parseStoredCart,
+  removeFromCart,
+  setCartQuantity,
+  type CartLine,
+  type Suggestion,
+} from '@/lib/cart'
+import { money, PROVIDER_LABEL, statusLabel } from '@/lib/purchaseDisplay'
+import type { PlaceOrderResponse, PurchaseProviderId, QuoteResponse } from '@/lib/types'
 
-type DraftLine = { mpn: string; quantity: string }
-
-function statusLabel(status: PurchaseStatus): string {
-  switch (status) {
-    case 'quoted':
-      return 'Quoted'
-    case 'partial':
-      return 'Partial quote'
-    case 'unavailable':
-      return 'Unavailable'
-    case 'submitted':
-      return 'Order submitted'
-    case 'not_configured':
-      return 'Distributor not connected yet'
-    case 'requires_distributor_credit':
-      return 'Distributor credit required'
-    case 'requires_subscription':
-      return 'Paid plan required'
-    case 'cap_exceeded':
-      return 'This month’s buy limit is used up'
-    case 'error':
-      return 'Could not reach the distributor'
-  }
+function cartSignature(provider: PurchaseProviderId, cart: CartLine[]): string {
+  return `${provider}|${cart.map((line) => `${line.key}:${line.quantity}`).join(',')}`
 }
 
-function money(value: number | null | undefined, currency?: string | null): string {
-  if (value == null) return '—'
-  const code = currency ?? 'USD'
+function readDismissed(): Set<string> {
   try {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: code }).format(value)
+    const value: unknown = JSON.parse(window.localStorage.getItem(DISMISSED_STORAGE_KEY) ?? '[]')
+    return new Set(Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [])
   } catch {
-    return `${value.toFixed(4)} ${code}`
+    return new Set()
   }
 }
 
 export default function PurchasingPage() {
   const { canWrite, error: teamError, reload: reloadTeam, loaded: teamLoaded, team } = useTeam()
+  const { boards, loading: boardsLoading, error: boardsError, failed } = useBuyBoards()
+  const catalog = useMemo(() => buildCatalog(boards), [boards])
+
+  const [cart, setCart] = useState<CartLine[]>([])
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
+  const [hydrated, setHydrated] = useState(false)
   const [provider, setProvider] = useState<PurchaseProviderId>('digikey')
-  const [lines, setLines] = useState<DraftLine[]>([{ mpn: '', quantity: '1' }])
   const [poNumber, setPoNumber] = useState('')
-  const [busy, setBusy] = useState<'quote' | 'order' | null>(null)
+  const [busy, setBusy] = useState<'quote' | 'order' | 'lookup' | null>(null)
   const [quote, setQuote] = useState<QuoteResponse | null>(null)
+  const [quotedFor, setQuotedFor] = useState<string | null>(null)
   const [order, setOrder] = useState<PlaceOrderResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  function updateLine(index: number, patch: Partial<DraftLine>) {
-    setLines((current) => current.map((line, i) => (i === index ? { ...line, ...patch } : line)))
+  const [lookupMpn, setLookupMpn] = useState('')
+  const [lookupQty, setLookupQty] = useState('1')
+  const [lookup, setLookup] = useState<QuoteResponse | null>(null)
+  const [lookupError, setLookupError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setCart(parseStoredCart(window.localStorage.getItem(CART_STORAGE_KEY)))
+    setDismissed(readDismissed())
+    setHydrated(true)
+  }, [])
+
+  useEffect(() => {
+    if (!hydrated) return
+    window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart))
+  }, [cart, hydrated])
+
+  useEffect(() => {
+    if (!hydrated) return
+    window.localStorage.setItem(DISMISSED_STORAGE_KEY, JSON.stringify([...dismissed]))
+  }, [dismissed, hydrated])
+
+  const suggestions = useMemo(
+    () => buildSuggestions(cart, catalog, boards, dismissed),
+    [cart, catalog, boards, dismissed],
+  )
+  const quoteStale = quote != null && quotedFor !== cartSignature(provider, cart)
+
+  function add(lines: CartLine[]) {
+    setCart((current) => addToCart(current, lines))
+    setOrder(null)
   }
 
-  function addLine() {
-    setLines((current) => [...current, { mpn: '', quantity: '1' }])
+  function dismiss(suggestion: Suggestion) {
+    setDismissed((current) => new Set([...current, ...suggestion.keys]))
   }
 
-  function removeLine(index: number) {
-    setLines((current) => (current.length <= 1 ? current : current.filter((_, i) => i !== index)))
+  function requestLines() {
+    return cart.map((line) => ({
+      mpn: line.mpn,
+      quantity: line.quantity,
+      ...(line.manufacturer ? { manufacturer: line.manufacturer } : {}),
+    }))
   }
 
-  function parsedLines() {
-    return lines
-      .map((line) => ({
-        mpn: line.mpn.trim(),
-        quantity: Number.parseInt(line.quantity, 10),
-      }))
-      .filter((line) => line.mpn.length > 0 && Number.isFinite(line.quantity) && line.quantity > 0)
-  }
-
-  async function runQuote() {
-    const requestLines = parsedLines()
-    if (requestLines.length === 0) {
-      setError('Add at least one part number with a quantity.')
-      return
-    }
+  async function priceCart() {
     setBusy('quote')
     setError(null)
     setOrder(null)
+    const signature = cartSignature(provider, cart)
     try {
-      const response = await quotePurchase({ provider, lines: requestLines })
-      setQuote(response)
+      setQuote(await quotePurchase({ provider, lines: requestLines() }))
+      setQuotedFor(signature)
     } catch (err) {
       setQuote(null)
-      setError(err instanceof Error ? err.message : 'Quote failed')
+      setError(err instanceof Error ? err.message : 'Pricing failed')
     } finally {
       setBusy(null)
     }
   }
 
-  async function runOrder() {
-    const requestLines = parsedLines()
-    if (requestLines.length === 0) {
-      setError('Add at least one part number with a quantity.')
-      return
-    }
+  async function submitOrder() {
     setBusy('order')
     setError(null)
     try {
-      const response = await placeOrder({
-        provider,
-        lines: requestLines,
-        purchase_order_number: poNumber.trim() || undefined,
-      })
-      setOrder(response)
+      setOrder(
+        await placeOrder({
+          provider,
+          lines: requestLines(),
+          purchase_order_number: poNumber.trim() || undefined,
+        }),
+      )
     } catch (err) {
       setOrder(null)
       setError(err instanceof Error ? err.message : 'Order failed')
@@ -122,223 +140,154 @@ export default function PurchasingPage() {
     }
   }
 
-  const quoteLines: QuoteLineResult[] = quote?.lines ?? []
+  async function runLookup(event: React.FormEvent) {
+    event.preventDefault()
+    const mpn = lookupMpn.trim()
+    if (!mpn) return
+    setBusy('lookup')
+    setLookupError(null)
+    try {
+      setLookup(await quotePurchase({ provider, lines: [{ mpn, quantity: 1 }] }))
+    } catch (err) {
+      setLookup(null)
+      setLookupError(err instanceof Error ? err.message : 'Lookup failed')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const lookupLine = lookup?.lines?.[0] ?? null
+  const writeBlockedNote =
+    teamLoaded && !team && teamError ? (
+      <>
+        Couldn’t check who can buy ({teamError}).{' '}
+        <button type="button" className="font-semibold text-mk-accent underline" onClick={() => reloadTeam()}>
+          Retry
+        </button>
+      </>
+    ) : teamLoaded ? (
+      'Your seat can browse and build a cart, not price or order.'
+    ) : (
+      'Checking your seat…'
+    )
 
   return (
     <div className={appPage}>
       <PageHeader
-        title="Get a quote"
-        description="Enter part numbers and quantities. We’ll price them at Digi-Key or Mouser. Placing the order stays off until your distributor account is connected."
+        title="Buy"
+        description="Parts from your boards, priced at Digi-Key or Mouser. Build a cart, price it, and send the order once your distributor account is connected."
       />
 
-      <div className={`${appSection} space-y-4`}>
-        <div className={appSheet}>
-          <div className="border-b border-mk-line px-5 py-4">
-            <h2 className="mk-app-heading text-mk-ink">Parts to buy</h2>
-            <p className="mt-1 text-[13px] text-mk-ink-muted">
-              One part number per row. Add a PO number only if you are ready to place the order.
-            </p>
-          </div>
-
-          <div className="space-y-4 px-5 py-5">
-            <label className="block max-w-xs">
-              <span className="mk-eyebrow">Distributor</span>
-              <select
-                value={provider}
-                onChange={(event) => setProvider(event.target.value as PurchaseProviderId)}
-                className={`${appField} mt-1`}
-              >
-                <option value="digikey">Digi-Key</option>
-                <option value="mouser">Mouser</option>
-              </select>
-            </label>
-
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[480px] border-collapse text-left text-[13px]">
-                <thead>
-                  <tr className="border-b border-mk-line bg-mk-raised">
-                    <th className="px-3 py-2 text-left">
-                      <span className="mk-eyebrow">Part number</span>
-                    </th>
-                    <th className="w-28 px-3 py-2 text-left">
-                      <span className="mk-eyebrow">Qty</span>
-                    </th>
-                    <th className="w-20 px-3 py-2" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {lines.map((line, index) => (
-                    <tr key={index} className="border-b border-mk-line">
-                      <td className="px-3 py-2">
-                        <input
-                          value={line.mpn}
-                          onChange={(event) => updateLine(index, { mpn: event.target.value })}
-                          placeholder="Part number"
-                          className={`${appField} mk-data`}
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          type="number"
-                          min={1}
-                          value={line.quantity}
-                          onChange={(event) => updateLine(index, { quantity: event.target.value })}
-                          className={`${appField} mk-data`}
-                        />
-                      </td>
-                      <td className="px-3 py-2 text-right">
-                        <button
-                          type="button"
-                          onClick={() => removeLine(index)}
-                          disabled={lines.length <= 1}
-                          className="text-[12px] text-mk-ink-subtle hover:text-mk-ink disabled:opacity-40"
-                        >
-                          Remove
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <button type="button" onClick={addLine} className={appGhostBtn}>
-                Add line
-              </button>
-              <label className="ml-auto flex max-w-xs flex-1 items-center gap-2">
-                <span className="mk-eyebrow shrink-0">PO #</span>
-                <input
-                  value={poNumber}
-                  onChange={(event) => setPoNumber(event.target.value)}
-                  placeholder="Optional"
-                  className={appField}
-                />
+      <div className={`${appContainer} grid grid-cols-[minmax(0,1fr)] gap-5 py-5 mk:py-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start`}>
+        <div className="min-w-0 space-y-4">
+          <form onSubmit={(event) => void runLookup(event)} className={`${appSheet} px-4 py-3 sm:px-5`}>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <label htmlFor="lookup-mpn" className="shrink-0 text-[13px] font-medium text-mk-ink">
+                Not on a board?
               </label>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 border-t border-mk-line pt-4">
+              <input
+                id="lookup-mpn"
+                value={lookupMpn}
+                onChange={(event) => setLookupMpn(event.target.value)}
+                placeholder="Exact part number, e.g. TPS62840DLCR"
+                className={`${appField} mk-data flex-1`}
+              />
               <button
-                type="button"
-                disabled={busy !== null || !canWrite}
-                onClick={() => void runQuote()}
-                className={appPrimaryBtn}
+                type="submit"
+                disabled={!lookupMpn.trim() || busy !== null || !canWrite}
+                className={`${appGhostBtn} shrink-0`}
               >
-                {busy === 'quote' ? 'Quoting…' : 'Get a quote'}
+                {busy === 'lookup' ? 'Looking up…' : `Check ${PROVIDER_LABEL[provider]}`}
               </button>
-              <button
-                type="button"
-                disabled={busy !== null || !canWrite}
-                onClick={() => void runOrder()}
-                className={appGhostBtn}
-              >
-                {busy === 'order' ? 'Submitting…' : 'Place order'}
-              </button>
-              {teamLoaded && !canWrite ? (
-                <p className="text-[12px] text-mk-ink-subtle">
-                  {!team && teamError ? (
-                    <>
-                      Couldn’t check who can buy ({teamError}).{' '}
-                      <button
-                        type="button"
-                        className="font-semibold text-mk-accent underline"
-                        onClick={() => reloadTeam()}
-                      >
-                        Retry
-                      </button>
-                    </>
-                  ) : (
-                    'Your seat can view quotes, not place them.'
-                  )}
-                </p>
-              ) : null}
             </div>
+            <p className="mt-1.5 text-[12px] text-mk-ink-subtle">Each lookup uses one quote from your monthly buy allowance.</p>
 
-            {error ? <p className="text-[13px] text-mk-red">{error}</p> : null}
-          </div>
+            {lookupError ? <p className="mt-2 text-[13px] text-mk-red">{lookupError}</p> : null}
+            {lookup && lookupLine && !lookupLine.error && lookupLine.unit_price != null ? (
+              <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-mk-line pt-3">
+                <div className="min-w-0 flex-1">
+                  <p className="mk-data text-mk-ink">{lookupLine.matched_mpn ?? lookupLine.mpn}</p>
+                  <p className="text-[12px] tabular-nums text-mk-ink-subtle">
+                    {money(lookupLine.unit_price, lookupLine.currency ?? lookup.currency)} ea at qty 1 ·{' '}
+                    {lookupLine.available_quantity?.toLocaleString() ?? 'unknown'} in stock
+                  </p>
+                </div>
+                <input
+                  type="number"
+                  min={1}
+                  aria-label="Quantity"
+                  value={lookupQty}
+                  onChange={(event) => setLookupQty(event.target.value)}
+                  className={appQtyField}
+                />
+                <button
+                  type="button"
+                  className={appTextBtn}
+                  onClick={() => {
+                    add([
+                      cartLineFrom(
+                        { mpn: lookupLine.matched_mpn ?? lookupLine.mpn },
+                        Number.parseInt(lookupQty, 10) || 1,
+                      ),
+                    ])
+                    setLookup(null)
+                    setLookupMpn('')
+                    setLookupQty('1')
+                  }}
+                >
+                  Add to cart
+                </button>
+              </div>
+            ) : lookup ? (
+              <p className="mt-2 text-[13px] text-mk-ink-muted">
+                {lookupLine?.error ?? lookup.message ?? `${statusLabel(lookup.status)}.`}
+              </p>
+            ) : null}
+          </form>
+
+          <PartsCatalog
+            boards={boards}
+            catalog={catalog}
+            cart={cart}
+            loading={boardsLoading}
+            error={boardsError}
+            failed={failed}
+            onAdd={add}
+          />
         </div>
 
-        {quote ? (
-          <div className={appSheet}>
-            <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-mk-line px-5 py-4">
-              <div>
-                <h2 className="mk-app-heading text-mk-ink">Quote</h2>
-                <p className="mt-1 text-[13px] text-mk-ink-muted">
-                  {quote.provider} · {statusLabel(quote.status)}
-                </p>
-              </div>
-              {quote.subtotal != null ? (
-                <p className="mk-app-heading text-mk-ink">
-                  {money(quote.subtotal, quote.currency)}
-                </p>
-              ) : null}
-            </div>
-            {quote.message ? (
-              <p className="border-b border-mk-line px-5 py-3 text-[13px] text-mk-ink-muted">{quote.message}</p>
-            ) : null}
-            {quoteLines.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[640px] border-collapse text-left text-[13px]">
-                  <thead>
-                    <tr className="border-b border-mk-line bg-mk-raised">
-                      {['Part', 'Matched', 'Qty', 'Unit', 'Extended', 'Available', 'Note'].map((header) => (
-                        <th key={header} className="px-4 py-2">
-                          <span className="mk-eyebrow">{header}</span>
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {quoteLines.map((line) => (
-                      <tr key={`${line.mpn}-${line.quantity}`} className="border-b border-mk-line">
-                        <td className="px-4 py-2.5">
-                          <span className="mk-data text-mk-ink">{line.mpn}</span>
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <span className="mk-data text-mk-ink-muted">{line.matched_mpn ?? '—'}</span>
-                        </td>
-                        <td className="px-4 py-2.5 tabular-nums text-mk-ink">{line.quantity}</td>
-                        <td className="px-4 py-2.5 tabular-nums text-mk-ink">
-                          {money(line.unit_price, line.currency ?? quote.currency)}
-                        </td>
-                        <td className="px-4 py-2.5 tabular-nums text-mk-ink">
-                          {money(line.extended_price, line.currency ?? quote.currency)}
-                        </td>
-                        <td className="px-4 py-2.5 tabular-nums text-mk-ink">
-                          {line.available_quantity?.toLocaleString() ?? '—'}
-                        </td>
-                        <td className="px-4 py-2.5 text-[12px] text-mk-red">{line.error ?? ''}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="px-5 py-6 text-[13px] text-mk-ink-muted">
-                No line prices came back. {statusLabel(quote.status)}.
-              </p>
-            )}
-          </div>
-        ) : null}
-
-        {order ? (
-          <div className={`${appSheet} px-5 py-4`}>
-            <h2 className="mk-app-heading text-mk-ink">Order</h2>
-            <p className="mt-1 text-[13px] text-mk-ink-muted">
-              {order.provider} · {statusLabel(order.status)}
-            </p>
-            {order.distributor_order_id ? (
-              <p className="mt-2 text-[13px] text-mk-ink">Distributor order {order.distributor_order_id}</p>
-            ) : null}
-            {order.message ? (
-              <p className="mt-2 text-[13px] text-mk-ink-muted">{order.message}</p>
-            ) : order.status === 'requires_distributor_credit' ? (
-              <p className="mt-2 text-[13px] text-mk-ink-muted">
-                Quotes still work. Placing the order needs a credit account at this distributor.
-              </p>
-            ) : null}
-          </div>
-        ) : null}
+        <aside className="lg:sticky lg:top-4">
+          <CartPanel
+            cart={cart}
+            provider={provider}
+            onProvider={setProvider}
+            quote={quote}
+            quoteStale={quoteStale}
+            order={order}
+            busy={busy}
+            error={error}
+            canWrite={canWrite}
+            writeBlockedNote={writeBlockedNote}
+            poNumber={poNumber}
+            onPoNumber={setPoNumber}
+            onQuantity={(key, quantity) => setCart((current) => setCartQuantity(current, key, quantity))}
+            onRemove={(key) => setCart((current) => removeFromCart(current, key))}
+            onClear={() => {
+              setCart([])
+              setDismissed(new Set())
+              setQuote(null)
+              setOrder(null)
+            }}
+            onPrice={() => void priceCart()}
+            onOrder={() => void submitOrder()}
+            suggestions={suggestions}
+            onAcceptSuggestion={(suggestion) => {
+              add(suggestion.add)
+              dismiss(suggestion)
+            }}
+            onDismissSuggestion={dismiss}
+          />
+        </aside>
       </div>
     </div>
   )
