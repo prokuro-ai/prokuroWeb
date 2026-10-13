@@ -244,6 +244,28 @@ export interface QuoteResponse {
   message?: string | null
 }
 
+export interface SuggestPartsRequest {
+  provider: PurchaseProviderId
+  lines: { mpn: string; manufacturer?: string; description?: string; quantity: number }[]
+}
+
+export interface PartSuggestion {
+  mpn: string
+  manufacturer?: string | null
+  for_mpn?: string | null
+  reason: string
+  quantity: number
+  unit_price?: number | null
+  currency?: string | null
+  available_quantity?: number | null
+}
+
+export interface SuggestPartsResponse {
+  status: 'ok' | 'disabled' | 'unverified' | 'error'
+  suggestions: PartSuggestion[]
+  message?: string | null
+}
+
 export interface PlaceOrderRequest {
   provider: PurchaseProviderId
   lines: PurchaseLine[]

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { placeOrder, quotePurchase } from '@/lib/api'
+import { placeOrder, quotePurchase, suggestParts } from '@/lib/api'
 import { useBuyBoards } from '@/hooks/use-buy-boards'
 import { useTeam } from '@/hooks/use-team'
 import PageHeader from '@/components/app/PageHeader'
@@ -18,6 +18,7 @@ import {
 } from '@/components/app/chrome'
 import {
   addToCart,
+  aiSuggestions,
   buildCatalog,
   buildSuggestions,
   CART_STORAGE_KEY,
@@ -30,7 +31,7 @@ import {
   type Suggestion,
 } from '@/lib/cart'
 import { money, PROVIDER_LABEL, statusLabel } from '@/lib/purchaseDisplay'
-import type { PlaceOrderResponse, PurchaseProviderId, QuoteResponse } from '@/lib/types'
+import type { PartSuggestion, PlaceOrderResponse, PurchaseProviderId, QuoteResponse } from '@/lib/types'
 
 function cartSignature(provider: PurchaseProviderId, cart: CartLine[]): string {
   return `${provider}|${cart.map((line) => `${line.key}:${line.quantity}`).join(',')}`
@@ -82,10 +83,42 @@ export default function PurchasingPage() {
     window.localStorage.setItem(DISMISSED_STORAGE_KEY, JSON.stringify([...dismissed]))
   }, [dismissed, hydrated])
 
+  const [aiParts, setAiParts] = useState<PartSuggestion[]>([])
+  const [aiBusy, setAiBusy] = useState(false)
+  const [aiNote, setAiNote] = useState<string | null>(null)
+
   const suggestions = useMemo(
-    () => buildSuggestions(cart, catalog, boards, dismissed),
-    [cart, catalog, boards, dismissed],
+    () => [...aiSuggestions(aiParts, cart, dismissed), ...buildSuggestions(cart, catalog, boards, dismissed)],
+    [aiParts, cart, catalog, boards, dismissed],
   )
+
+  async function askAi() {
+    setAiBusy(true)
+    setAiNote(null)
+    try {
+      const response = await suggestParts({
+        provider,
+        lines: cart.map((line) => ({
+          mpn: line.mpn,
+          quantity: line.quantity,
+          ...(line.manufacturer ? { manufacturer: line.manufacturer } : {}),
+          ...(line.description ? { description: line.description } : {}),
+        })),
+      })
+      setAiParts(response.suggestions)
+      if (response.suggestions.length === 0) {
+        setAiNote(
+          response.status === 'ok'
+            ? 'Nothing obviously missing from this cart.'
+            : (response.message ?? 'No suggestions right now.'),
+        )
+      }
+    } catch (err) {
+      setAiNote(err instanceof Error ? err.message : 'No suggestions right now.')
+    } finally {
+      setAiBusy(false)
+    }
+  }
   const quoteStale = quote != null && quotedFor !== cartSignature(provider, cart)
 
   function add(lines: CartLine[]) {
@@ -275,6 +308,8 @@ export default function PurchasingPage() {
             onClear={() => {
               setCart([])
               setDismissed(new Set())
+              setAiParts([])
+              setAiNote(null)
               setQuote(null)
               setOrder(null)
             }}
@@ -286,6 +321,9 @@ export default function PurchasingPage() {
               dismiss(suggestion)
             }}
             onDismissSuggestion={dismiss}
+            onAskAi={() => void askAi()}
+            aiBusy={aiBusy}
+            aiNote={aiNote}
           />
         </aside>
       </div>

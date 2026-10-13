@@ -10,6 +10,8 @@ import type {
   PlaceOrderResponse,
   QuoteRequest,
   QuoteResponse,
+  SuggestPartsRequest,
+  SuggestPartsResponse,
 } from './types'
 
 export interface BomRecord {
@@ -306,6 +308,20 @@ export async function quotePurchase(request: QuoteRequest): Promise<QuoteRespons
   const body: unknown = await readJsonBody(res)
   if (!res.ok) throw new Error(await readErrorMessage(res, body))
   return body as QuoteResponse
+}
+
+export async function suggestParts(request: SuggestPartsRequest): Promise<SuggestPartsResponse> {
+  const res = await fetch('/api/purchase/suggestions', {
+    method: 'POST',
+    headers: {
+      ...(await authHeaders()),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  return body as SuggestPartsResponse
 }
 
 export async function placeOrder(request: PlaceOrderRequest): Promise<PlaceOrderResponse> {

@@ -30,6 +30,9 @@ export default function CartPanel({
   suggestions,
   onAcceptSuggestion,
   onDismissSuggestion,
+  onAskAi,
+  aiBusy,
+  aiNote,
 }: {
   cart: CartLine[]
   provider: PurchaseProviderId
@@ -51,6 +54,9 @@ export default function CartPanel({
   suggestions: Suggestion[]
   onAcceptSuggestion: (suggestion: Suggestion) => void
   onDismissSuggestion: (suggestion: Suggestion) => void
+  onAskAi: () => void
+  aiBusy: boolean
+  aiNote: string | null
 }) {
   const priced = new Map<string, QuoteLineResult>()
   if (quote && !quoteStale) {
@@ -222,13 +228,26 @@ export default function CartPanel({
         </div>
       </section>
 
-      {suggestions.length > 0 ? (
+      {cart.length > 0 ? (
         <section className={appSheet} aria-labelledby="suggestions-heading">
           <div className="border-b border-mk-line px-4 py-3">
-            <h2 id="suggestions-heading" className="mk-app-heading text-mk-ink">
-              Worth adding
-            </h2>
-            <p className="mt-0.5 text-[12px] text-mk-ink-subtle">Based on what’s in the cart. Check before you order.</p>
+            <div className="flex items-baseline justify-between gap-2">
+              <h2 id="suggestions-heading" className="mk-app-heading text-mk-ink">
+                Worth adding
+              </h2>
+              <button
+                type="button"
+                onClick={onAskAi}
+                disabled={aiBusy || !canWrite}
+                className={appTextBtn}
+              >
+                {aiBusy ? 'Thinking…' : 'Ask AI what’s missing'}
+              </button>
+            </div>
+            <p className="mt-0.5 text-[12px] text-mk-ink-subtle">
+              Based on what’s in the cart. AI picks are priced at the distributor first. Check before you order.
+            </p>
+            {aiNote ? <p className="mt-1.5 text-[12px] text-mk-ink-muted">{aiNote}</p> : null}
           </div>
           <ul>
             {suggestions.map((suggestion) => (
