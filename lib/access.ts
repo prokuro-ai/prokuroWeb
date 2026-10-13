@@ -9,6 +9,7 @@ export const SELF_SERVE_ENABLED = process.env.NEXT_PUBLIC_STATIC_EXPORT !== '1'
 export const APP_ROUTE_PREFIXES = [
   '/dashboard',
   '/boms',
+  '/sourcing',
   '/purchasing',
   '/account',
   '/billing',

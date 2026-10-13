@@ -16,6 +16,7 @@ export const config = {
     '/signup',
     '/dashboard/:path*',
     '/boms/:path*',
+    '/sourcing/:path*',
     '/purchasing/:path*',
     '/account/:path*',
     '/billing/:path*',

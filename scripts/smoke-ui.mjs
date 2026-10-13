@@ -33,7 +33,7 @@ async function httpChecks(base) {
     '/login',
     '/signup',
     '/dashboard',
-    '/purchasing',
+    '/sourcing',
     '/account',
     '/boms',
     '/analyze',

@@ -5,8 +5,9 @@ import { placeOrder, quotePurchase, suggestParts } from '@/lib/api'
 import { useBuyBoards } from '@/hooks/use-buy-boards'
 import { useTeam } from '@/hooks/use-team'
 import PageHeader from '@/components/app/PageHeader'
-import CartPanel from '@/components/buy/CartPanel'
-import PartsCatalog from '@/components/buy/PartsCatalog'
+import CartPanel from '@/components/sourcing/CartPanel'
+import PartsCatalog from '@/components/sourcing/PartsCatalog'
+import { PAGE } from '@/lib/pageTitle'
 import {
   appContainer,
   appField,
@@ -30,11 +31,11 @@ import {
   type CartLine,
   type Suggestion,
 } from '@/lib/cart'
-import { money, PROVIDER_LABEL, statusLabel } from '@/lib/purchaseDisplay'
-import type { PartSuggestion, PlaceOrderResponse, PurchaseProviderId, QuoteResponse } from '@/lib/types'
+import { buyerMessage, money, SOURCING_PROVIDER, statusLabel } from '@/lib/purchaseDisplay'
+import type { PartSuggestion, PlaceOrderResponse, QuoteResponse } from '@/lib/types'
 
-function cartSignature(provider: PurchaseProviderId, cart: CartLine[]): string {
-  return `${provider}|${cart.map((line) => `${line.key}:${line.quantity}`).join(',')}`
+function cartSignature(cart: CartLine[]): string {
+  return `${cart.map((line) => `${line.key}:${line.quantity}`).join(',')}`
 }
 
 function readDismissed(): Set<string> {
@@ -46,7 +47,7 @@ function readDismissed(): Set<string> {
   }
 }
 
-export default function PurchasingPage() {
+export default function SourcingPage() {
   const { canWrite, error: teamError, reload: reloadTeam, loaded: teamLoaded, team } = useTeam()
   const { boards, loading: boardsLoading, error: boardsError, failed } = useBuyBoards()
   const catalog = useMemo(() => buildCatalog(boards), [boards])
@@ -54,7 +55,6 @@ export default function PurchasingPage() {
   const [cart, setCart] = useState<CartLine[]>([])
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   const [hydrated, setHydrated] = useState(false)
-  const [provider, setProvider] = useState<PurchaseProviderId>('digikey')
   const [poNumber, setPoNumber] = useState('')
   const [busy, setBusy] = useState<'quote' | 'order' | 'lookup' | null>(null)
   const [quote, setQuote] = useState<QuoteResponse | null>(null)
@@ -97,7 +97,7 @@ export default function PurchasingPage() {
     setAiNote(null)
     try {
       const response = await suggestParts({
-        provider,
+        provider: SOURCING_PROVIDER,
         lines: cart.map((line) => ({
           mpn: line.mpn,
           quantity: line.quantity,
@@ -110,16 +110,18 @@ export default function PurchasingPage() {
         setAiNote(
           response.status === 'ok'
             ? 'Nothing obviously missing from this cart.'
-            : (response.message ?? 'No suggestions right now.'),
+            : response.status === 'disabled'
+              ? 'AI suggestions aren’t switched on yet.'
+              : 'No suggestions right now. Try again in a minute.',
         )
       }
-    } catch (err) {
-      setAiNote(err instanceof Error ? err.message : 'No suggestions right now.')
+    } catch {
+      setAiNote('No suggestions right now. Try again in a minute.')
     } finally {
       setAiBusy(false)
     }
   }
-  const quoteStale = quote != null && quotedFor !== cartSignature(provider, cart)
+  const quoteStale = quote != null && quotedFor !== cartSignature(cart)
 
   function add(lines: CartLine[]) {
     setCart((current) => addToCart(current, lines))
@@ -142,9 +144,9 @@ export default function PurchasingPage() {
     setBusy('quote')
     setError(null)
     setOrder(null)
-    const signature = cartSignature(provider, cart)
+    const signature = cartSignature(cart)
     try {
-      setQuote(await quotePurchase({ provider, lines: requestLines() }))
+      setQuote(await quotePurchase({ provider: SOURCING_PROVIDER, lines: requestLines() }))
       setQuotedFor(signature)
     } catch (err) {
       setQuote(null)
@@ -160,7 +162,7 @@ export default function PurchasingPage() {
     try {
       setOrder(
         await placeOrder({
-          provider,
+          provider: SOURCING_PROVIDER,
           lines: requestLines(),
           purchase_order_number: poNumber.trim() || undefined,
         }),
@@ -180,7 +182,7 @@ export default function PurchasingPage() {
     setBusy('lookup')
     setLookupError(null)
     try {
-      setLookup(await quotePurchase({ provider, lines: [{ mpn, quantity: 1 }] }))
+      setLookup(await quotePurchase({ provider: SOURCING_PROVIDER, lines: [{ mpn, quantity: 1 }] }))
     } catch (err) {
       setLookup(null)
       setLookupError(err instanceof Error ? err.message : 'Lookup failed')
@@ -207,8 +209,8 @@ export default function PurchasingPage() {
   return (
     <div className={appPage}>
       <PageHeader
-        title="Buy"
-        description="Parts from your boards, priced at Digi-Key or Mouser. Build a cart, price it, and send the order once your distributor account is connected."
+        title={PAGE.sourcing}
+        description="Every part on your boards, at the best price we can find. Build a cart, price it, and place the order once ordering is switched on for your account."
       />
 
       <div className={`${appContainer} grid grid-cols-[minmax(0,1fr)] gap-5 py-5 mk:py-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start`}>
@@ -230,10 +232,10 @@ export default function PurchasingPage() {
                 disabled={!lookupMpn.trim() || busy !== null || !canWrite}
                 className={`${appGhostBtn} shrink-0`}
               >
-                {busy === 'lookup' ? 'Looking up…' : `Check ${PROVIDER_LABEL[provider]}`}
+                {busy === 'lookup' ? 'Looking up…' : 'Check price'}
               </button>
             </div>
-            <p className="mt-1.5 text-[12px] text-mk-ink-subtle">Each lookup uses one quote from your monthly buy allowance.</p>
+            <p className="mt-1.5 text-[12px] text-mk-ink-subtle">Each lookup uses one quote from your monthly sourcing allowance.</p>
 
             {lookupError ? <p className="mt-2 text-[13px] text-mk-red">{lookupError}</p> : null}
             {lookup && lookupLine && !lookupLine.error && lookupLine.unit_price != null ? (
@@ -273,7 +275,9 @@ export default function PurchasingPage() {
               </div>
             ) : lookup ? (
               <p className="mt-2 text-[13px] text-mk-ink-muted">
-                {lookupLine?.error ?? lookup.message ?? `${statusLabel(lookup.status)}.`}
+                {lookupLine?.error
+                  ? 'No price found for this part number. Check it and try again.'
+                  : (buyerMessage(lookup.status, lookup.message) ?? `${statusLabel(lookup.status)}.`)}
               </p>
             ) : null}
           </form>
@@ -292,8 +296,6 @@ export default function PurchasingPage() {
         <aside className="lg:sticky lg:top-4">
           <CartPanel
             cart={cart}
-            provider={provider}
-            onProvider={setProvider}
             quote={quote}
             quoteStale={quoteStale}
             order={order}

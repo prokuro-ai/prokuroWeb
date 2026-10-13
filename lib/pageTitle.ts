@@ -13,7 +13,7 @@ export const PAGE = {
   notFound: 'Page not found',
   thisWeek: 'This week',
   boms: 'BOMs',
-  buy: 'Buy',
+  sourcing: 'Sourcing',
   admin: 'Admin',
   settings: 'Settings',
   billing: 'Billing',
@@ -42,7 +42,7 @@ export function pageTitleForPath(pathname: string | null | undefined): string | 
   if (path === '/dashboard') return PAGE.thisWeek
   if (path === '/boms' || path === '/bom/new' || path === '/analyze') return PAGE.boms
   if (path.startsWith('/bom/')) return PAGE.bom
-  if (path === '/purchasing') return PAGE.buy
+  if (path === '/sourcing' || path === '/purchasing') return PAGE.sourcing
   if (path === '/admin') return PAGE.admin
   if (path === '/account') return PAGE.settings
   if (path === '/billing') return PAGE.billing

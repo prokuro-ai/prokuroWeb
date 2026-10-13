@@ -1,8 +1,5 @@
-import PurchasingPage from '@/components/PurchasingPage'
-import { PAGE, pageMetadata } from '@/lib/pageTitle'
-
-export const metadata = pageMetadata(PAGE.buy)
+import { redirect } from 'next/navigation'
 
 export default function Page() {
-  return <PurchasingPage />
+  redirect('/sourcing')
 }

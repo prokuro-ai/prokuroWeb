@@ -32,9 +32,9 @@ const WORK_NAV: NavItem[] = [
     match: (pathname) => pathname === '/boms' || pathname.startsWith('/bom'),
   },
   {
-    href: '/purchasing',
-    label: PAGE.buy,
-    match: (pathname) => pathname === '/purchasing',
+    href: '/sourcing',
+    label: PAGE.sourcing,
+    match: (pathname) => pathname === '/sourcing',
   },
 ]
 
