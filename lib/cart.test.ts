@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   addToCart,
+  aiSuggestions,
   boardToCart,
   buildCatalog,
   buildSuggestions,
@@ -130,6 +131,20 @@ describe('buildSuggestions', () => {
 
     const small = buildSuggestions([cartLineFrom({ mpn: 'RC0402FR-0710KL' }, 2)], catalog, boards)
     expect(small.find((s) => s.source === 'Attrition rule')!.add[0].quantity).toBe(10)
+  })
+
+  it('turns priced AI picks into suggestions and skips ones already in the cart or dismissed', () => {
+    const cart = [cartLineFrom({ mpn: 'STM32G431CBT6' }, 100)]
+    const parts = [
+      { mpn: 'ABM8-8.000MHZ-B2-T', for_mpn: 'STM32G431CBT6', reason: 'Clock source.', quantity: 100, unit_price: 0.42, available_quantity: 900 },
+      { mpn: 'stm32g431cbt6', reason: 'dup', quantity: 1 },
+      { mpn: 'GRM155R61A104KA01D', reason: 'Decoupling.', quantity: 400 },
+    ]
+    const picks = aiSuggestions(parts, cart, new Set(['ai:GRM155R61A104KA01D']))
+    expect(picks).toHaveLength(1)
+    expect(picks[0].title).toBe('ABM8-8.000MHZ-B2-T for STM32G431CBT6')
+    expect(picks[0].detail).toBe('Clock source. $0.42 ea, 900 in stock')
+    expect(picks[0].add[0].quantity).toBe(100)
   })
 
   it('suggests nothing for an empty cart', () => {

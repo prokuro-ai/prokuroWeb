@@ -1,6 +1,7 @@
 import { briefAlternate } from '@/lib/decision'
+import { money } from '@/lib/purchaseDisplay'
 import { isAtRisk, isPendingLine, lineRiskLevel } from '@/lib/risk'
-import type { AnalyzedLine, RiskLevel } from '@/lib/types'
+import type { AnalyzedLine, PartSuggestion, RiskLevel } from '@/lib/types'
 
 export type Board = { id: string; name: string; lines: AnalyzedLine[] }
 
@@ -24,7 +25,7 @@ export type CartLine = {
   quantity: number
 }
 
-export type SuggestionSource = 'Your AML' | 'Line brief' | 'Board' | 'Attrition rule'
+export type SuggestionSource = 'Prokuro AI' | 'Your AML' | 'Line brief' | 'Board' | 'Attrition rule'
 
 export type Suggestion = {
   id: string
@@ -183,6 +184,36 @@ function alternateFor(line: AnalyzedLine): { mpn: string; source: SuggestionSour
   const brief = briefAlternate(line)
   if (brief && MPN_LIKE.test(brief)) return { mpn: brief, source: 'Line brief' }
   return null
+}
+
+/** Gateway already dropped anything the distributor could not price. */
+export function aiSuggestions(
+  parts: PartSuggestion[],
+  cart: CartLine[],
+  dismissed: ReadonlySet<string>,
+): Suggestion[] {
+  const inCart = new Set(cart.map((line) => line.key))
+  return parts
+    .filter((part) => !inCart.has(partKey(part.mpn)) && !dismissed.has(`ai:${partKey(part.mpn)}`))
+    .map((part) => {
+      const price =
+        part.unit_price != null ? `${money(part.unit_price, part.currency)} ea` : null
+      const stock =
+        part.available_quantity != null ? `${part.available_quantity.toLocaleString()} in stock` : null
+      return {
+        id: `ai:${partKey(part.mpn)}`,
+        keys: [`ai:${partKey(part.mpn)}`],
+        source: 'Prokuro AI' as const,
+        title: part.for_mpn ? `${part.mpn} for ${part.for_mpn}` : part.mpn,
+        detail: [part.reason, [price, stock].filter(Boolean).join(', ')].filter(Boolean).join(' '),
+        add: [
+          cartLineFrom(
+            { mpn: part.mpn, manufacturer: part.manufacturer ?? null, description: part.reason },
+            part.quantity,
+          ),
+        ],
+      }
+    })
 }
 
 export function buildSuggestions(
