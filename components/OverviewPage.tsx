@@ -80,7 +80,7 @@ export default function OverviewPage() {
 
   useEffect(() => {
     if (tab === 'boms') router.replace('/boms')
-    if (tab === 'purchasing') router.replace('/purchasing')
+    if (tab === 'purchasing') router.replace('/sourcing')
   }, [tab, router])
 
   if (tab === 'boms' || tab === 'purchasing') return null

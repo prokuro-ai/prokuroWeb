@@ -1,31 +1,37 @@
 import type { PurchaseProviderId, PurchaseStatus } from '@/lib/types'
 
-export const PROVIDER_LABEL: Record<PurchaseProviderId, string> = {
-  digikey: 'Digi-Key',
-  mouser: 'Mouser',
-}
+/**
+ * Buyers never pick a distributor. Until the gateway prices every distributor and keeps the
+ * cheapest per line, all sourcing calls go to this one.
+ */
+export const SOURCING_PROVIDER: PurchaseProviderId = 'digikey'
 
 export function statusLabel(status: PurchaseStatus): string {
   switch (status) {
     case 'quoted':
-      return 'Quoted'
+      return 'Priced'
     case 'partial':
-      return 'Partial quote'
+      return 'Some parts priced'
     case 'unavailable':
-      return 'Unavailable'
+      return 'No prices found'
     case 'submitted':
-      return 'Order submitted'
+      return 'Order placed'
     case 'not_configured':
-      return 'Distributor not connected yet'
     case 'requires_distributor_credit':
-      return 'Distributor credit required'
+      return 'Ordering isn’t switched on for your account yet'
     case 'requires_subscription':
       return 'Paid plan required'
     case 'cap_exceeded':
-      return 'This month’s buy limit is used up'
+      return 'This month’s sourcing limit is used up'
     case 'error':
-      return 'Could not reach the distributor'
+      return 'Pricing is unavailable right now'
   }
+}
+
+/** Gateway messages can name the distributor; only plan messages are worth showing a buyer. */
+export function buyerMessage(status: PurchaseStatus, message?: string | null): string | null {
+  if (!message?.trim()) return null
+  return status === 'cap_exceeded' || status === 'requires_subscription' ? message.trim() : null
 }
 
 export function money(value: number | null | undefined, currency?: string | null): string {

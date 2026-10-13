@@ -13,7 +13,8 @@ describe('pageTitleForPath', () => {
     expect(pageTitleForPath('/dashboard')).toBe(PAGE.thisWeek)
     expect(pageTitleForPath('/boms/')).toBe(PAGE.boms)
     expect(pageTitleForPath('/bom/abc')).toBe(PAGE.bom)
-    expect(pageTitleForPath('/purchasing')).toBe(PAGE.buy)
+    expect(pageTitleForPath('/sourcing')).toBe(PAGE.sourcing)
+    expect(pageTitleForPath('/purchasing')).toBe(PAGE.sourcing)
     expect(pageTitleForPath('/admin')).toBe(PAGE.admin)
   })
 

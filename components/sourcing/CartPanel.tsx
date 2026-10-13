@@ -4,15 +4,11 @@ import type { ReactNode } from 'react'
 import { X } from 'lucide-react'
 import { appField, appGhostBtn, appPrimaryBtn, appQtyField, appSheet, appTextBtn } from '@/components/app/chrome'
 import type { CartLine, Suggestion } from '@/lib/cart'
-import { money, PROVIDER_LABEL, statusLabel } from '@/lib/purchaseDisplay'
-import type { PlaceOrderResponse, PurchaseProviderId, QuoteLineResult, QuoteResponse } from '@/lib/types'
-
-const PROVIDERS: PurchaseProviderId[] = ['digikey', 'mouser']
+import { buyerMessage, money, statusLabel } from '@/lib/purchaseDisplay'
+import type { PlaceOrderResponse, QuoteLineResult, QuoteResponse } from '@/lib/types'
 
 export default function CartPanel({
   cart,
-  provider,
-  onProvider,
   quote,
   quoteStale,
   order,
@@ -35,8 +31,6 @@ export default function CartPanel({
   aiNote,
 }: {
   cart: CartLine[]
-  provider: PurchaseProviderId
-  onProvider: (provider: PurchaseProviderId) => void
   quote: QuoteResponse | null
   quoteStale: boolean
   order: PlaceOrderResponse | null
@@ -124,7 +118,7 @@ export default function CartPanel({
                   {price ? (
                     <p className="mt-1 flex justify-between gap-2 text-[12px] tabular-nums">
                       {price.error ? (
-                        <span className="text-mk-red">{price.error}</span>
+                        <span className="text-mk-red">No price found for this part</span>
                       ) : (
                         <span className={short != null ? 'text-mk-red' : 'text-mk-ink-subtle'}>
                           {money(price.unit_price, price.currency ?? quote?.currency)} ea
@@ -146,42 +140,22 @@ export default function CartPanel({
         )}
 
         <div className="space-y-3 border-t border-mk-line px-4 py-4">
-          <div className="flex items-center justify-between gap-3">
-            <div
-              role="radiogroup"
-              aria-label="Distributor"
-              className="inline-flex rounded-[8px] border border-mk-line p-0.5"
-            >
-              {PROVIDERS.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  role="radio"
-                  aria-checked={provider === option}
-                  onClick={() => onProvider(option)}
-                  className={`rounded-[6px] px-3 py-1 text-[12px] font-medium transition-colors ${
-                    provider === option ? 'bg-mk-ink text-mk-canvas' : 'text-mk-ink-muted hover:text-mk-ink'
-                  }`}
-                >
-                  {PROVIDER_LABEL[option]}
-                </button>
-              ))}
-            </div>
-            {quote && !quoteStale && quote.subtotal != null ? (
-              <p className="text-right">
-                <span className="block text-[11px] text-mk-ink-subtle">Subtotal</span>
-                <span className="mk-app-heading tabular-nums text-mk-ink">
-                  {money(quote.subtotal, quote.currency)}
-                </span>
-              </p>
-            ) : null}
-          </div>
+          {quote && !quoteStale && quote.subtotal != null ? (
+            <p className="flex items-baseline justify-between gap-3">
+              <span className="text-[13px] text-mk-ink-muted">Subtotal</span>
+              <span className="mk-app-heading tabular-nums text-mk-ink">
+                {money(quote.subtotal, quote.currency)}
+              </span>
+            </p>
+          ) : null}
 
           {quote ? (
             <p className="text-[12px] text-mk-ink-muted">
               {quoteStale
                 ? 'Cart changed since the last price. Price it again.'
-                : `${PROVIDER_LABEL[quote.provider]}: ${statusLabel(quote.status)}.${quote.message ? ` ${quote.message}` : ''}`}
+                : `${statusLabel(quote.status)}.${
+                    buyerMessage(quote.status, quote.message) ? ` ${buyerMessage(quote.status, quote.message)}` : ''
+                  }`}
             </p>
           ) : null}
 
@@ -191,7 +165,7 @@ export default function CartPanel({
             onClick={onPrice}
             className={`${appPrimaryBtn} w-full`}
           >
-            {busy === 'quote' ? 'Pricing…' : `Price at ${PROVIDER_LABEL[provider]}`}
+            {busy === 'quote' ? 'Finding best prices…' : 'Get best price'}
           </button>
 
           <div className="flex items-center gap-2">
@@ -216,10 +190,10 @@ export default function CartPanel({
             <p className="text-[12px] text-mk-ink-muted">
               {statusLabel(order.status)}.
               {order.distributor_order_id ? ` Order ${order.distributor_order_id}.` : ''}
-              {order.message
-                ? ` ${order.message}`
-                : order.status === 'requires_distributor_credit'
-                  ? ' Pricing still works. Ordering needs a credit account at this distributor.'
+              {buyerMessage(order.status, order.message)
+                ? ` ${buyerMessage(order.status, order.message)}`
+                : order.status === 'not_configured' || order.status === 'requires_distributor_credit'
+                  ? ' Pricing still works. Prokuro will place orders for you once ordering is on.'
                   : ''}
             </p>
           ) : null}
@@ -245,7 +219,7 @@ export default function CartPanel({
               </button>
             </div>
             <p className="mt-0.5 text-[12px] text-mk-ink-subtle">
-              Based on what’s in the cart. AI picks are priced at the distributor first. Check before you order.
+              Based on what’s in the cart. AI picks are checked for price and stock first. Check before you order.
             </p>
             {aiNote ? <p className="mt-1.5 text-[12px] text-mk-ink-muted">{aiNote}</p> : null}
           </div>

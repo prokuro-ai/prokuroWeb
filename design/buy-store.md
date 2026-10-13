@@ -1,6 +1,15 @@
-# Buy page as a store
+# Sourcing page (was Buy)
 
-**Status:** proposed
+**Status:** PR 1 and PR 2 shipped. Renamed to Sourcing, with distributors abstracted.
+
+## Update: Sourcing, distributors abstracted
+
+The tab is called **Sourcing** and lives at `/sourcing`; `/purchasing` redirects there. A buyer wants the right part at the lowest price. Which distributor fills the line is Prokuro's job, not theirs. So the UI never names Digi-Key or Mouser and has no distributor switch.
+
+- **Web (done):** every call goes to `SOURCING_PROVIDER` in `lib/purchaseDisplay.ts`. Status text is distributor-neutral. Gateway messages are shown only for plan limits, because the others can name the distributor.
+- **Backend (next):** the quote endpoint should price each line at every configured distributor and return the cheapest in-stock offer per line, with the distributor kept internal. Then `provider` becomes optional in `QuoteRequest` and the web constant goes away. Orders would then split per distributor server-side.
+
+## Original design (Buy)
 **Repos touched:** `prokuroWeb` (PR 1). `prokuroBackend` gateway (PR 2, companion suggestions).
 
 ## Problem
