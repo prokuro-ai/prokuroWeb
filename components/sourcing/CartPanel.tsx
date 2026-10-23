@@ -1,11 +1,19 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { X } from 'lucide-react'
+import { Sparkles, X } from 'lucide-react'
 import { appField, appGhostBtn, appPrimaryBtn, appQtyField, appSheet, appTextBtn } from '@/components/app/chrome'
 import type { CartLine, Suggestion } from '@/lib/cart'
+import { MAX_RUN_LINES, type CartPlanLine, type Tone } from '@/lib/sourcingPlan'
 import { buyerMessage, money, statusLabel } from '@/lib/purchaseDisplay'
 import type { PlaceOrderResponse, QuoteLineResult, QuoteResponse } from '@/lib/types'
+
+const PLAN_TONE: Record<Tone, string> = {
+  good: 'text-mk-green',
+  warn: 'text-mk-amber',
+  bad: 'text-mk-red',
+  muted: 'text-mk-ink-muted',
+}
 
 export default function CartPanel({
   cart,
@@ -21,7 +29,13 @@ export default function CartPanel({
   onQuantity,
   onRemove,
   onClear,
-  onPrice,
+  onSource,
+  sourcing,
+  canSource,
+  tooManyLines,
+  planView,
+  planTotal,
+  hasPlan,
   onOrder,
   suggestions,
   onAcceptSuggestion,
@@ -43,7 +57,14 @@ export default function CartPanel({
   onQuantity: (key: string, quantity: number) => void
   onRemove: (key: string) => void
   onClear: () => void
-  onPrice: () => void
+  onSource: () => void
+  sourcing: boolean
+  canSource: boolean
+  tooManyLines: boolean
+  /** Present while a sourcing plan matches the cart. */
+  planView: Map<string, CartPlanLine> | null
+  planTotal: { total: number; currency: string } | null
+  hasPlan: boolean
   onOrder: () => void
   suggestions: Suggestion[]
   onAcceptSuggestion: (suggestion: Suggestion) => void
@@ -82,7 +103,8 @@ export default function CartPanel({
         ) : (
           <ul className="max-h-[22rem] overflow-y-auto">
             {cart.map((line) => {
-              const price = priced.get(line.key)
+              const planned = planView?.get(line.key)
+              const price = planned ? undefined : priced.get(line.key)
               const short =
                 price?.available_quantity != null && price.available_quantity < line.quantity
                   ? price.available_quantity
@@ -115,7 +137,25 @@ export default function CartPanel({
                       <X className="h-3.5 w-3.5" aria-hidden />
                     </button>
                   </div>
-                  {price ? (
+                  {planned ? (
+                    <p className="mt-1 flex justify-between gap-2 text-[12px] tabular-nums">
+                      <span className="min-w-0 truncate">
+                        <span className={PLAN_TONE[planned.tone]}>{planned.label}</span>
+                        {planned.buy ? (
+                          <span className="text-mk-ink-subtle">
+                            {' '}
+                            · {money(planned.buy.unit_price, planTotal?.currency)} ea
+                            {planned.buy.quantity !== line.quantity
+                              ? ` · plan buys ${planned.buy.quantity.toLocaleString()}`
+                              : ''}
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className="text-mk-ink">
+                        {planned.buy ? money(planned.buy.total, planTotal?.currency) : '—'}
+                      </span>
+                    </p>
+                  ) : price ? (
                     <p className="mt-1 flex justify-between gap-2 text-[12px] tabular-nums">
                       {price.error ? (
                         <span className="text-mk-red">No price found for this part</span>
@@ -140,7 +180,14 @@ export default function CartPanel({
         )}
 
         <div className="space-y-3 border-t border-mk-line px-4 py-4">
-          {quote && !quoteStale && quote.subtotal != null ? (
+          {planTotal ? (
+            <p className="flex items-baseline justify-between gap-3">
+              <span className="text-[13px] text-mk-ink-muted">Plan total</span>
+              <span className="mk-app-heading tabular-nums text-mk-ink">
+                {money(planTotal.total, planTotal.currency)}
+              </span>
+            </p>
+          ) : quote && !quoteStale && quote.subtotal != null ? (
             <p className="flex items-baseline justify-between gap-3">
               <span className="text-[13px] text-mk-ink-muted">Subtotal</span>
               <span className="mk-app-heading tabular-nums text-mk-ink">
@@ -149,7 +196,7 @@ export default function CartPanel({
             </p>
           ) : null}
 
-          {quote ? (
+          {quote && !planTotal ? (
             <p className="text-[12px] text-mk-ink-muted">
               {quoteStale
                 ? 'Cart changed since the last price. Price it again.'
@@ -159,14 +206,28 @@ export default function CartPanel({
             </p>
           ) : null}
 
-          <button
-            type="button"
-            disabled={cart.length === 0 || busy !== null || !canWrite}
-            onClick={onPrice}
-            className={`${appPrimaryBtn} w-full`}
-          >
-            {busy === 'quote' ? 'Finding best prices…' : 'Get best price'}
-          </button>
+          <div>
+            <button type="button" disabled={!canSource} onClick={onSource} className={`${appPrimaryBtn} w-full`}>
+              <Sparkles className="h-4 w-4" aria-hidden />
+              {sourcing
+                ? 'Sourcing…'
+                : busy === 'quote'
+                  ? 'Finding best prices…'
+                  : hasPlan
+                    ? 'Source again'
+                    : 'Source this cart'}
+            </button>
+            {tooManyLines ? (
+              <p className="mt-1.5 text-[12px] text-mk-red">
+                Sourcing takes up to {MAX_RUN_LINES} lines at a time. Remove{' '}
+                {(cart.length - MAX_RUN_LINES).toLocaleString()} or split the cart.
+              </p>
+            ) : cart.length > 0 && canWrite ? (
+              <p className="mt-1.5 text-[12px] text-mk-ink-subtle">
+                Compares sources, price breaks, and approved alternates for every line.
+              </p>
+            ) : null}
+          </div>
 
           <div className="flex items-center gap-2">
             <input
@@ -178,7 +239,7 @@ export default function CartPanel({
             />
             <button
               type="button"
-              disabled={cart.length === 0 || busy !== null || !canWrite}
+              disabled={cart.length === 0 || busy !== null || sourcing || !canWrite}
               onClick={onOrder}
               className={`${appGhostBtn} shrink-0`}
             >

@@ -278,3 +278,87 @@ export interface PlaceOrderResponse {
   distributor_order_id?: string | null
   message?: string | null
 }
+
+export interface SourcingRunRequest {
+  lines: {
+    mpn: string
+    quantity: number
+    manufacturer?: string
+    alternates?: { mpn: string; approved: boolean }[]
+  }[]
+}
+
+export type SourcingRunStatus = 'running' | 'done' | 'failed'
+
+export type SourcingStage = 'pricing' | 'second_source' | 'alternates' | 'finishing'
+
+export type SourcingLineStatus =
+  | 'ready'
+  | 'short'
+  | 'out_of_stock'
+  | 'no_price'
+  | 'not_found'
+  | 'ambiguous'
+  | 'unchecked'
+  | 'invalid'
+
+export type PartLifecycle = 'active' | 'not_for_new_designs' | 'last_time_buy' | 'not_carried' | 'obsolete'
+
+export type SourcingNote =
+  | { kind: 'price_break'; from: number; to: number; saves: number }
+  | { kind: 'minimum_order'; from: number; to: number }
+  | { kind: 'compared_sources'; sources: number; saves: number }
+  | { kind: 'split'; sources: number }
+  | { kind: 'shortfall'; available: number; missing: number }
+  | { kind: 'lead_time'; days: number }
+  | { kind: 'matched_as'; mpn: string }
+  | { kind: 'partial_check' }
+  | { kind: 'lifecycle'; status: PartLifecycle }
+
+export interface SourcingBuy {
+  mpn: string
+  quantity: number
+  unit_price: number
+  total: number
+  in_stock: number
+  sources: number
+  packaging?: string | null
+}
+
+export interface SourcingAlternate {
+  mpn: string
+  approved: boolean
+  reason: 'replaces_unavailable' | 'cheaper'
+  buy: SourcingBuy
+  saves?: number | null
+  manufacturer?: string | null
+  description?: string | null
+}
+
+export interface SourcingPlanLine {
+  mpn: string
+  requested: number
+  status: SourcingLineStatus
+  buy?: SourcingBuy | null
+  notes: SourcingNote[]
+  manufacturer?: string | null
+  description?: string | null
+  alternate?: SourcingAlternate | null
+}
+
+export interface SourcingPlan {
+  currency: string
+  total: number
+  saved: number
+  counts: Record<SourcingLineStatus | 'swaps', number>
+  sources_checked: number
+  lines: SourcingPlanLine[]
+}
+
+export interface SourcingRun {
+  id: string
+  status: SourcingRunStatus
+  progress: { stage: SourcingStage; done: number; total: number }
+  plan?: SourcingPlan | null
+  message?: string | null
+}

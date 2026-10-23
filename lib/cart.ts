@@ -176,7 +176,7 @@ export function isPassive(line: AnalyzedLine): boolean {
 }
 
 /** Single-token values only; free-text brief advice is not something you can add to a cart. */
-const MPN_LIKE = /^[A-Z0-9][A-Z0-9\-./#+]{2,39}$/i
+export const MPN_LIKE = /^[A-Z0-9][A-Z0-9\-./#+]{2,39}$/i
 
 function alternateFor(line: AnalyzedLine): { mpn: string; source: SuggestionSource } | null {
   const aml = line.aml_candidates.map((mpn) => mpn.trim()).find((mpn) => MPN_LIKE.test(mpn))
