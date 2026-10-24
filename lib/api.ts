@@ -10,6 +10,8 @@ import type {
   PlaceOrderResponse,
   QuoteRequest,
   QuoteResponse,
+  SourcingRun,
+  SourcingRunRequest,
   SuggestPartsRequest,
   SuggestPartsResponse,
 } from './types'
@@ -336,6 +338,58 @@ export async function placeOrder(request: PlaceOrderRequest): Promise<PlaceOrder
   const body: unknown = await readJsonBody(res)
   if (!res.ok) throw new Error(await readErrorMessage(res, body))
   return body as PlaceOrderResponse
+}
+
+/** `status` is the HTTP status; `runId` is set when a run is already going (409). */
+export class SourcingRunError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly runId?: string,
+  ) {
+    super(message)
+    this.name = 'SourcingRunError'
+  }
+}
+
+async function sourcingResponse(res: Response): Promise<SourcingRun> {
+  const body: unknown = await res.json().catch(() => null)
+  if (res.ok && body && typeof body === 'object' && 'id' in body) return body as SourcingRun
+  const runId =
+    body && typeof body === 'object' && 'run_id' in body && typeof body.run_id === 'string'
+      ? body.run_id
+      : undefined
+  const status = res.ok ? 502 : res.status
+  const detail = body && !res.ok ? await readErrorMessage(res, body) : null
+  const message =
+    detail && detail !== `HTTP ${res.status}`
+      ? detail
+      : status === 401
+        ? 'Your session expired. Sign in again.'
+        : status >= 500
+          ? 'Sourcing is unavailable right now. Try again in a minute.'
+          : `Sourcing failed (HTTP ${status}).`
+  throw new SourcingRunError(message, status, runId)
+}
+
+export async function startSourcingRun(request: SourcingRunRequest): Promise<SourcingRun> {
+  const res = await fetch('/api/sourcing/runs', {
+    method: 'POST',
+    headers: {
+      ...(await authHeaders()),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  })
+  return sourcingResponse(res)
+}
+
+export async function getSourcingRun(id: string): Promise<SourcingRun> {
+  const res = await fetch(`/api/sourcing/runs/${encodeURIComponent(id)}`, {
+    headers: await authHeaders(),
+    cache: 'no-store',
+  })
+  return sourcingResponse(res)
 }
 
 export type BillingPlan = 'free' | 'growth' | 'scale'
