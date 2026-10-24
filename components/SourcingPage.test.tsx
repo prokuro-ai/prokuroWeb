@@ -2,7 +2,7 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import SourcingPage from '@/components/SourcingPage'
-import { getSourcingRun, quotePurchase, SourcingRunError, startSourcingRun } from '@/lib/api'
+import { getSourcingRun, quotePurchase, SourcingRunError, startSourcingRun, suggestParts } from '@/lib/api'
 import { CART_STORAGE_KEY, cartLineFrom } from '@/lib/cart'
 import { PLAN_STORAGE_KEY } from '@/lib/sourcingPlan'
 import type { SourcingPlan, SourcingRun } from '@/lib/types'
@@ -30,6 +30,7 @@ vi.mock('@/hooks/use-buy-boards', () => ({
 const start = vi.mocked(startSourcingRun)
 const get = vi.mocked(getSourcingRun)
 const quote = vi.mocked(quotePurchase)
+const suggest = vi.mocked(suggestParts)
 
 const PLAN: SourcingPlan = {
   currency: 'USD',
@@ -92,6 +93,7 @@ beforeEach(() => {
   start.mockReset()
   get.mockReset()
   quote.mockReset()
+  suggest.mockReset()
 })
 
 afterEach(() => cleanup())
@@ -114,7 +116,9 @@ describe('SourcingPage sourcing plan', () => {
     })
 
     const plan = await screen.findByRole('region', { name: 'Sourcing plan' })
-    expect(within(plan).getByText('Ready to buy')).toBeInTheDocument()
+    expect(within(plan).getByText(/1 of 3 lines are ready to buy\. 2 need a look, listed first\. Planning saved \$1\.25\./)).toBeInTheDocument()
+    expect(within(plan).queryByText('Ready')).not.toBeInTheDocument()
+    expect(within(plan).getByText('Out of stock')).toBeInTheDocument()
     expect(within(plan).getByText(/hits a price break and saves \$1\.25/)).toBeInTheDocument()
     expect(within(plan).getByText(/No source lists this part number/)).toBeInTheDocument()
     expect(document.body.textContent).not.toMatch(/digi-?key|mouser/i)
@@ -122,6 +126,8 @@ describe('SourcingPage sourcing plan', () => {
 
     await user.click(within(plan).getByRole('button', { name: 'Use B2-ALT' }))
     expect(await within(plan).findByText('Raises 1 line to the planned quantity and swaps in 1 alternate.')).toBeInTheDocument()
+    expect(within(plan).getByText(/2 of 3 lines are ready to buy\. 1 needs a look/)).toBeInTheDocument()
+    expect(within(plan).getByText('Swapped')).toBeInTheDocument()
 
     await user.click(within(plan).getByRole('button', { name: 'Apply to cart' }))
     expect(quantityOf('A1')).toBe(25)
@@ -167,7 +173,7 @@ describe('SourcingPage sourcing plan', () => {
     )
     get.mockResolvedValue(run('done', PLAN))
     render(<SourcingPage />)
-    expect(await screen.findByText('Ready to buy')).toBeInTheDocument()
+    expect(await screen.findByText(/1 of 3 lines are ready to buy/)).toBeInTheDocument()
     expect(get).toHaveBeenCalledWith('run-1')
     expect(start).not.toHaveBeenCalled()
   })
@@ -243,5 +249,104 @@ describe('SourcingPage sourcing plan', () => {
     expect(text).toContain('Part number,Manufacturer')
     expect(text).toContain('A1,Acme,Regulator,10,25')
     click.mockRestore()
+  })
+
+  it('shows only the lines that need a look, and back', async () => {
+    seedCart()
+    start.mockResolvedValue(run('running'))
+    get.mockResolvedValue(run('done', PLAN))
+    const user = userEvent.setup()
+    render(<SourcingPage />)
+    await user.click(await screen.findByRole('button', { name: /Source this cart/ }))
+    const plan = await screen.findByRole('region', { name: 'Sourcing plan' })
+    await user.click(within(plan).getByRole('button', { name: 'Show only the 2 that need a look' }))
+    expect(within(plan).queryByText(/hits a price break/)).not.toBeInTheDocument()
+    expect(within(plan).getByText('Out of stock')).toBeInTheDocument()
+    await user.click(within(plan).getByRole('button', { name: 'Show all 3 lines' }))
+    expect(within(plan).getByText(/hits a price break/)).toBeInTheDocument()
+  })
+})
+
+describe('SourcingPage cart', () => {
+  it('lets a cart quantity be cleared and retyped, and steps it', async () => {
+    seedCart()
+    const user = userEvent.setup()
+    render(<SourcingPage />)
+    const input = (await screen.findByLabelText('Quantity of A1')) as HTMLInputElement
+    await user.clear(input)
+    expect(input.value).toBe('')
+    await user.type(input, '12')
+    expect(input.value).toBe('12')
+    await user.tab()
+    expect(quantityOf('A1')).toBe(12)
+    await user.click(screen.getByRole('button', { name: 'Increase quantity of A1' }))
+    expect(quantityOf('A1')).toBe(13)
+    await user.clear(input)
+    await user.tab()
+    expect(quantityOf('A1')).toBe(13)
+  })
+})
+
+describe('SourcingPage Ask AI', () => {
+  it('explains what Ask AI does before it is used', async () => {
+    seedCart()
+    render(<SourcingPage />)
+    expect(await screen.findByText(/Ask AI to check for parts boards usually need/)).toBeInTheDocument()
+  })
+
+  it('shows AI suggestions and lets one be added', async () => {
+    seedCart()
+    suggest.mockResolvedValue({
+      status: 'ok',
+      suggestions: [
+        { mpn: 'ABM8-8.000MHZ-B2-T', for_mpn: 'A1', reason: 'Clock source.', quantity: 10, unit_price: 0.5, currency: 'USD', available_quantity: 900 },
+      ],
+    } as never)
+    const user = userEvent.setup()
+    render(<SourcingPage />)
+    await user.click(await screen.findByRole('button', { name: /Ask AI what’s missing/ }))
+    expect(await screen.findByText('ABM8-8.000MHZ-B2-T for A1')).toBeInTheDocument()
+    expect(screen.queryByText(/Ask AI to check for parts/)).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Add 10 pcs' }))
+    expect(quantityOf('ABM8-8.000MHZ-B2-T')).toBe(10)
+  })
+
+  it('says so when the AI is unavailable', async () => {
+    seedCart()
+    suggest.mockResolvedValue({ status: 'error', suggestions: [], message: "Couldn't get suggestions right now." } as never)
+    const user = userEvent.setup()
+    render(<SourcingPage />)
+    await user.click(await screen.findByRole('button', { name: /Ask AI what’s missing/ }))
+    expect(await screen.findByText(/AI suggestions aren’t available right now/)).toBeInTheDocument()
+  })
+
+  it('says so when the request itself fails', async () => {
+    seedCart()
+    suggest.mockRejectedValue(new Error('network'))
+    const user = userEvent.setup()
+    render(<SourcingPage />)
+    await user.click(await screen.findByRole('button', { name: /Ask AI what’s missing/ }))
+    expect(await screen.findByText(/AI suggestions aren’t available right now/)).toBeInTheDocument()
+  })
+
+  it('says so when everything suggested is already in the cart', async () => {
+    seedCart()
+    suggest.mockResolvedValue({
+      status: 'ok',
+      suggestions: [{ mpn: 'b2', reason: 'Already there.', quantity: 1, unit_price: 0.1, currency: 'USD' }],
+    } as never)
+    const user = userEvent.setup()
+    render(<SourcingPage />)
+    await user.click(await screen.findByRole('button', { name: /Ask AI what’s missing/ }))
+    expect(await screen.findByText(/Everything the AI suggested is already in your cart/)).toBeInTheDocument()
+  })
+
+  it('reports a clean answer with nothing missing', async () => {
+    seedCart()
+    suggest.mockResolvedValue({ status: 'ok', suggestions: [] } as never)
+    const user = userEvent.setup()
+    render(<SourcingPage />)
+    await user.click(await screen.findByRole('button', { name: /Ask AI what’s missing/ }))
+    expect(await screen.findByText('Nothing obviously missing from this cart.')).toBeInTheDocument()
   })
 })

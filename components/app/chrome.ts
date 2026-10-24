@@ -32,10 +32,6 @@ export const appInput =
 export const appField =
   'w-full rounded-[8px] border border-mk-line bg-mk-canvas px-3 py-2 text-[13px] text-mk-ink placeholder:text-mk-ink-subtle focus:border-mk-accent focus:outline-none'
 
-/** Fixed-width quantity box. `appField` is full width and wins over a width override. */
-export const appQtyField =
-  'mk-data w-20 shrink-0 rounded-[8px] border border-mk-line bg-mk-canvas px-2 py-1.5 text-right text-[13px] text-mk-ink focus:border-mk-accent focus:outline-none'
-
 export const appPage =
   'flex-1 overflow-y-auto bg-mk-canvas font-mk-sans text-mk-ink'
 

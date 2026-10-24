@@ -1,8 +1,9 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Sparkles, X } from 'lucide-react'
-import { appField, appGhostBtn, appPrimaryBtn, appQtyField, appSheet, appTextBtn } from '@/components/app/chrome'
+import QtyInput from '@/components/app/QtyInput'
+import { appField, appGhostBtn, appPrimaryBtn, appSheet, appTextBtn } from '@/components/app/chrome'
 import type { CartLine, Suggestion } from '@/lib/cart'
 import { MAX_RUN_LINES, type CartPlanLine, type Tone } from '@/lib/sourcingPlan'
 import { buyerMessage, money, statusLabel } from '@/lib/purchaseDisplay'
@@ -13,6 +14,24 @@ const PLAN_TONE: Record<Tone, string> = {
   warn: 'text-mk-amber',
   bad: 'text-mk-red',
   muted: 'text-mk-ink-muted',
+}
+
+export type AiNote = { text: string; tone: 'muted' | 'bad' }
+
+function CartQty({ line, onQuantity }: { line: CartLine; onQuantity: (key: string, quantity: number) => void }) {
+  const [draft, setDraft] = useState<string | null>(null)
+  return (
+    <QtyInput
+      label={`Quantity of ${line.mpn}`}
+      value={draft ?? String(line.quantity)}
+      onChange={(value) => {
+        const quantity = Number.parseInt(value, 10)
+        if (quantity >= 1) onQuantity(line.key, quantity)
+        setDraft(quantity >= 1 ? null : value)
+      }}
+      onBlur={() => setDraft(null)}
+    />
+  )
 }
 
 export default function CartPanel({
@@ -73,7 +92,7 @@ export default function CartPanel({
   onDismissSuggestion: (suggestion: Suggestion) => void
   onAskAi: () => void
   aiBusy: boolean
-  aiNote: string | null
+  aiNote: AiNote | null
 }) {
   const priced = new Map<string, QuoteLineResult>()
   if (quote && !quoteStale) {
@@ -133,19 +152,12 @@ export default function CartPanel({
                         />
                       </label>
                     </div>
-                    <input
-                      type="number"
-                      min={1}
-                      aria-label={`Quantity of ${line.mpn}`}
-                      value={line.quantity}
-                      onChange={(event) => onQuantity(line.key, Number.parseInt(event.target.value, 10))}
-                      className={appQtyField}
-                    />
+                    <CartQty line={line} onQuantity={onQuantity} />
                     <button
                       type="button"
                       onClick={() => onRemove(line.key)}
                       aria-label={`Remove ${line.mpn}`}
-                      className="mt-1.5 text-mk-ink-subtle hover:text-mk-ink"
+                      className="mt-2 text-mk-ink-subtle hover:text-mk-ink"
                     >
                       <X className="h-3.5 w-3.5" aria-hidden />
                     </button>
@@ -289,14 +301,35 @@ export default function CartPanel({
                 disabled={aiBusy || !canWrite}
                 className={appTextBtn}
               >
+                <Sparkles className="h-3.5 w-3.5" aria-hidden />
                 {aiBusy ? 'Thinking…' : 'Ask AI what’s missing'}
               </button>
             </div>
             <p className="mt-0.5 text-[12px] text-mk-ink-subtle">
               Based on what’s in the cart. AI picks are checked for price and stock first. Check before you order.
             </p>
-            {aiNote ? <p className="mt-1.5 text-[12px] text-mk-ink-muted">{aiNote}</p> : null}
           </div>
+          {aiBusy ? (
+            <div className="space-y-2 border-b border-mk-line px-4 py-3" role="status" aria-label="Looking for missing parts">
+              <div className="h-3 w-2/5 animate-pulse rounded bg-mk-raised" />
+              <div className="h-3 w-4/5 animate-pulse rounded bg-mk-raised" />
+              <div className="h-3 w-3/5 animate-pulse rounded bg-mk-raised" />
+            </div>
+          ) : aiNote ? (
+            <p
+              role="status"
+              className={`border-b border-mk-line px-4 py-3 text-[12px] ${
+                aiNote.tone === 'bad' ? 'bg-mk-red/5 text-mk-red' : 'text-mk-ink-muted'
+              }`}
+            >
+              {aiNote.text}
+            </p>
+          ) : suggestions.length === 0 ? (
+            <p className="px-4 py-3 text-[12px] text-mk-ink-subtle">
+              Nothing to suggest yet. Ask AI to check for parts boards usually need, like decoupling caps, crystals, or
+              connectors.
+            </p>
+          ) : null}
           <ul>
             {suggestions.map((suggestion) => (
               <li key={suggestion.id} className="border-b border-mk-line px-4 py-3 last:border-b-0">

@@ -6,7 +6,8 @@ import { useBuyBoards } from '@/hooks/use-buy-boards'
 import { useSourcingRun } from '@/hooks/use-sourcing-run'
 import { useTeam } from '@/hooks/use-team'
 import PageHeader from '@/components/app/PageHeader'
-import CartPanel from '@/components/sourcing/CartPanel'
+import QtyInput from '@/components/app/QtyInput'
+import CartPanel, { type AiNote } from '@/components/sourcing/CartPanel'
 import PartsCatalog from '@/components/sourcing/PartsCatalog'
 import SourcingPlanPanel from '@/components/sourcing/SourcingPlan'
 import { PAGE } from '@/lib/pageTitle'
@@ -15,7 +16,6 @@ import {
   appField,
   appGhostBtn,
   appPage,
-  appQtyField,
   appSheet,
   appTextBtn,
 } from '@/components/app/chrome'
@@ -164,7 +164,7 @@ export default function SourcingPage() {
 
   const [aiParts, setAiParts] = useState<PartSuggestion[]>([])
   const [aiBusy, setAiBusy] = useState(false)
-  const [aiNote, setAiNote] = useState<string | null>(null)
+  const [aiNote, setAiNote] = useState<AiNote | null>(null)
 
   const suggestions = useMemo(
     () => [...aiSuggestions(aiParts, cart, dismissed), ...buildSuggestions(cart, catalog, boards, dismissed)],
@@ -188,14 +188,16 @@ export default function SourcingPage() {
       if (response.suggestions.length === 0) {
         setAiNote(
           response.status === 'ok'
-            ? 'Nothing obviously missing from this cart.'
+            ? { text: 'Nothing obviously missing from this cart.', tone: 'muted' }
             : response.status === 'disabled'
-              ? 'AI suggestions aren’t switched on yet.'
-              : 'No suggestions right now. Try again in a minute.',
+              ? { text: 'AI suggestions aren’t switched on yet.', tone: 'muted' }
+              : { text: 'AI suggestions aren’t available right now. Try again in a minute.', tone: 'bad' },
         )
+      } else if (aiSuggestions(response.suggestions, cart, dismissed).length === 0) {
+        setAiNote({ text: 'Everything the AI suggested is already in your cart or was set aside.', tone: 'muted' })
       }
     } catch {
-      setAiNote('No suggestions right now. Try again in a minute.')
+      setAiNote({ text: 'AI suggestions aren’t available right now. Try again in a minute.', tone: 'bad' })
     } finally {
       setAiBusy(false)
     }
@@ -400,14 +402,7 @@ export default function SourcingPage() {
                     {lookupLine.available_quantity?.toLocaleString() ?? 'unknown'} in stock
                   </p>
                 </div>
-                <input
-                  type="number"
-                  min={1}
-                  aria-label="Quantity"
-                  value={lookupQty}
-                  onChange={(event) => setLookupQty(event.target.value)}
-                  className={appQtyField}
-                />
+                <QtyInput label="Quantity" value={lookupQty} onChange={setLookupQty} />
                 <button
                   type="button"
                   className={appTextBtn}

@@ -87,6 +87,13 @@ When a sized line is short, out of stock, or not found, one DigiKey keyword sear
 
 `Offer.package` stays reel versus cut tape. Ordering stays off.
 
+## Feedback round 1 (Mounir, deployed stack)
+
+- **Plan header read like a dashboard.** Buyers aren't analysts. The four tiles, coverage bar, and status chips become one total and one sentence ("2 of 3 lines are ready to buy. 1 needs a look, listed first."), plus a single "Show only the lines that need a look" toggle for long plans.
+- **Status pills.** Ready lines carry no badge. Other statuses are plain coloured text, so the eye lands on the problems.
+- **Ask AI showed nothing.** Root cause was infrastructure, not UI: in `us-west-2` Nova Micro has no on-demand throughput, so every Bedrock call (Ask AI and BOM line briefs) failed in about 45 ms with `ValidationException`. The gateway now gets the `us.amazon.nova-micro-v1:0` inference profile, and the task role may invoke it and the three US regional models it routes to (prokuroInfrastructureCDK). The gateway logs the full SDK error instead of "service error" (prokuroBackend). On the page, "Worth adding" now says what Ask AI does before it's used, shows a loading state, and shows a red note when the AI is unavailable. It also says when everything suggested is already in the cart.
+- **Native browser controls.** Quantity fields used Chrome's number spinner and the board filter was a native `<select>`. Both are replaced: a − / + stepper (`components/app/QtyInput.tsx`, arrow keys step, non-digits dropped, a cart line can be cleared while typing and snaps back on blur) and a menu in the app's own style (`components/sourcing/BoardPicker.tsx`) that shows each board's part count.
+
 ## Not in scope
 
 - Placing split or multi-distributor orders. Ordering stays off, and both `*_ORDERING_ENABLED` flags remain `false`.
