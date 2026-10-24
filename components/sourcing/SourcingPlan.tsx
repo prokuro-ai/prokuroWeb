@@ -17,8 +17,6 @@ import type { RunPhase } from '@/hooks/use-sourcing-run'
 import { partKey, type CartLine } from '@/lib/cart'
 import { money } from '@/lib/purchaseDisplay'
 import {
-  coverage,
-  needsAttention,
   noteText,
   plannedSavings,
   plannedTotal,
@@ -28,7 +26,7 @@ import {
   swapText,
   type Tone,
 } from '@/lib/sourcingPlan'
-import type { SourcingLineStatus, SourcingPlan, SourcingPlanLine, SourcingStage } from '@/lib/types'
+import type { SourcingPlan, SourcingPlanLine, SourcingStage } from '@/lib/types'
 
 const STAGES: { stage: SourcingStage; label: string }[] = [
   { stage: 'pricing', label: 'Pricing every line' },
@@ -45,22 +43,6 @@ const TONE_TEXT: Record<Tone, string> = {
   bad: 'text-mk-red',
   muted: 'text-mk-ink-muted',
 }
-
-const TONE_BAR: Record<Tone, string> = {
-  good: 'bg-mk-green',
-  warn: 'bg-mk-amber',
-  bad: 'bg-mk-red',
-  muted: 'bg-mk-line-strong',
-}
-
-const TONE_CHIP: Record<Tone, string> = {
-  good: 'bg-mk-green/10 text-mk-green',
-  warn: 'bg-mk-amber/12 text-mk-amber',
-  bad: 'bg-mk-red/10 text-mk-red',
-  muted: 'bg-mk-raised text-mk-ink-muted',
-}
-
-type Filter = 'all' | 'swaps' | SourcingLineStatus
 
 function useElapsed(since: number | null): number {
   const [now, setNow] = useState(() => Date.now())
@@ -389,26 +371,19 @@ function PlanBody({
   onApply: () => void
 }) {
   const reduce = useReducedMotion()
-  const [filter, setFilter] = useState<Filter>('all')
+  const [onlyAttention, setOnlyAttention] = useState(false)
   const [showAll, setShowAll] = useState(false)
-  const segments = useMemo(() => coverage(plan), [plan])
   const sorted = useMemo(() => sortLines(plan.lines), [plan])
-  const swapCount = plan.lines.filter((line) => line.alternate).length
-  const attention = needsAttention(plan)
   const total = plannedTotal(plan, swaps)
   const saved = plannedSavings(plan, swaps)
-  const ready = plan.lines.filter((line) => line.status === 'ready' || (line.alternate && swaps.has(partKey(line.mpn)))).length
+  const covered = (line: SourcingPlanLine) =>
+    line.status === 'ready' || (!!line.alternate && swaps.has(partKey(line.mpn)))
+  const ready = plan.lines.filter(covered).length
+  const attention = plan.lines.length - ready
 
-  const active: Filter =
-    filter === 'all' || (filter === 'swaps' ? swapCount > 0 : segments.some((segment) => segment.status === filter))
-      ? filter
-      : 'all'
-  const visible = sorted.filter((line) =>
-    active === 'all' ? true : active === 'swaps' ? !!line.alternate : line.status === active,
-  )
+  const filtering = onlyAttention && attention > 0 && ready > 0
+  const visible = filtering ? sorted.filter((line) => !covered(line)) : sorted
   const shown = showAll ? visible : visible.slice(0, FIRST_PAGE)
-
-  const nothingToBuy = plan.lines.length > 0 && plan.lines.every((line) => !line.buy && !line.alternate)
 
   return (
     <>
@@ -427,63 +402,26 @@ function PlanBody({
         </div>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-px bg-mk-line sm:grid-cols-4">
-        <Tile label="Plan total" value={money(total, plan.currency)} detail={plan.currency} />
-        <Tile
-          label="Ready to buy"
-          value={`${ready.toLocaleString()} of ${plan.lines.length.toLocaleString()}`}
-          detail={ready === plan.lines.length ? 'Every line covered' : 'lines'}
-          tone={ready === plan.lines.length ? 'good' : undefined}
-        />
-        <Tile
-          label="Needs a look"
-          value={attention.toLocaleString()}
-          detail={attention === 0 ? 'Nothing flagged' : attention === 1 ? 'line' : 'lines'}
-          tone={attention > 0 ? 'warn' : 'good'}
-        />
-        <Tile
-          label="Saved by planning"
-          value={saved >= 0.005 ? money(saved, plan.currency) : '—'}
-          detail={saved >= 0.005 ? 'price breaks, sources, swaps' : 'already at the best price'}
-          tone={saved >= 0.005 ? 'good' : undefined}
-        />
-      </div>
-
-      <div className="border-t border-mk-line px-4 pb-3 pt-4 sm:px-5">
-        <div className="flex h-2 gap-0.5 overflow-hidden rounded-full" aria-hidden>
-          {segments.map((segment, i) => (
-            <motion.div
-              key={segment.status}
-              className={`${TONE_BAR[STATUS_META[segment.status].tone]} h-full first:rounded-l-full last:rounded-r-full`}
-              initial={reduce ? false : { width: 0 }}
-              animate={{ width: `${segment.share * 100}%` }}
-              transition={{ duration: 0.6, delay: i * 0.06, ease: 'easeOut' }}
-            />
-          ))}
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 px-4 py-4 sm:px-5">
+        <div className="min-w-0">
+          <p className="text-[22px] font-semibold leading-tight tabular-nums text-mk-ink">{money(total, plan.currency)}</p>
+          <p className="mt-1 text-[13px] text-mk-ink-muted">{planSummary(plan.lines.length, ready, saved, plan.currency)}</p>
         </div>
-        <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Filter plan lines">
-          <FilterChip on={active === 'all'} onClick={() => setFilter('all')} label="All" count={plan.lines.length} />
-          {segments.map((segment) => (
-            <FilterChip
-              key={segment.status}
-              on={active === segment.status}
-              onClick={() => setFilter(segment.status)}
-              label={STATUS_META[segment.status].label}
-              count={segment.count}
-              tone={STATUS_META[segment.status].tone}
-            />
-          ))}
-          {swapCount > 0 ? (
-            <FilterChip on={active === 'swaps'} onClick={() => setFilter('swaps')} label="Alternates" count={swapCount} />
-          ) : null}
-        </div>
+        {attention > 0 && ready > 0 ? (
+          <button
+            type="button"
+            className={appTextBtn}
+            aria-pressed={filtering}
+            onClick={() => setOnlyAttention((current) => !current)}
+          >
+            {filtering
+              ? `Show all ${plan.lines.length.toLocaleString()} lines`
+              : attention === 1
+                ? 'Show only the line that needs a look'
+                : `Show only the ${attention.toLocaleString()} that need a look`}
+          </button>
+        ) : null}
       </div>
-
-      {nothingToBuy ? (
-        <p className="border-t border-mk-line px-4 py-6 text-center text-[13px] text-mk-ink-muted sm:px-5">
-          None of these parts can be bought right now. The notes on each line say why.
-        </p>
-      ) : null}
 
       <div className="hidden grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_6rem_6.5rem] gap-x-4 border-y border-mk-line bg-mk-raised/50 px-5 py-2 text-[12px] font-medium text-mk-ink-subtle sm:grid">
         <span>Part</span>
@@ -505,9 +443,6 @@ function PlanBody({
             delay={reduce || i > 12 ? 0 : i * 0.025}
           />
         ))}
-        {visible.length === 0 ? (
-          <li className="px-5 py-6 text-center text-[13px] text-mk-ink-subtle">No lines match this filter.</li>
-        ) : null}
       </ul>
       {!showAll && visible.length > FIRST_PAGE ? (
         <div className="border-t border-mk-line px-4 py-2.5 text-center sm:px-5">
@@ -558,43 +493,18 @@ function applySummary({ raise, swap }: { raise: number; swap: number }): string 
   return `${text.charAt(0).toUpperCase()}${text.slice(1)}.`
 }
 
-function Tile({ label, value, detail, tone }: { label: string; value: string; detail: string; tone?: Tone }) {
-  return (
-    <div className="bg-mk-canvas px-4 py-3 sm:px-5">
-      <p className="text-[12px] text-mk-ink-subtle">{label}</p>
-      <p className={`mt-0.5 text-[18px] font-semibold tabular-nums ${tone ? TONE_TEXT[tone] : 'text-mk-ink'}`}>{value}</p>
-      <p className="truncate text-[11px] text-mk-ink-subtle">{detail}</p>
-    </div>
-  )
-}
-
-function FilterChip({
-  on,
-  onClick,
-  label,
-  count,
-  tone,
-}: {
-  on: boolean
-  onClick: () => void
-  label: string
-  count: number
-  tone?: Tone
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={on}
-      onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] font-medium transition-colors ${
-        on ? 'border-mk-ink bg-mk-ink text-mk-canvas' : 'border-mk-line bg-mk-canvas text-mk-ink hover:bg-mk-raised'
-      }`}
-    >
-      {tone ? <span className={`h-1.5 w-1.5 rounded-full ${TONE_BAR[tone]}`} aria-hidden /> : null}
-      {label}
-      <span className="tabular-nums opacity-70">{count.toLocaleString()}</span>
-    </button>
-  )
+function planSummary(lines: number, ready: number, saved: number, currency: string): string {
+  const coverage =
+    ready === lines
+      ? lines === 1
+        ? 'Ready to buy.'
+        : `All ${lines.toLocaleString()} lines are ready to buy.`
+      : ready === 0
+        ? `${lines === 1 ? 'This line isn’t' : 'None of these lines are'} ready to buy. The notes say why.`
+        : `${ready.toLocaleString()} of ${lines.toLocaleString()} lines are ready to buy. ${(lines - ready).toLocaleString()} ${
+            lines - ready === 1 ? 'needs' : 'need'
+          } a look, listed first.`
+  return saved >= 0.005 ? `${coverage} Planning saved ${money(saved, currency)}.` : coverage
 }
 
 function PlanRow({
@@ -644,13 +554,11 @@ function PlanRow({
           <div className="flex min-w-0 items-center gap-2">
             <p className={`mk-data truncate ${active ? 'text-mk-ink-subtle line-through' : 'text-mk-ink'}`}>{line.mpn}</p>
             {active ? <p className="mk-data truncate text-mk-ink">{active.mpn}</p> : null}
-            <span
-              className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                active ? TONE_CHIP.good : TONE_CHIP[meta.tone]
-              }`}
-            >
-              {active ? 'Swapped' : meta.label}
-            </span>
+            {active ? (
+              <span className="shrink-0 text-[12px] font-medium text-mk-green">Swapped</span>
+            ) : line.status !== 'ready' ? (
+              <span className={`shrink-0 text-[12px] font-medium ${TONE_TEXT[meta.tone]}`}>{meta.label}</span>
+            ) : null}
           </div>
           {maker ? <p className="truncate text-[12px] text-mk-ink-subtle">{maker}</p> : null}
           <p className="mt-0.5 text-[12px] tabular-nums text-mk-ink-muted sm:hidden">

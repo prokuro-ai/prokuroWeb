@@ -4,7 +4,9 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Search } from 'lucide-react'
 import EmptyState from '@/components/app/EmptyState'
-import { appColHead, appField, appGhostBtn, appQtyField, appSheet, appTextBtn } from '@/components/app/chrome'
+import QtyInput from '@/components/app/QtyInput'
+import { appColHead, appField, appGhostBtn, appSheet, appTextBtn } from '@/components/app/chrome'
+import BoardPicker, { type BoardOption } from '@/components/sourcing/BoardPicker'
 import { lineStatusLabel, riskTone, stockHot, stockLabel } from '@/lib/bomLineDisplay'
 import { boardToCart, cartLineFrom, type Board, type CartLine, type CatalogPart } from '@/lib/cart'
 import { isPendingLine, lifecycleLabel, lineRiskLevel } from '@/lib/risk'
@@ -50,6 +52,17 @@ export default function PartsCatalog({
   const buildCount = Math.max(1, Number.parseInt(builds, 10) || 1)
   const inCart = useMemo(() => new Map(cart.map((line) => [line.key, line.quantity])), [cart])
   const board = boards.find((candidate) => candidate.id === boardId) ?? null
+  const boardOptions = useMemo<BoardOption[]>(() => {
+    const parts = (count: number) => `${count.toLocaleString()} ${count === 1 ? 'part' : 'parts'}`
+    return [
+      { value: ALL, label: 'All boards', detail: parts(catalog.length) },
+      ...boards.map((option) => ({
+        value: option.id,
+        label: option.name,
+        detail: parts(catalog.filter((part) => part.uses.some((use) => use.bomId === option.id)).length),
+      })),
+    ]
+  }, [boards, catalog])
 
   const rows = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -93,19 +106,7 @@ export default function PartsCatalog({
     <div className={appSheet}>
       <div className="flex flex-col gap-3 border-b border-mk-line px-4 py-3 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-          <select
-            value={boardId}
-            onChange={(event) => setBoardId(event.target.value)}
-            aria-label="Board"
-            className={`${appField} sm:w-56`}
-          >
-            <option value={ALL}>All boards ({catalog.length} parts)</option>
-            {boards.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.name}
-              </option>
-            ))}
-          </select>
+          <BoardPicker value={boardId} options={boardOptions} onChange={setBoardId} />
           <div className="relative w-full sm:max-w-xs">
             <Search
               className="absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-mk-ink-subtle"
@@ -122,16 +123,10 @@ export default function PartsCatalog({
         </div>
         {board ? (
           <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 text-[13px] text-mk-ink-muted">
+            <span className="flex items-center gap-2 text-[13px] text-mk-ink-muted">
               Builds
-              <input
-                type="number"
-                min={1}
-                value={builds}
-                onChange={(event) => setBuilds(event.target.value)}
-                className={appQtyField}
-              />
-            </label>
+              <QtyInput label="Builds" value={builds} onChange={setBuilds} />
+            </span>
             <button type="button" onClick={() => onAdd(boardToCart(board, buildCount))} className={appGhostBtn}>
               Add whole board
             </button>
@@ -147,14 +142,14 @@ export default function PartsCatalog({
       ) : null}
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] table-fixed border-collapse text-left text-[13px]">
+        <table className="w-full min-w-[680px] table-fixed border-collapse text-left text-[13px]">
           <thead>
             <tr className="border-b border-mk-line">
               <th scope="col" className={`${appColHead} px-4 py-2.5`}>Part</th>
               <th scope="col" className={`${appColHead} w-[8.5rem] px-3 py-2.5`}>Used on</th>
               <th scope="col" className={`${appColHead} w-[6.5rem] px-3 py-2.5 text-right`}>Stock</th>
               <th scope="col" className={`${appColHead} w-[8.5rem] px-3 py-2.5`}>Risk</th>
-              <th scope="col" className={`${appColHead} w-[9.5rem] px-4 py-2.5 text-right`}>
+              <th scope="col" className={`${appColHead} w-[11.5rem] px-4 py-2.5 text-right`}>
                 <span className="sr-only">Add to cart</span>
               </th>
             </tr>
@@ -204,15 +199,10 @@ export default function PartsCatalog({
                       </td>
                       <td className="px-4 py-2">
                         <div className="flex items-center justify-end gap-3">
-                          <input
-                            type="number"
-                            min={1}
-                            aria-label={`Quantity of ${part.mpn}`}
+                          <QtyInput
+                            label={`Quantity of ${part.mpn}`}
                             value={qtyDrafts[part.key] ?? String(defaultQty(part, boardId, buildCount))}
-                            onChange={(event) =>
-                              setQtyDrafts((current) => ({ ...current, [part.key]: event.target.value }))
-                            }
-                            className={appQtyField}
+                            onChange={(value) => setQtyDrafts((current) => ({ ...current, [part.key]: value }))}
                           />
                           <button type="button" onClick={() => addPart(part)} className={appTextBtn}>
                             Add
