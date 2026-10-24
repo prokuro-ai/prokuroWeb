@@ -141,14 +141,14 @@ export default function CartPanel({
                         </p>
                       ) : null}
                       <label className="mt-1.5 flex items-center gap-2 text-[12px] text-mk-ink-subtle">
-                        <span className="shrink-0">Size</span>
+                        <span className="shrink-0">Package</span>
                         <input
                           type="text"
-                          aria-label={`Size of ${line.mpn}`}
+                          aria-label={`Package of ${line.mpn}`}
                           value={line.fit ?? ''}
-                          placeholder="0402"
+                          placeholder="0402 or SOT-23"
                           onChange={(event) => onFit(line.key, event.target.value)}
-                          className={`${appField} h-7 w-28 px-2 text-[12px]`}
+                          className={`${appField} h-7 w-36 px-2 text-[12px]`}
                         />
                       </label>
                     </div>
@@ -249,7 +249,7 @@ export default function CartPanel({
               </p>
             ) : cart.length > 0 && canWrite ? (
               <p className="mt-1.5 text-[12px] text-mk-ink-subtle">
-                Compares sources, price breaks, and approved alternates for every line.
+                Compares sources, price breaks, packages, and approved alternates for every line.
               </p>
             ) : null}
           </div>

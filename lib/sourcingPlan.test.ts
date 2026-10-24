@@ -151,6 +151,13 @@ describe('planMatchesCart', () => {
     expect(planMatchesCart(sourced, cart(['b2', 3], ['a1', 10]))).toBe(true)
   })
 
+  it('stops matching when the package changes, so the old check is not reused', () => {
+    const checked = plan([planLine({ mpn: 'A1', requested: 10, fit: '0402' })])
+    const [line] = cart(['A1', 10])
+    expect(planMatchesCart(checked, [{ ...line, fit: '0402' }])).toBe(true)
+    expect(planMatchesCart(checked, [{ ...line, fit: '0603' }])).toBe(false)
+  })
+
   it('still matches after the plan was applied', () => {
     expect(planMatchesCart(sourced, cart(['A1', 25], ['B2-ALT', 10]))).toBe(true)
   })
@@ -352,6 +359,9 @@ describe('noteText', () => {
       tone: 'warn',
     })
     expect(noteText({ kind: 'no_fit', asked: '0402' }, 'USD')?.text).toBe('Nothing else fits 0402.')
+    expect(noteText({ kind: 'package_unpublished', asked: 'SOT-23-5' }, 'USD')?.text).toBe(
+      'No package was published for this part, so it wasn’t marked available for SOT-23-5.',
+    )
   })
 
   it('never names a distributor', () => {
@@ -397,7 +407,7 @@ describe('status copy', () => {
     expect(
       swapText(alternate({ mpn: 'X9', approved: false, discovered: true, case_label: '0402 (1005 Metric)' }), line, 'USD'),
     ).toBe(
-      'B2 can’t be found. X9 (matches the size) is in stock: 10 for $4.00. 0402 (1005 Metric), same package you asked for',
+      'B2 can’t be found. X9 (matches the package) is in stock: 10 for $4.00. 0402 (1005 Metric), same package you asked for',
     )
   })
 })

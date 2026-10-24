@@ -34,27 +34,34 @@ function requestedQuantity(quantity: number): number {
  * Whether the plan still describes the cart. A line matches at the quantity that was sourced,
  * at the quantity the plan buys (after "Apply to cart"), or swapped for its alternate.
  */
+function samePackage(asked: string | null | undefined, cartFit: string | null | undefined): boolean {
+  return (asked ?? '').trim() === (cartFit ?? '').trim()
+}
+
 export function planMatchesCart(plan: SourcingPlan, cart: CartLine[]): boolean {
-  const quantities = new Map(cart.map((line) => [line.key, line.quantity]))
+  const byKey = new Map(cart.map((line) => [line.key, line]))
   const covered = new Set<string>()
   const swappedIn = new Map<string, number>()
   for (const line of plan.lines) {
     const key = partKey(line.mpn)
-    const quantity = quantities.get(key)
-    if (quantity != null) {
-      if (requestedQuantity(quantity) !== line.requested && quantity !== line.buy?.quantity) return false
+    const current = byKey.get(key)
+    if (current) {
+      if (requestedQuantity(current.quantity) !== line.requested && current.quantity !== line.buy?.quantity) return false
+      if (!samePackage(line.fit, current.fit)) return false
       covered.add(key)
       continue
     }
     const swapKey = line.alternate ? partKey(line.alternate.mpn) : null
-    if (!swapKey || !quantities.has(swapKey)) return false
-    swappedIn.set(swapKey, (swappedIn.get(swapKey) ?? 0) + line.alternate!.buy.quantity)
+    const swapped = swapKey ? byKey.get(swapKey) : undefined
+    if (!swapped) return false
+    if (!samePackage(line.fit, swapped.fit)) return false
+    swappedIn.set(swapKey!, (swappedIn.get(swapKey!) ?? 0) + line.alternate!.buy.quantity)
   }
   for (const [key, quantity] of swappedIn) {
-    if (covered.has(key) || quantities.get(key) !== quantity) return false
+    if (covered.has(key) || byKey.get(key)?.quantity !== quantity) return false
     covered.add(key)
   }
-  return covered.size === quantities.size
+  return covered.size === byKey.size
 }
 
 export function alternatesFor(part: CatalogPart | undefined): { mpn: string; approved: boolean }[] {
@@ -94,12 +101,13 @@ export type Tone = 'good' | 'warn' | 'bad' | 'muted'
 export const STATUS_META: Record<SourcingLineStatus, { label: string; tone: Tone; rank: number }> = {
   out_of_stock: { label: 'Out of stock', tone: 'bad', rank: 0 },
   not_found: { label: 'Not found', tone: 'bad', rank: 1 },
-  no_price: { label: 'No price', tone: 'bad', rank: 2 },
-  short: { label: 'Short', tone: 'warn', rank: 3 },
-  ambiguous: { label: 'Needs detail', tone: 'warn', rank: 4 },
-  unchecked: { label: 'Not checked', tone: 'muted', rank: 5 },
-  invalid: { label: 'Not a part number', tone: 'muted', rank: 6 },
-  ready: { label: 'Ready', tone: 'good', rank: 7 },
+  does_not_fit: { label: 'Doesn’t fit', tone: 'bad', rank: 2 },
+  no_price: { label: 'No price', tone: 'bad', rank: 3 },
+  short: { label: 'Short', tone: 'warn', rank: 4 },
+  ambiguous: { label: 'Needs detail', tone: 'warn', rank: 5 },
+  unchecked: { label: 'Not checked', tone: 'muted', rank: 6 },
+  invalid: { label: 'Not a part number', tone: 'muted', rank: 7 },
+  ready: { label: 'Ready', tone: 'good', rank: 8 },
 }
 
 export const STATUS_ORDER = (Object.keys(STATUS_META) as SourcingLineStatus[]).sort(
@@ -123,6 +131,10 @@ export function statusHint(line: SourcingPlanLine): string | null {
       return line.alternate || line.notes.some((note) => note.kind === 'shortfall')
         ? null
         : 'Nothing on hand at any source we checked.'
+    case 'does_not_fit':
+      return line.notes.some((note) => note.kind === 'does_not_fit' || note.kind === 'package_unpublished')
+        ? null
+        : 'This part doesn’t match the package, so it isn’t available to order.'
     default:
       return null
   }
@@ -182,6 +194,11 @@ export function noteText(note: SourcingNote, currency: string): { text: string; 
       return { text: `Listed as ${note.listed}. You asked for ${note.asked}.`, tone: 'warn' }
     case 'no_fit':
       return { text: `Nothing else fits ${note.asked}.`, tone: 'muted' }
+    case 'package_unpublished':
+      return {
+        text: `No package was published for this part, so it wasn’t marked available for ${note.asked}.`,
+        tone: 'warn',
+      }
     default:
       return null
   }
@@ -191,7 +208,7 @@ export function swapText(alternate: SourcingAlternate, line: SourcingPlanLine, c
   const source = alternate.approved
     ? 'on your AML'
     : alternate.discovered
-      ? 'matches the size'
+      ? 'matches the package'
       : 'suggested in the line brief'
   const cost = `${pcs(alternate.buy.quantity)} for ${money(alternate.buy.total, currency)}`
   const fit = alternate.case_label ? `. ${alternate.case_label}, same package you asked for` : ''
@@ -199,7 +216,14 @@ export function swapText(alternate: SourcingAlternate, line: SourcingPlanLine, c
     const saves = alternate.saves != null ? `, saves ${money(alternate.saves, currency)}` : ''
     return `${alternate.mpn} (${source}) covers it: ${cost}${saves}${fit}`
   }
-  const why = line.status === 'not_found' ? 'can’t be found' : line.status === 'short' ? 'is short' : 'can’t be bought'
+  const why =
+    line.status === 'not_found'
+      ? 'can’t be found'
+      : line.status === 'short'
+        ? 'is short'
+        : line.status === 'does_not_fit'
+          ? 'doesn’t match the package'
+          : 'can’t be bought'
   return `${line.mpn} ${why}. ${alternate.mpn} (${source}) is in stock: ${cost}${fit}`
 }
 
@@ -220,6 +244,7 @@ const BAR_ORDER: SourcingLineStatus[] = [
   'ambiguous',
   'no_price',
   'not_found',
+  'does_not_fit',
   'out_of_stock',
   'unchecked',
   'invalid',
@@ -444,6 +469,7 @@ const NOTE_NUMBERS: Record<SourcingNote['kind'], string[]> = {
   lifecycle: [],
   does_not_fit: [],
   no_fit: [],
+  package_unpublished: [],
 }
 
 function validNote(value: unknown): value is SourcingNote {
@@ -456,7 +482,7 @@ function validNote(value: unknown): value is SourcingNote {
   if (kind === 'matched_as') return !!text(note.mpn)
   if (kind === 'lifecycle') return typeof note.status === 'string' && Object.hasOwn(LIFECYCLE_TEXT, note.status)
   if (kind === 'does_not_fit') return !!text(note.asked) && !!text(note.listed)
-  if (kind === 'no_fit') return !!text(note.asked)
+  if (kind === 'no_fit' || kind === 'package_unpublished') return !!text(note.asked)
   return true
 }
 
@@ -521,6 +547,7 @@ export function normalizePlan(value: unknown): SourcingPlan | null {
       manufacturer: text(line.manufacturer),
       description: text(line.description),
       case_label: text(line.case_label),
+      fit: text(line.fit),
       alternate: normalizeAlternate(line.alternate),
     })
   }

@@ -28,6 +28,7 @@ import {
   cartLineFrom,
   DISMISSED_STORAGE_KEY,
   parseStoredCart,
+  partKey,
   removeFromCart,
   setCartFit,
   setCartQuantity,
@@ -52,7 +53,7 @@ import {
 import type { PartSuggestion, PlaceOrderResponse, QuoteResponse, SourcingRun } from '@/lib/types'
 
 function cartSignature(cart: CartLine[]): string {
-  return `${cart.map((line) => `${line.key}:${line.quantity}`).join(',')}`
+  return `${cart.map((line) => `${line.key}:${line.quantity}:${line.fit ?? ''}`).join(',')}`
 }
 
 function downloadCsv(csv: string) {
@@ -281,7 +282,32 @@ export default function SourcingPage() {
     setAppliedNote(null)
   }
 
+  function packageAllowsOrder(line: CartLine): boolean {
+    if (!line.fit?.trim()) return true
+    if (!plan || !planCurrent) return false
+    const row = plan.lines.find((item) => partKey(item.mpn) === line.key)
+    if (row?.status === 'ready') return true
+    return plan.lines.some(
+      (item) =>
+        !!item.alternate &&
+        activeSwaps.has(partKey(item.mpn)) &&
+        partKey(item.alternate.mpn) === line.key,
+    )
+  }
+
   async function submitOrder() {
+    const blocked = cart.filter((line) => !packageAllowsOrder(line))
+    if (blocked.length > 0) {
+      setOrder(null)
+      setError(
+        !plan || !planCurrent
+          ? 'Source this cart before ordering. The package has to be checked first.'
+          : `${blocked.map((line) => line.mpn).join(', ')} ${
+              blocked.length === 1 ? 'doesn’t match' : 'don’t match'
+            } the package, so the order wasn’t sent. Accept a part that fits, or clear the package.`,
+      )
+      return
+    }
     setBusy('order')
     setError(null)
     try {

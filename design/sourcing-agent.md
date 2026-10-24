@@ -29,6 +29,7 @@ The plan shows the total, what each line costs, why the agent chose it, and what
 | Needs detail | The number matches several different parts. | Add the full part number. |
 | Not checked | A source errored or rate-limited. Never written as not found. | Run again in a minute. |
 | Not a part number | Failed the safe-MPN check, so it was never sent to a distributor. | Nothing was looked up. |
+| Doesn't fit | The buyer named a package and this part was not confirmed to match it. | What was listed, or that no package was published. It is not available to order. |
 
 Lifecycle notes come from the manufacturer status: not for new designs, last-time buy, obsolete, no longer carried. When a short number like `BLM18KG260TN1` is listed only with a suffix (`…TN1D`), the agent uses the single suffixed listing and says "Listed as …". Several suffixed listings make the line "Needs detail" instead of a guess.
 
@@ -77,13 +78,13 @@ One run uses one purchasing action no matter how many lines it has. That matters
 - Browser against the local gateway and live Digi-Key: a 21-line cart, a 200-line run adopted through 409, Apply to cart, reload persistence, the stale banner, and the narrow layout.
 - Not yet: a deployed stack (needs a go-ahead), and Mouser for real (no key exists). Multi-source splitting is verified only against the mock.
 
-## Package size
+## Package
 
-A cart line can carry a size, such as `0402`, `SOT-23-5`, or `1.00mm x 0.50mm`. It is filled from the BOM footprint column and the buyer can edit it. Empty means the run does not filter.
+A cart line can carry a package, such as `0402`, `SOT-23-5`, or `1.00mm x 0.50mm`. The field is labeled Package. It is filled from the BOM footprint column and the buyer can edit it. Empty means the run does not filter.
 
-The part number they asked for is always priced. If DigiKey lists a different package, the plan says so. An alternate is proposed only when its published package matches. A part with no published package is not treated as a fit and is not treated as a miss.
+The named part is available to order only when its published package matches. A different package, or no published package, takes the line off the buy: status "Doesn't fit", no order quantity. The plan still says what was listed. An alternate is proposed only when its published package matches, including when the named part is in stock but the wrong package. The buyer still accepts the swap.
 
-When a sized line is short, out of stock, or not found, one DigiKey keyword search (the description plus the size token) may add up to three matching part numbers. Those are unapproved. The buyer still accepts the swap. Prices come from the product-details quote, because keyword price and stock can be a day stale. The search does not use DigiKey's parametric filter ids. Those ids have to be copied from an earlier response, and inventing them returns an empty error.
+When a line is short, out of stock, not found, or the wrong package, one DigiKey keyword search (the description plus the package token) may add up to three matching part numbers. Those are unapproved. Prices come from the product-details quote, because keyword price and stock can be a day stale. The search does not use DigiKey's parametric filter ids. Those ids have to be copied from an earlier response, and inventing them returns an empty error.
 
 `Offer.package` stays reel versus cut tape. Ordering stays off.
 

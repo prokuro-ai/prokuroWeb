@@ -306,6 +306,7 @@ export type SourcingLineStatus =
   | 'ambiguous'
   | 'unchecked'
   | 'invalid'
+  | 'does_not_fit'
 
 export type PartLifecycle = 'active' | 'not_for_new_designs' | 'last_time_buy' | 'not_carried' | 'obsolete'
 
@@ -321,6 +322,7 @@ export type SourcingNote =
   | { kind: 'lifecycle'; status: PartLifecycle }
   | { kind: 'does_not_fit'; asked: string; listed: string }
   | { kind: 'no_fit'; asked: string }
+  | { kind: 'package_unpublished'; asked: string }
 
 export interface SourcingBuy {
   mpn: string
@@ -354,6 +356,8 @@ export interface SourcingPlanLine {
   manufacturer?: string | null
   description?: string | null
   case_label?: string | null
+  /** Package the buyer asked to check. Empty when they set none. */
+  fit?: string | null
   alternate?: SourcingAlternate | null
 }
 
