@@ -27,6 +27,7 @@ export default function CartPanel({
   poNumber,
   onPoNumber,
   onQuantity,
+  onFit,
   onRemove,
   onClear,
   onSource,
@@ -55,6 +56,7 @@ export default function CartPanel({
   poNumber: string
   onPoNumber: (value: string) => void
   onQuantity: (key: string, quantity: number) => void
+  onFit: (key: string, fit: string) => void
   onRemove: (key: string) => void
   onClear: () => void
   onSource: () => void
@@ -119,6 +121,17 @@ export default function CartPanel({
                           {[line.manufacturer, line.description].filter(Boolean).join(' · ')}
                         </p>
                       ) : null}
+                      <label className="mt-1.5 flex items-center gap-2 text-[12px] text-mk-ink-subtle">
+                        <span className="shrink-0">Size</span>
+                        <input
+                          type="text"
+                          aria-label={`Size of ${line.mpn}`}
+                          value={line.fit ?? ''}
+                          placeholder="0402"
+                          onChange={(event) => onFit(line.key, event.target.value)}
+                          className={`${appField} h-7 w-28 px-2 text-[12px]`}
+                        />
+                      </label>
                     </div>
                     <input
                       type="number"

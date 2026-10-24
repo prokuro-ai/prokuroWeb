@@ -29,6 +29,7 @@ import {
   DISMISSED_STORAGE_KEY,
   parseStoredCart,
   removeFromCart,
+  setCartFit,
   setCartQuantity,
   type CartLine,
   type Suggestion,
@@ -458,6 +459,7 @@ export default function SourcingPage() {
             poNumber={poNumber}
             onPoNumber={setPoNumber}
             onQuantity={(key, quantity) => setCart((current) => setCartQuantity(current, key, quantity))}
+            onFit={(key, fit) => setCart((current) => setCartFit(current, key, fit))}
             onRemove={(key) => setCart((current) => removeFromCart(current, key))}
             onClear={() => {
               closePlan()

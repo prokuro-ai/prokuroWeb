@@ -77,6 +77,16 @@ One run uses one purchasing action no matter how many lines it has. That matters
 - Browser against the local gateway and live Digi-Key: a 21-line cart, a 200-line run adopted through 409, Apply to cart, reload persistence, the stale banner, and the narrow layout.
 - Not yet: a deployed stack (needs a go-ahead), and Mouser for real (no key exists). Multi-source splitting is verified only against the mock.
 
+## Package size
+
+A cart line can carry a size, such as `0402`, `SOT-23-5`, or `1.00mm x 0.50mm`. It is filled from the BOM footprint column and the buyer can edit it. Empty means the run does not filter.
+
+The part number they asked for is always priced. If DigiKey lists a different package, the plan says so. An alternate is proposed only when its published package matches. A part with no published package is not treated as a fit and is not treated as a miss.
+
+When a sized line is short, out of stock, or not found, one DigiKey keyword search (the description plus the size token) may add up to three matching part numbers. Those are unapproved. The buyer still accepts the swap. Prices come from the product-details quote, because keyword price and stock can be a day stale. The search does not use DigiKey's parametric filter ids. Those ids have to be copied from an earlier response, and inventing them returns an empty error.
+
+`Offer.package` stays reel versus cut tape. Ordering stays off.
+
 ## Not in scope
 
 - Placing split or multi-distributor orders. Ordering stays off, and both `*_ORDERING_ENABLED` flags remain `false`.

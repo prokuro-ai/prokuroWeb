@@ -73,7 +73,15 @@ function analyzed(overrides: Partial<AnalyzedLine>): AnalyzedLine {
 
 function catalogPart(line: AnalyzedLine): CatalogPart {
   const mpn = line.mpn!.trim()
-  return { key: mpn.toUpperCase(), mpn, manufacturer: line.manufacturer, description: line.description, line, uses: [] }
+  return {
+    key: mpn.toUpperCase(),
+    mpn,
+    manufacturer: line.manufacturer,
+    description: line.description,
+    fit: line.footprint?.trim() || null,
+    line,
+    uses: [],
+  }
 }
 
 describe('alternatesFor', () => {
@@ -122,6 +130,13 @@ describe('runRequest', () => {
       { mpn: 'BIG', quantity: MAX_RUN_QUANTITY },
       { mpn: 'ZERO', quantity: 1 },
       { mpn: 'FRACTION', quantity: 3 },
+    ])
+  })
+
+  it('sends a size and description when the cart line has them', () => {
+    const items = [cartLineFrom({ mpn: 'RC0402', description: '10k 1%', fit: '0402' }, 10)]
+    expect(runRequest(items, []).lines).toEqual([
+      { mpn: 'RC0402', quantity: 10, description: '10k 1%', fit: '0402' },
     ])
   })
 })
@@ -205,8 +220,8 @@ describe('applyPlan', () => {
     ])
     const result = applyPlan(cart(['B2', 3], ['C3', 10]), sourced, new Set(['B2']))
     expect(result.cart).toEqual([
-      { key: 'C3', mpn: 'C3', manufacturer: null, description: null, quantity: 10 },
-      { key: 'B2-ALT', mpn: 'B2-ALT', manufacturer: 'ST', description: '5V LDO', quantity: 10 },
+      { key: 'C3', mpn: 'C3', manufacturer: null, description: null, fit: null, quantity: 10 },
+      { key: 'B2-ALT', mpn: 'B2-ALT', manufacturer: 'ST', description: '5V LDO', fit: null, quantity: 10 },
     ])
     expect(result.swapped).toBe(1)
     expect(planMatchesCart(sourced, result.cart)).toBe(true)
@@ -332,6 +347,11 @@ describe('noteText', () => {
     expect(noteText({ kind: 'lead_time', days: 0 }, 'USD')).toBeNull()
     expect(noteText({ kind: 'lifecycle', status: 'active' }, 'USD')).toBeNull()
     expect(noteText({ kind: 'lifecycle', status: 'obsolete' }, 'USD')?.tone).toBe('warn')
+    expect(noteText({ kind: 'does_not_fit', asked: '0402', listed: '0603 (1608 Metric)' }, 'USD')).toEqual({
+      text: 'Listed as 0603 (1608 Metric). You asked for 0402.',
+      tone: 'warn',
+    })
+    expect(noteText({ kind: 'no_fit', asked: '0402' }, 'USD')?.text).toBe('Nothing else fits 0402.')
   })
 
   it('never names a distributor', () => {
@@ -373,6 +393,11 @@ describe('status copy', () => {
     )
     expect(swapText(alternate({ mpn: 'X9', reason: 'cheaper', saves: 1.5, approved: false }), line, 'USD')).toBe(
       'X9 (suggested in the line brief) covers it: 10 for $4.00, saves $1.50',
+    )
+    expect(
+      swapText(alternate({ mpn: 'X9', approved: false, discovered: true, case_label: '0402 (1005 Metric)' }), line, 'USD'),
+    ).toBe(
+      'B2 can’t be found. X9 (matches the size) is in stock: 10 for $4.00. 0402 (1005 Metric), same package you asked for',
     )
   })
 })
@@ -481,6 +506,30 @@ describe('normalizePlan', () => {
     expect(normalized.total).toBe(0)
     expect(normalized.lines[0].status).toBe('unchecked')
     expect(normalized.lines[0].notes).toEqual([{ kind: 'shortfall', available: 2, missing: 3 }])
+  })
+
+  it('keeps size notes and drops one that does not name a package', () => {
+    const normalized = normalizePlan({
+      currency: 'USD',
+      lines: [
+        {
+          mpn: 'RC0402',
+          requested: 10,
+          status: 'ready',
+          case_label: '0603 (1608 Metric)',
+          notes: [
+            { kind: 'does_not_fit', asked: '0402', listed: '0603 (1608 Metric)' },
+            { kind: 'no_fit', asked: '0402' },
+            { kind: 'does_not_fit', asked: '' },
+          ],
+        },
+      ],
+    })!
+    expect(normalized.lines[0].case_label).toBe('0603 (1608 Metric)')
+    expect(normalized.lines[0].notes).toEqual([
+      { kind: 'does_not_fit', asked: '0402', listed: '0603 (1608 Metric)' },
+      { kind: 'no_fit', asked: '0402' },
+    ])
   })
 
   it('drops lines without a part number and duplicate part numbers', () => {

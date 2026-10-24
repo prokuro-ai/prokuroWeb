@@ -624,7 +624,11 @@ function PlanRow({
     ? []
     : line.notes.map((note) => noteText(note, currency)).filter((note): note is NonNullable<typeof note> => !!note)
   const hint = active ? null : statusHint(line)
-  const maker = [active ? active.manufacturer : line.manufacturer, active ? active.description : line.description]
+  const maker = [
+    active ? active.manufacturer : line.manufacturer,
+    active ? active.description : line.description,
+    active ? active.case_label : line.case_label,
+  ]
     .filter(Boolean)
     .join(' · ')
 
@@ -702,7 +706,7 @@ function PlanRow({
             {active
               ? `Buying ${alternate.mpn} ${alternate.approved ? 'from your AML' : 'from the line brief'} instead of ${line.mpn}.`
               : swapText(alternate, line, currency)}
-            {!alternate.approved && !active ? (
+            {!alternate.approved && !active && !alternate.case_label ? (
               <span className="text-mk-ink-subtle"> Not on your AML yet, so check it fits.</span>
             ) : null}
           </p>

@@ -77,11 +77,27 @@ describe('cart edits', () => {
     ])
   })
 
-  it('drops stored carts that do not parse', () => {
+  it('drops stored carts that do not parse and treats a missing size as empty', () => {
     expect(parseStoredCart('not json')).toEqual([])
     expect(parseStoredCart('[{"mpn":"","quantity":2},{"mpn":"BSS138","quantity":2}]')).toEqual([
-      expect.objectContaining({ key: 'BSS138', quantity: 2 }),
+      expect.objectContaining({ key: 'BSS138', quantity: 2, fit: null }),
     ])
+  })
+
+  it('keeps a shared footprint and clears one the boards disagree on', () => {
+    const agreed = buildCatalog([
+      {
+        id: 'a',
+        name: 'A',
+        lines: [line({ mpn: 'R1', footprint: '0402' }), line({ mpn: 'R1', row_index: 1, footprint: '0402' })],
+      },
+    ])
+    expect(agreed[0].fit).toBe('0402')
+    const split = buildCatalog([
+      { id: 'a', name: 'A', lines: [line({ mpn: 'R1', footprint: '0402' })] },
+      { id: 'b', name: 'B', lines: [line({ mpn: 'R1', footprint: '0603' })] },
+    ])
+    expect(split[0].fit).toBeNull()
   })
 })
 

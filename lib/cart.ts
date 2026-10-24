@@ -12,6 +12,8 @@ export type CatalogPart = {
   mpn: string
   manufacturer: string | null
   description: string | null
+  /** Shared footprint, or null when the boards disagree or none was given. */
+  fit: string | null
   /** Worst-risk line across boards; drives stock, lifecycle and risk columns. */
   line: AnalyzedLine
   uses: PartUse[]
@@ -22,6 +24,8 @@ export type CartLine = {
   mpn: string
   manufacturer: string | null
   description: string | null
+  /** Package or body size. Null means the run does not filter on size. */
+  fit: string | null
   quantity: number
 }
 
@@ -69,6 +73,7 @@ export function buildCatalog(boards: Board[]): CatalogPart[] {
           mpn,
           manufacturer: line.manufacturer,
           description: line.description,
+          fit: cleanFit(line.footprint),
           line,
           uses: [use],
         })
@@ -77,6 +82,7 @@ export function buildCatalog(boards: Board[]): CatalogPart[] {
       existing.uses.push(use)
       existing.manufacturer ??= line.manufacturer
       existing.description ??= line.description
+      existing.fit = mergeFit(existing.fit, line.footprint)
       if (RISK_RANK[lineRiskLevel(line)] > RISK_RANK[lineRiskLevel(existing.line)]) existing.line = line
     }
   }
@@ -94,8 +100,23 @@ export function lineQuantity(line: AnalyzedLine): number {
   return line.quantity != null && line.quantity > 0 ? line.quantity : 1
 }
 
+export function cleanFit(value: string | null | undefined): string | null {
+  const text = value?.trim() ?? ''
+  if (!text) return null
+  return text.slice(0, 120)
+}
+
+/** Keeps a size only when every copy agrees. A blank does not clear one that is already set. */
+export function mergeFit(current: string | null | undefined, incoming: string | null | undefined): string | null {
+  const left = cleanFit(current)
+  const right = cleanFit(incoming)
+  if (!left) return right
+  if (!right) return left
+  return left.toLowerCase() === right.toLowerCase() ? left : null
+}
+
 export function cartLineFrom(
-  part: { mpn: string; manufacturer?: string | null; description?: string | null },
+  part: { mpn: string; manufacturer?: string | null; description?: string | null; fit?: string | null; footprint?: string | null },
   quantity: number,
 ): CartLine {
   const mpn = part.mpn.trim()
@@ -104,6 +125,7 @@ export function cartLineFrom(
     mpn,
     manufacturer: part.manufacturer ?? null,
     description: part.description ?? null,
+    fit: cleanFit(part.fit ?? part.footprint),
     quantity: Math.max(1, Math.round(quantity)),
   }
 }
@@ -116,6 +138,7 @@ export function addToCart(cart: CartLine[], additions: CartLine[]): CartLine[] {
       existing.quantity += add.quantity
       existing.manufacturer ??= add.manufacturer
       existing.description ??= add.description
+      existing.fit = mergeFit(existing.fit, add.fit)
     } else {
       next.push({ ...add })
     }
@@ -132,6 +155,11 @@ export function removeFromCart(cart: CartLine[], key: string): CartLine[] {
   return cart.filter((line) => line.key !== key)
 }
 
+export function setCartFit(cart: CartLine[], key: string, fit: string): CartLine[] {
+  const next = cleanFit(fit)
+  return cart.map((line) => (line.key === key ? { ...line, fit: next } : line))
+}
+
 export function boardToCart(board: Board, builds: number): CartLine[] {
   const perBoard = new Map<string, CartLine>()
   for (const line of board.lines) {
@@ -139,8 +167,10 @@ export function boardToCart(board: Board, builds: number): CartLine[] {
     if (!mpn) continue
     const item = cartLineFrom({ ...line, mpn }, lineQuantity(line) * builds)
     const existing = perBoard.get(item.key)
-    if (existing) existing.quantity += item.quantity
-    else perBoard.set(item.key, item)
+    if (existing) {
+      existing.quantity += item.quantity
+      existing.fit = mergeFit(existing.fit, item.fit)
+    } else perBoard.set(item.key, item)
   }
   return [...perBoard.values()]
 }

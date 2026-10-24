@@ -81,6 +81,8 @@ export function runRequest(cart: CartLine[], catalog: CatalogPart[]): SourcingRu
         mpn: line.mpn,
         quantity: requestedQuantity(line.quantity),
         ...(line.manufacturer ? { manufacturer: line.manufacturer } : {}),
+        ...(line.description ? { description: line.description } : {}),
+        ...(line.fit ? { fit: line.fit } : {}),
         ...(alternates.length > 0 ? { alternates } : {}),
       }
     }),
@@ -176,20 +178,29 @@ export function noteText(note: SourcingNote, currency: string): { text: string; 
       if (!text) return null
       return { text, tone: note.status === 'not_for_new_designs' ? 'muted' : 'warn' }
     }
+    case 'does_not_fit':
+      return { text: `Listed as ${note.listed}. You asked for ${note.asked}.`, tone: 'warn' }
+    case 'no_fit':
+      return { text: `Nothing else fits ${note.asked}.`, tone: 'muted' }
     default:
       return null
   }
 }
 
 export function swapText(alternate: SourcingAlternate, line: SourcingPlanLine, currency: string): string {
-  const source = alternate.approved ? 'on your AML' : 'suggested in the line brief'
+  const source = alternate.approved
+    ? 'on your AML'
+    : alternate.discovered
+      ? 'matches the size'
+      : 'suggested in the line brief'
   const cost = `${pcs(alternate.buy.quantity)} for ${money(alternate.buy.total, currency)}`
+  const fit = alternate.case_label ? `. ${alternate.case_label}, same package you asked for` : ''
   if (alternate.reason === 'cheaper') {
     const saves = alternate.saves != null ? `, saves ${money(alternate.saves, currency)}` : ''
-    return `${alternate.mpn} (${source}) covers it: ${cost}${saves}`
+    return `${alternate.mpn} (${source}) covers it: ${cost}${saves}${fit}`
   }
   const why = line.status === 'not_found' ? 'can’t be found' : line.status === 'short' ? 'is short' : 'can’t be bought'
-  return `${line.mpn} ${why}. ${alternate.mpn} (${source}) is in stock: ${cost}`
+  return `${line.mpn} ${why}. ${alternate.mpn} (${source}) is in stock: ${cost}${fit}`
 }
 
 /** Attention first, then the biggest spend, so the review starts where money and risk are. */
@@ -269,6 +280,7 @@ export function applyPlan(cart: CartLine[], plan: SourcingPlan, swaps: ReadonlyS
             mpn: line.alternate.mpn,
             manufacturer: line.alternate.manufacturer ?? null,
             description: line.alternate.description ?? `Alternate for ${item.mpn}`,
+            fit: item.fit,
           },
           Math.max(line.alternate.buy.quantity, 1),
         ),
@@ -430,6 +442,8 @@ const NOTE_NUMBERS: Record<SourcingNote['kind'], string[]> = {
   matched_as: [],
   partial_check: [],
   lifecycle: [],
+  does_not_fit: [],
+  no_fit: [],
 }
 
 function validNote(value: unknown): value is SourcingNote {
@@ -441,6 +455,8 @@ function validNote(value: unknown): value is SourcingNote {
   }
   if (kind === 'matched_as') return !!text(note.mpn)
   if (kind === 'lifecycle') return typeof note.status === 'string' && Object.hasOwn(LIFECYCLE_TEXT, note.status)
+  if (kind === 'does_not_fit') return !!text(note.asked) && !!text(note.listed)
+  if (kind === 'no_fit') return !!text(note.asked)
   return true
 }
 
@@ -472,6 +488,8 @@ function normalizeAlternate(value: unknown): SourcingAlternate | null {
     saves: typeof alternate.saves === 'number' && Number.isFinite(alternate.saves) ? alternate.saves : null,
     manufacturer: text(alternate.manufacturer),
     description: text(alternate.description),
+    discovered: alternate.discovered === true,
+    case_label: text(alternate.case_label),
   }
 }
 
@@ -502,6 +520,7 @@ export function normalizePlan(value: unknown): SourcingPlan | null {
       notes: Array.isArray(line.notes) ? line.notes.filter(validNote) : [],
       manufacturer: text(line.manufacturer),
       description: text(line.description),
+      case_label: text(line.case_label),
       alternate: normalizeAlternate(line.alternate),
     })
   }

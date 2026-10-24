@@ -151,6 +151,8 @@ export interface AnalyzedLine {
   quantity: number | null
   refdes: string | null
   description: string | null
+  /** PCB footprint from the BOM. Older analyses omit it. */
+  footprint?: string | null
   aml_candidates: string[]
   availability_status: string
   lifecycle_status: string
@@ -284,6 +286,9 @@ export interface SourcingRunRequest {
     mpn: string
     quantity: number
     manufacturer?: string
+    description?: string
+    /** Package or body size. Omitted when the buyer did not set one. */
+    fit?: string
     alternates?: { mpn: string; approved: boolean }[]
   }[]
 }
@@ -314,6 +319,8 @@ export type SourcingNote =
   | { kind: 'matched_as'; mpn: string }
   | { kind: 'partial_check' }
   | { kind: 'lifecycle'; status: PartLifecycle }
+  | { kind: 'does_not_fit'; asked: string; listed: string }
+  | { kind: 'no_fit'; asked: string }
 
 export interface SourcingBuy {
   mpn: string
@@ -333,6 +340,9 @@ export interface SourcingAlternate {
   saves?: number | null
   manufacturer?: string | null
   description?: string | null
+  /** Found by a size search, rather than named on the AML or in the brief. */
+  discovered?: boolean
+  case_label?: string | null
 }
 
 export interface SourcingPlanLine {
@@ -343,6 +353,7 @@ export interface SourcingPlanLine {
   notes: SourcingNote[]
   manufacturer?: string | null
   description?: string | null
+  case_label?: string | null
   alternate?: SourcingAlternate | null
 }
 
