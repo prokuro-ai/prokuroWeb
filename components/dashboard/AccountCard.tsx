@@ -1,11 +1,18 @@
-import { appSheet } from '@/components/app/chrome'
+import { appColHead, appSheet } from '@/components/app/chrome'
 import { atRisk, MIX_SEGMENTS, mixTotal, percent, scoredTotal, SITUATION_COLUMNS, TONE_VAR, type Tone } from '@/lib/dashboard'
-import type { LineTally } from '@/lib/types'
+import type { LineTally, RiskMix } from '@/lib/types'
 
 /** Zero reads as subtle. Slate counts are facts, not warnings, so they stay ink. */
 function countColor(tone: Tone, count: number): string {
   if (count === 0) return 'var(--mk-ink-subtle)'
   return tone === 'slate' || tone === 'pending' ? 'var(--mk-ink)' : TONE_VAR[tone]
+}
+
+/** Same rule as the Needs a call column: red only when something is critical. */
+function callTone(mix: RiskMix, flagged: number): string {
+  if (mix.red > 0) return 'text-mk-red'
+  if (flagged > 0) return 'text-mk-amber'
+  return 'text-mk-ink-subtle'
 }
 
 /** Account readout, on the same sheet as the boards and calls below it. */
@@ -17,37 +24,42 @@ export default function AccountCard({ account }: { account: LineTally }) {
 
   return (
     <section aria-label="Account" className={appSheet}>
-      <div className="flex flex-col gap-3 border-b border-mk-line px-4 py-4 mk:flex-row mk:items-baseline mk:justify-between mk:gap-8 mk:px-5">
-        <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-          <span className={`text-[22px] font-semibold tabular-nums leading-none ${flagged > 0 ? 'text-mk-red' : 'text-mk-green'}`}>
-            {flagged.toLocaleString()}
+      <div className="flex flex-col gap-5 px-4 py-4 mk:flex-row mk:items-end mk:justify-between mk:gap-10 mk:px-5 mk:py-5">
+        <p className="shrink-0">
+          <span className="flex items-baseline gap-x-2">
+            <span className={`text-[20px] font-semibold tabular-nums leading-none ${callTone(mix, flagged)}`}>
+              {flagged.toLocaleString()}
+            </span>
+            <span className="text-[14px] text-mk-ink">{flagged === 1 ? 'part needs' : 'parts need'} a call</span>
           </span>
-          <span className="text-[14px] text-mk-ink">{flagged === 1 ? 'part needs' : 'parts need'} a call</span>
-          <span className="text-[13px] tabular-nums text-mk-ink-subtle">
+          <span className="mt-1.5 block text-[13px] tabular-nums text-mk-ink-subtle">
             {percent(flagged, total)} of {total.toLocaleString()}
           </span>
         </p>
-        <p className="flex flex-wrap gap-x-4 gap-y-1 text-[13px]">
+        <ul className="grid grid-cols-3 gap-x-4 gap-y-3 sm:grid-cols-5 mk:w-[24rem] mk:shrink-0">
           {MIX_SEGMENTS.map((segment) => (
-            <span key={segment.key} className="text-mk-ink-subtle">
-              {segment.label}{' '}
-              <span className="font-medium tabular-nums" style={{ color: countColor(segment.tone, mix[segment.key]) }}>
+            <li key={segment.key}>
+              <span className={`${appColHead} block`}>{segment.label}</span>
+              <span
+                className="mt-1 block text-[14px] font-medium tabular-nums"
+                style={{ color: countColor(segment.tone, mix[segment.key]) }}
+              >
                 {mix[segment.key].toLocaleString()}
               </span>
-            </span>
+            </li>
           ))}
-        </p>
+        </ul>
       </div>
 
       {scored > 0 ? (
-        <ul>
+        <ul className="grid grid-cols-1 border-t border-mk-line sm:grid-cols-2">
           {SITUATION_COLUMNS.map((column) => {
             const count = situation[column.key]
             return (
               <li
                 key={column.key}
                 title={`${percent(count, scored)} of ${scored.toLocaleString()} scored parts`}
-                className="flex items-baseline justify-between gap-4 border-b border-mk-line px-4 py-2.5 last:border-b-0 mk:px-5"
+                className="flex items-baseline justify-between gap-4 px-4 py-2 mk:px-5"
               >
                 <span className="min-w-0 text-[13px] text-mk-ink-muted">{column.label}</span>
                 <span className="shrink-0 text-[14px] font-medium tabular-nums" style={{ color: countColor(column.tone, count) }}>
