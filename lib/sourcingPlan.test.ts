@@ -4,10 +4,8 @@ import {
   alternatesFor,
   applyPlan,
   cartPlanView,
-  coverage,
   finishedRun,
   MAX_RUN_QUANTITY,
-  needsAttention,
   normalizePlan,
   noteText,
   parseStoredPlan,
@@ -412,7 +410,7 @@ describe('status copy', () => {
   })
 })
 
-describe('sortLines and coverage', () => {
+describe('sortLines', () => {
   const sourced = plan([
     planLine({ mpn: 'READY-SMALL', buy: buy({ total: 1 }) }),
     planLine({ mpn: 'READY-BIG', buy: buy({ total: 100 }) }),
@@ -429,16 +427,6 @@ describe('sortLines and coverage', () => {
       'READY-BIG',
       'READY-SMALL',
     ])
-  })
-
-  it('splits the bar by status and skips empty segments', () => {
-    expect(coverage(sourced)).toEqual([
-      { status: 'ready', count: 2, share: 0.4 },
-      { status: 'ambiguous', count: 1, share: 0.2 },
-      { status: 'out_of_stock', count: 2, share: 0.4 },
-    ])
-    expect(coverage(plan([]))).toEqual([])
-    expect(needsAttention(sourced)).toBe(3)
   })
 })
 
