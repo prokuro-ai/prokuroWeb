@@ -238,31 +238,6 @@ export function sortLines(lines: SourcingPlanLine[]): SourcingPlanLine[] {
   )
 }
 
-const BAR_ORDER: SourcingLineStatus[] = [
-  'ready',
-  'short',
-  'ambiguous',
-  'no_price',
-  'not_found',
-  'does_not_fit',
-  'out_of_stock',
-  'unchecked',
-  'invalid',
-]
-
-export function coverage(plan: SourcingPlan): { status: SourcingLineStatus; count: number; share: number }[] {
-  const total = plan.lines.length
-  if (total === 0) return []
-  return BAR_ORDER.map((status) => {
-    const count = plan.lines.filter((line) => line.status === status).length
-    return { status, count, share: count / total }
-  }).filter((segment) => segment.count > 0)
-}
-
-export function needsAttention(plan: SourcingPlan): number {
-  return plan.lines.filter((line) => line.status !== 'ready').length
-}
-
 /** Plan total with accepted swaps priced in. */
 export function plannedTotal(plan: SourcingPlan, swaps: ReadonlySet<string>): number {
   let total = 0
