@@ -259,7 +259,9 @@ export default function BomBulkUploadModal({
           eyebrow: 'New BOM',
           title: 'Upload a BOM',
           subtitle:
-            'Drop a CSV or Excel export. You can add more than one file. Next you will confirm which columns are part number, manufacturer, and quantity.',
+            source === 'sheet'
+              ? 'Pick a spreadsheet and tab. Next you will confirm which columns are part number, manufacturer, and quantity, same as a file.'
+              : 'Drop a CSV or Excel export. You can add more than one file. Next you will confirm which columns are part number, manufacturer, and quantity.',
         }
       : step === 'mapping'
         ? {
