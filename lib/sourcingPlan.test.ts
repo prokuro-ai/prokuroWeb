@@ -14,6 +14,8 @@ import {
   pendingChanges,
   planCsv,
   planMatchesCart,
+  budgetGap,
+  DEFAULT_PARTS_BUDGET,
   plannedSavings,
   plannedTotal,
   runRequest,
@@ -307,6 +309,16 @@ describe('totals', () => {
 
   it('never reports negative savings', () => {
     expect(plannedSavings(plan([], { saved: -0.01 }), new Set())).toBe(0)
+  })
+
+  it('compares a distributor total to the parts budget without treating duty as part of it', () => {
+    expect(DEFAULT_PARTS_BUDGET).toBe(10_000)
+    expect(budgetGap(7500, 10_000)).toEqual({ budget: 10_000, total: 7500, left: 2500, over: false })
+    expect(budgetGap(10_000, 10_000)?.over).toBe(false)
+    expect(budgetGap(10_000, 10_000)?.left).toBe(0)
+    expect(budgetGap(12_400, 10_000)).toMatchObject({ left: -2400, over: true })
+    expect(budgetGap(100, 0)).toBeNull()
+    expect(budgetGap(100, Number.NaN)).toBeNull()
   })
 })
 

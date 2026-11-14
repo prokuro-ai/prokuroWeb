@@ -117,6 +117,9 @@ describe('SourcingPage sourcing plan', () => {
 
     const plan = await screen.findByRole('region', { name: 'Sourcing plan' })
     expect(within(plan).getByText(/1 of 3 lines are ready to buy\. 2 need a look, listed first\. Planning saved \$1\.25\./)).toBeInTheDocument()
+    expect(within(plan).getByText('Distributor cost. Estimated duty is not included.')).toBeInTheDocument()
+    expect(within(plan).getByLabelText('Parts budget')).toHaveValue('10000')
+    expect(within(plan).getByText(/Uses \$7\.50 of \$10,000\.00\. \$9,992\.50 under\./)).toBeInTheDocument()
     expect(within(plan).queryByText('Ready')).not.toBeInTheDocument()
     expect(within(plan).getByText('Out of stock')).toBeInTheDocument()
     expect(within(plan).getByText(/hits a price break and saves \$1\.25/)).toBeInTheDocument()

@@ -12,11 +12,13 @@ import {
   WifiOff,
   X,
 } from 'lucide-react'
-import { appPrimaryBtn, appSheet, appTextBtn, appToolbarBtn } from '@/components/app/chrome'
+import { appField, appPrimaryBtn, appSheet, appTextBtn, appToolbarBtn } from '@/components/app/chrome'
 import type { RunPhase } from '@/hooks/use-sourcing-run'
 import { partKey, type CartLine } from '@/lib/cart'
 import { money } from '@/lib/purchaseDisplay'
 import {
+  budgetGap,
+  DEFAULT_PARTS_BUDGET,
   noteText,
   plannedSavings,
   plannedTotal,
@@ -376,6 +378,8 @@ function PlanBody({
   const sorted = useMemo(() => sortLines(plan.lines), [plan])
   const total = plannedTotal(plan, swaps)
   const saved = plannedSavings(plan, swaps)
+  const [budgetText, setBudgetText] = useState(String(DEFAULT_PARTS_BUDGET))
+  const gap = budgetGap(total, Number(budgetText.replace(/,/g, '')))
   const covered = (line: SourcingPlanLine) =>
     line.status === 'ready' || (!!line.alternate && swaps.has(partKey(line.mpn)))
   const ready = plan.lines.filter(covered).length
@@ -405,7 +409,29 @@ function PlanBody({
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 px-4 py-4 sm:px-5">
         <div className="min-w-0">
           <p className="text-[22px] font-semibold leading-tight tabular-nums text-mk-ink">{money(total, plan.currency)}</p>
+          <p className="mt-1 text-[13px] text-mk-ink-muted">Distributor cost. Estimated duty is not included.</p>
           <p className="mt-1 text-[13px] text-mk-ink-muted">{planSummary(plan.lines.length, ready, saved, plan.currency)}</p>
+          <label className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-mk-ink-muted">
+            Parts budget
+            <input
+              type="text"
+              inputMode="decimal"
+              aria-label="Parts budget"
+              value={budgetText}
+              onChange={(event) => setBudgetText(event.target.value)}
+              className={`${appField} w-28 tabular-nums`}
+            />
+          </label>
+          {gap ? (
+            <p className="mt-1 text-[13px] text-mk-ink">
+              Uses {money(gap.total, plan.currency)} of {money(gap.budget, plan.currency)}.{' '}
+              {Math.abs(gap.left) < 0.005
+                ? 'On the budget.'
+                : gap.over
+                  ? `${money(Math.abs(gap.left), plan.currency)} over.`
+                  : `${money(gap.left, plan.currency)} under.`}
+            </p>
+          ) : null}
         </div>
         {attention > 0 && ready > 0 ? (
           <button

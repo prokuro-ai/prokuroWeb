@@ -263,6 +263,24 @@ export function needsAttention(plan: SourcingPlan): number {
   return plan.lines.filter((line) => line.status !== 'ready').length
 }
 
+/** Default parts budget for a buyer working a small build, in plan currency. */
+export const DEFAULT_PARTS_BUDGET = 10_000
+
+export type BudgetGap = {
+  budget: number
+  total: number
+  /** Positive when the distributor total is under the budget. Duty is not in `total`. */
+  left: number
+  over: boolean
+}
+
+/** Compare a distributor total to a parts budget. A blank or non-positive budget is no comparison. */
+export function budgetGap(total: number, budget: number): BudgetGap | null {
+  if (!Number.isFinite(total) || !Number.isFinite(budget) || budget <= 0) return null
+  const left = budget - total
+  return { budget, total, left, over: left < -0.004 }
+}
+
 /** Plan total with accepted swaps priced in. */
 export function plannedTotal(plan: SourcingPlan, swaps: ReadonlySet<string>): number {
   let total = 0
