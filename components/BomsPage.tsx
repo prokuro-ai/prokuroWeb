@@ -1,16 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { DeleteBomButton } from '@/components/DeleteBomButton'
 import BomBulkUploadModal from '@/components/BomBulkUploadModal'
+import ErpOnboarding from '@/components/erp/ErpOnboarding'
 import EmptyState from '@/components/app/EmptyState'
 import PageHeader from '@/components/app/PageHeader'
 import PageLoading from '@/components/app/PageLoading'
 import { appColHead, appInput, appPage, appPrimaryBtn, appSection, appSheet, bomTableCols } from '@/components/app/chrome'
 import { useBoms } from '@/hooks/use-boms'
 import { useTeam } from '@/hooks/use-team'
-import { listBoms } from '@/lib/api'
+import { getErpPrefs, listBoms } from '@/lib/api'
+import { EMPTY_ERP_PREFS, type ErpId, type ErpPrefs } from '@/lib/erp'
 import type { BomSummary } from '@/lib/types'
 import { formatUploadedAt } from '@/lib/format'
 import { accountUnscored, BOM_BAND_LABEL, bomRiskBand, stillLookingUpLabel, type BomBand } from '@/lib/risk'
@@ -56,8 +58,41 @@ export default function BomsPage() {
   const { boms, setBoms, loading, error } = useBoms()
   const { canWrite, canManage, team } = useTeam()
   const [uploadOpen, setUploadOpen] = useState(false)
+  const [uploadTab, setUploadTab] = useState<'file' | 'erp'>('file')
+  const [initialErp, setInitialErp] = useState<ErpId | null>(null)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<BomFilter>('All')
+  const [erpPrefs, setErpPrefs] = useState<ErpPrefs | null>(null)
+  const [erpLoading, setErpLoading] = useState(false)
+  const [erpError, setErpError] = useState<string | null>(null)
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false)
+
+  const accountId = team?.account_id
+
+  useEffect(() => {
+    if (!accountId || loading || boms.length > 0) return
+    let cancelled = false
+    setErpLoading(true)
+    getErpPrefs(accountId)
+      .then((prefs) => {
+        if (!cancelled) {
+          setErpPrefs(prefs)
+          setErpError(null)
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setErpPrefs(EMPTY_ERP_PREFS)
+          setErpError(err instanceof Error ? err.message : 'Could not load ERP preferences')
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setErpLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [accountId, loading, boms.length])
 
   const handleUploadComplete = (saved: BomSummary[]) => {
     if (saved.length === 0) return
@@ -68,6 +103,12 @@ export default function BomsPage() {
     listBoms()
       .then((result) => setBoms(result.items))
       .catch(() => {})
+  }
+
+  const openUpload = (tab: 'file' | 'erp' = 'file', erp?: ErpId | null) => {
+    setUploadTab(tab)
+    setInitialErp(erp ?? erpPrefs?.default_erp ?? null)
+    setUploadOpen(true)
   }
 
   const query = search.trim().toLowerCase()
@@ -98,6 +139,15 @@ export default function BomsPage() {
           ...(noMatch > 0 ? [`${noMatch.toLocaleString()} with no catalog match`] : []),
         ].join(' · ')
 
+  const showOnboarding =
+    !loading &&
+    !error &&
+    boms.length === 0 &&
+    !onboardingDismissed &&
+    Boolean(accountId) &&
+    erpPrefs != null &&
+    !erpPrefs.onboarding_skipped
+
   return (
     <>
       <div className={appPage}>
@@ -106,7 +156,7 @@ export default function BomsPage() {
           description={status ?? (loading ? undefined : 'Upload a BOM to see what to buy, drop, or watch.')}
           actions={
             canWrite && boms.length > 0 ? (
-              <button type="button" onClick={() => setUploadOpen(true)} className={appPrimaryBtn}>
+              <button type="button" onClick={() => openUpload('file')} className={appPrimaryBtn}>
                 Upload BOM
               </button>
             ) : null
@@ -146,7 +196,7 @@ export default function BomsPage() {
             </div>
           ) : null}
 
-          {loading ? (
+          {loading || (boms.length === 0 && erpLoading) ? (
             <PageLoading />
           ) : error ? (
             <EmptyState
@@ -158,15 +208,30 @@ export default function BomsPage() {
                 </button>
               }
             />
+          ) : showOnboarding && accountId ? (
+            <div>
+              {erpError ? <p className="mb-4 text-[13px] text-mk-amber">{erpError}</p> : null}
+              <ErpOnboarding
+                accountId={accountId}
+                canWrite={canWrite}
+                onSkip={() => setOnboardingDismissed(true)}
+                onReadyToUpload={(erp) => openUpload('erp', erp)}
+              />
+            </div>
           ) : boms.length === 0 ? (
             <EmptyState
               title="No BOMs yet"
               description="Upload a BOM and we’ll tell you what to fix first."
               action={
                 canWrite ? (
-                  <button type="button" onClick={() => setUploadOpen(true)} className={appPrimaryBtn}>
-                    Upload BOM
-                  </button>
+                  <div className="flex flex-wrap justify-center gap-3">
+                    <button type="button" onClick={() => openUpload('file')} className={appPrimaryBtn}>
+                      Upload BOM
+                    </button>
+                    <button type="button" onClick={() => openUpload('erp')} className="mk-btn mk-btn--ghost">
+                      Import from ERP
+                    </button>
+                  </div>
                 ) : (
                   <p className="text-[13px] text-mk-ink-subtle">Ask someone who can upload to add a BOM.</p>
                 )
@@ -241,8 +306,10 @@ export default function BomsPage() {
         open={uploadOpen}
         onClose={() => setUploadOpen(false)}
         onComplete={handleUploadComplete}
-        accountId={team?.account_id}
+        accountId={accountId}
         canManage={canManage}
+        initialTab={uploadTab}
+        initialErp={initialErp}
       />
     </>
   )

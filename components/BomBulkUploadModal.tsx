@@ -3,10 +3,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { CheckCircle, Loader2, Upload, X, XCircle } from 'lucide-react'
 import { AppModal, ModalNotice } from '@/components/AppModal'
-import { appGhostBtn, appPrimaryBtn } from '@/components/app/chrome'
+import { appField, appGhostBtn, appPrimaryBtn } from '@/components/app/chrome'
 import BomColumnMappingStep from '@/components/BomColumnMappingStep'
 import BomGoogleSheetImport from '@/components/BomGoogleSheetImport'
-import { analyzeFile, parseFile, saveBom } from '@/lib/api'
+import ErpExportHowto from '@/components/erp/ErpExportHowto'
+import {
+  analyzeFile,
+  getErpPrefs,
+  parseFile,
+  patchErpPrefs,
+  saveBom,
+  saveErpMapping,
+} from '@/lib/api'
 import {
   buildColumnMappings,
   extractHeaders,
@@ -15,6 +23,7 @@ import {
   previewRows,
 } from '@/lib/columnMapping'
 import { ACCEPTED, formatFileSize } from '@/components/BomUploadDropzone'
+import { ERP_PRESETS, erpLabel, type ErpId } from '@/lib/erp'
 import { pendingLineCount, stillLookingUpLabel } from '@/lib/risk'
 import type { BomSummary, ColumnMapping, ParseResult } from '@/lib/types'
 
@@ -34,6 +43,7 @@ type QueueItem = {
 }
 
 type UploadStep = 'select' | 'mapping' | 'complete'
+type TopTab = 'file' | 'erp'
 
 type BomBulkUploadModalProps = {
   open: boolean
@@ -41,6 +51,8 @@ type BomBulkUploadModalProps = {
   onComplete: (saved: BomSummary[]) => void
   accountId?: string | null
   canManage?: boolean
+  initialTab?: TopTab
+  initialErp?: ErpId | string | null
 }
 
 function queueKey(file: File) {
@@ -61,6 +73,8 @@ export default function BomBulkUploadModal({
   onComplete,
   accountId,
   canManage = false,
+  initialTab = 'file',
+  initialErp = null,
 }: BomBulkUploadModalProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const savedRef = useRef<BomSummary[]>([])
@@ -78,7 +92,14 @@ export default function BomBulkUploadModal({
   const [mapping, setMapping] = useState<ColumnMapping[]>([])
   const [headers, setHeaders] = useState<string[]>([])
   const [preview, setPreview] = useState<string[][]>([])
-  const [source, setSource] = useState<'file' | 'sheet'>('file')
+  const [topTab, setTopTab] = useState<TopTab>(initialTab)
+  const [fileSource, setFileSource] = useState<'file' | 'sheet'>('file')
+  const [erpId, setErpId] = useState<ErpId>((initialErp as ErpId) || 'other')
+  const [howtoCollapsed, setHowtoCollapsed] = useState(false)
+  const [saveMapping, setSaveMapping] = useState(false)
+  const [savedMappings, setSavedMappings] = useState<Record<string, Record<string, string>>>({})
+
+  const activeErp = topTab === 'erp' ? erpId : null
 
   const reset = useCallback(() => {
     setStep('select')
@@ -94,9 +115,39 @@ export default function BomBulkUploadModal({
     setMapping([])
     setHeaders([])
     setPreview([])
-    setSource('file')
+    setTopTab(initialTab)
+    setFileSource('file')
+    setErpId((initialErp as ErpId) || 'other')
+    setHowtoCollapsed(false)
+    setSaveMapping(false)
     savedRef.current = []
-  }, [])
+  }, [initialErp, initialTab])
+
+  useEffect(() => {
+    if (!open) return
+    setTopTab(initialTab)
+    if (initialErp) setErpId(initialErp as ErpId)
+  }, [open, initialTab, initialErp])
+
+  useEffect(() => {
+    if (!open || !accountId) return
+    let cancelled = false
+    getErpPrefs(accountId)
+      .then((prefs) => {
+        if (cancelled) return
+        if (prefs.default_erp && !initialErp) setErpId(prefs.default_erp)
+        setHowtoCollapsed(Boolean(prefs.howto_collapsed))
+        const next: Record<string, Record<string, string>> = {}
+        for (const mapping of prefs.mappings) {
+          next[mapping.erp] = mapping.column_mapping
+        }
+        setSavedMappings(next)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [open, accountId, initialErp])
 
   const handleClose = () => {
     if (parsing || confirming) return
@@ -138,7 +189,7 @@ export default function BomBulkUploadModal({
   }
 
   const beginMappingForFile = useCallback(
-    async (index: number, queue: QueueItem[]) => {
+    async (index: number, queue: QueueItem[], erp: string | null) => {
       if (index >= queue.length) {
         setStep('complete')
         onComplete(savedRef.current)
@@ -152,7 +203,11 @@ export default function BomBulkUploadModal({
       markItem(index, { status: 'mapping', error: undefined })
 
       try {
-        const result = await parseFile(item.file)
+        const saved = erp && savedMappings[erp] ? savedMappings[erp] : undefined
+        const result = await parseFile(item.file, {
+          sourceErp: erp,
+          columnMapping: saved,
+        })
         setAutoParse(result)
         setParseResult(result)
         setMapping(buildColumnMappings(result))
@@ -161,19 +216,23 @@ export default function BomBulkUploadModal({
         setStep('mapping')
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to parse file'
-        markItem(index, { status: 'failed', error: message })
-        await beginMappingForFile(index + 1, queue)
+        const friendly =
+          /part number|mpn|column/i.test(message)
+            ? message
+            : `${message} If the part number column is missing, pick it on the next screen when the file parses.`
+        markItem(index, { status: 'failed', error: friendly })
+        await beginMappingForFile(index + 1, queue, erp)
       } finally {
         setParsing(false)
       }
     },
-    [onComplete],
+    [onComplete, savedMappings],
   )
 
   const handleContinue = () => {
     if (items.length === 0) return
     savedRef.current = []
-    void beginMappingForFile(0, items)
+    void beginMappingForFile(0, items, activeErp)
   }
 
   const handleBackFromMapping = () => {
@@ -184,6 +243,7 @@ export default function BomBulkUploadModal({
     setHeaders([])
     setPreview([])
     setFileIndex(0)
+    setSaveMapping(false)
     setItems((prev) => prev.map((item) => ({ ...item, status: 'ready', error: undefined, saved: undefined })))
     savedRef.current = []
   }
@@ -194,7 +254,11 @@ export default function BomBulkUploadModal({
 
     const validationError = mappingValidationError(mapping)
     if (validationError) {
-      setPickError(validationError)
+      setPickError(
+        validationError.includes('MPN')
+          ? "We couldn't find a part number column. Pick it below."
+          : validationError,
+      )
       return
     }
 
@@ -204,22 +268,41 @@ export default function BomBulkUploadModal({
     markItem(fileIndex, { status: 'processing', error: undefined })
 
     try {
-      const analyzeResult = await analyzeFile(item.file, { columnMapping })
-      const bom = await saveBom(item.file, analyzeResult)
+      if (accountId && activeErp && activeErp !== 'other') {
+        await patchErpPrefs(accountId, { default_erp: activeErp }).catch(() => {})
+      }
+      if (accountId && saveMapping && activeErp && activeErp !== 'other') {
+        await saveErpMapping(accountId, activeErp, columnMapping).catch(() => {})
+      }
+
+      const analyzeResult = await analyzeFile(item.file, {
+        columnMapping,
+        sourceErp: activeErp,
+      })
+      const bom = await saveBom(item.file, analyzeResult, {
+        sourceErp: activeErp,
+        columnMapping,
+      })
       savedRef.current.push(bom)
       markItem(fileIndex, {
         status: 'done',
         saved: bom,
         pendingCount: pendingLineCount(analyzeResult),
       })
-      await beginMappingForFile(fileIndex + 1, items)
+      await beginMappingForFile(fileIndex + 1, items, activeErp)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Analysis failed'
       markItem(fileIndex, { status: 'failed', error: message })
-      await beginMappingForFile(fileIndex + 1, items)
+      await beginMappingForFile(fileIndex + 1, items, activeErp)
     } finally {
       setConfirming(false)
     }
+  }
+
+  const collapseHowto = async () => {
+    setHowtoCollapsed(true)
+    if (!accountId) return
+    await patchErpPrefs(accountId, { howto_collapsed: true }).catch(() => {})
   }
 
   const currentFile = items[fileIndex]?.file ?? null
@@ -235,7 +318,10 @@ export default function BomBulkUploadModal({
     const timer = window.setTimeout(async () => {
       setPreviewLoading(true)
       try {
-        const updated = await parseFile(currentFile, { columnMapping })
+        const updated = await parseFile(currentFile, {
+          columnMapping,
+          sourceErp: activeErp,
+        })
         setParseResult(updated)
         setHeaders(extractHeaders(updated))
         setPreview(previewRows(updated, 4))
@@ -247,7 +333,7 @@ export default function BomBulkUploadModal({
     }, PREVIEW_DEBOUNCE_MS)
 
     return () => window.clearTimeout(timer)
-  }, [step, autoParse, currentFile, mapping])
+  }, [step, autoParse, currentFile, mapping, activeErp])
 
   const doneCount = items.filter((item) => item.status === 'done').length
   const failedCount = items.filter((item) => item.status === 'failed').length
@@ -257,16 +343,19 @@ export default function BomBulkUploadModal({
     step === 'select'
       ? {
           eyebrow: 'New BOM',
-          title: 'Upload a BOM',
+          title: topTab === 'erp' ? 'Import from ERP' : 'Upload a BOM',
           subtitle:
-            'Drop a CSV or Excel export. You can add more than one file. Next you will confirm which columns are part number, manufacturer, and quantity.',
+            topTab === 'erp'
+              ? `Export from ${erpLabel(erpId)}, then drop the file here. Next you will confirm column mapping.`
+              : 'Drop a CSV or Excel export. You can add more than one file. Next you will confirm which columns are part number, manufacturer, and quantity.',
         }
       : step === 'mapping'
         ? {
             eyebrow: items.length > 1 ? `Columns · ${fileIndex + 1} of ${items.length}` : 'Columns',
             title: 'Confirm columns',
-            subtitle:
-              'We guessed these from the header row. Part number is required. Skip anything that is not a BOM field.',
+            subtitle: activeErp
+              ? `Mapped from ${erpLabel(activeErp)} field names. Part number is required. Fix any row below.`
+              : 'We guessed these from the header row. Part number is required. Skip anything that is not a BOM field.',
           }
         : {
             eyebrow: 'Upload',
@@ -330,6 +419,50 @@ export default function BomBulkUploadModal({
       </div>
     )
 
+  const dropzone = (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => inputRef.current?.click()}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          inputRef.current?.click()
+        }
+      }}
+      onDragOver={(e) => {
+        e.preventDefault()
+        setDragOver(true)
+      }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => {
+        e.preventDefault()
+        setDragOver(false)
+        addFiles(e.dataTransfer.files)
+      }}
+      className={`flex min-h-44 flex-col items-center justify-center rounded-[8px] border border-dashed border-mk-line-strong bg-mk-raised px-6 py-10 text-center transition-colors ${
+        dragOver ? 'border-mk-accent bg-mk-accent/5' : ''
+      }`}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        multiple
+        accept={ACCEPT_MIME}
+        className="sr-only"
+        onChange={(e) => {
+          if (e.target.files) addFiles(e.target.files)
+          e.target.value = ''
+        }}
+      />
+      <Upload className="h-5 w-5 text-mk-ink-muted" aria-hidden />
+      <p className="mt-3 text-[15px] font-medium text-mk-ink">Drop files here or click to browse</p>
+      <p className="mt-2 max-w-[36ch] text-[13px] leading-relaxed text-mk-ink-muted">
+        CSV, XLSX, XLS, or TXT. Up to 2,000 rows per file.
+      </p>
+    </div>
+  )
+
   return (
     <AppModal
       open={open}
@@ -350,75 +483,88 @@ export default function BomBulkUploadModal({
           <div className="mb-4 flex gap-1 rounded-[8px] bg-mk-raised p-1">
             <button
               type="button"
-              onClick={() => setSource('file')}
+              onClick={() => setTopTab('file')}
               className={`flex-1 rounded-[6px] px-3 py-2 text-[13px] font-medium transition-colors ${
-                source === 'file' ? 'bg-mk-canvas text-mk-ink' : 'text-mk-ink-muted hover:text-mk-ink'
+                topTab === 'file' ? 'bg-mk-canvas text-mk-ink' : 'text-mk-ink-muted hover:text-mk-ink'
               }`}
             >
-              File
+              Upload file
             </button>
             <button
               type="button"
-              onClick={() => setSource('sheet')}
+              onClick={() => setTopTab('erp')}
               className={`flex-1 rounded-[6px] px-3 py-2 text-[13px] font-medium transition-colors ${
-                source === 'sheet' ? 'bg-mk-canvas text-mk-ink' : 'text-mk-ink-muted hover:text-mk-ink'
+                topTab === 'erp' ? 'bg-mk-canvas text-mk-ink' : 'text-mk-ink-muted hover:text-mk-ink'
               }`}
             >
-              Google Sheet
+              Import from ERP
             </button>
           </div>
 
-          {source === 'file' ? (
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => inputRef.current?.click()}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                inputRef.current?.click()
-              }
-            }}
-            onDragOver={(e) => {
-              e.preventDefault()
-              setDragOver(true)
-            }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={(e) => {
-              e.preventDefault()
-              setDragOver(false)
-              addFiles(e.dataTransfer.files)
-            }}
-            className={`flex min-h-44 flex-col items-center justify-center rounded-[8px] border border-dashed border-mk-line-strong bg-mk-raised px-6 py-10 text-center transition-colors ${
-              dragOver ? 'border-mk-accent bg-mk-accent/5' : ''
-            }`}
-          >
-            <input
-              ref={inputRef}
-              type="file"
-              multiple
-              accept={ACCEPT_MIME}
-              className="sr-only"
-              onChange={(e) => {
-                if (e.target.files) addFiles(e.target.files)
-                e.target.value = ''
-              }}
-            />
-            <Upload className="h-5 w-5 text-mk-ink-muted" aria-hidden />
-            <p className="mt-3 text-[15px] font-medium text-mk-ink">Drop files here or click to browse</p>
-            <p className="mt-2 max-w-[36ch] text-[13px] leading-relaxed text-mk-ink-muted">
-              CSV, XLSX, XLS, or TXT. We look for a part-number column first, then manufacturer and quantity.
-            </p>
-          </div>
-          ) : accountId ? (
-            <BomGoogleSheetImport
-              accountId={accountId}
-              canManage={canManage}
-              disabled={parsing}
-              onFile={(file) => addFiles([file])}
-            />
+          {topTab === 'file' ? (
+            <>
+              <div className="mb-4 flex gap-1 rounded-[8px] bg-mk-raised p-1">
+                <button
+                  type="button"
+                  onClick={() => setFileSource('file')}
+                  className={`flex-1 rounded-[6px] px-3 py-2 text-[13px] font-medium transition-colors ${
+                    fileSource === 'file' ? 'bg-mk-canvas text-mk-ink' : 'text-mk-ink-muted hover:text-mk-ink'
+                  }`}
+                >
+                  File
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFileSource('sheet')}
+                  className={`flex-1 rounded-[6px] px-3 py-2 text-[13px] font-medium transition-colors ${
+                    fileSource === 'sheet' ? 'bg-mk-canvas text-mk-ink' : 'text-mk-ink-muted hover:text-mk-ink'
+                  }`}
+                >
+                  Google Sheet
+                </button>
+              </div>
+
+              {fileSource === 'file' ? (
+                dropzone
+              ) : accountId ? (
+                <BomGoogleSheetImport
+                  accountId={accountId}
+                  canManage={canManage}
+                  disabled={parsing}
+                  onFile={(file) => addFiles([file])}
+                />
+              ) : (
+                <p className="text-[13px] text-mk-ink-muted">Sign in to open a Google Sheet.</p>
+              )}
+            </>
           ) : (
-            <p className="text-[13px] text-mk-ink-muted">Sign in to open a Google Sheet.</p>
+            <div className="space-y-4">
+              <label className="block">
+                <span className="mb-1.5 block text-[12px] font-medium text-mk-ink-subtle">ERP</span>
+                <select
+                  value={erpId}
+                  onChange={(e) => setErpId(e.target.value as ErpId)}
+                  className={appField}
+                >
+                  {ERP_PRESETS.map((preset) => (
+                    <option key={preset.id} value={preset.id}>
+                      {preset.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <ErpExportHowto
+                erp={erpId}
+                collapsed={howtoCollapsed}
+                onToggle={() => {
+                  if (howtoCollapsed) setHowtoCollapsed(false)
+                  else void collapseHowto()
+                }}
+              />
+
+              {dropzone}
+            </div>
           )}
 
           {items.length > 0 ? (
@@ -459,6 +605,9 @@ export default function BomBulkUploadModal({
           preview={preview}
           previewLoading={previewLoading}
           onMappingChange={setMapping}
+          sourceErp={activeErp}
+          saveMapping={saveMapping}
+          onSaveMappingChange={setSaveMapping}
         />
       ) : null}
 

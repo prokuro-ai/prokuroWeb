@@ -2,6 +2,7 @@
 
 import AppMenu from '@/components/app/AppMenu'
 import { ModalNotice } from '@/components/AppModal'
+import { erpLabel } from '@/lib/erp'
 import type { ColumnMapping, ParseResult, WarningCode } from '@/lib/types'
 
 type BomColumnMappingStepProps = {
@@ -13,6 +14,9 @@ type BomColumnMappingStepProps = {
   preview: string[][]
   previewLoading?: boolean
   onMappingChange: (mapping: ColumnMapping[]) => void
+  sourceErp?: string | null
+  saveMapping?: boolean
+  onSaveMappingChange?: (value: boolean) => void
 }
 
 function warningCopy(code: WarningCode): string {
@@ -28,6 +32,24 @@ function warningCopy(code: WarningCode): string {
   }
 }
 
+function fieldConfidence(col: ColumnMapping, overall: number): string {
+  if (!col.detectedFrom) return 'Not mapped'
+  if (col.confirmed && col.detectedFrom) {
+    // User-touched or auto-detected; show relative strength from overall parse.
+    if (overall >= 0.85) return 'High'
+    if (overall >= 0.6) return 'Medium'
+    return 'Low'
+  }
+  return 'Low'
+}
+
+function confidenceTone(label: string): string {
+  if (label === 'High') return 'text-mk-green'
+  if (label === 'Medium') return 'text-mk-amber'
+  if (label === 'Not mapped') return 'text-mk-ink-subtle'
+  return 'text-mk-red'
+}
+
 export default function BomColumnMappingStep({
   file,
   fileCount,
@@ -37,6 +59,9 @@ export default function BomColumnMappingStep({
   preview,
   previewLoading = false,
   onMappingChange,
+  sourceErp = null,
+  saveMapping = false,
+  onSaveMappingChange,
 }: BomColumnMappingStepProps) {
   const hasMpn = mapping.some((col) => col.canonical === 'mpn' && col.detectedFrom)
   const fileName = file?.name ?? parseResult.source_filename
@@ -62,6 +87,7 @@ export default function BomColumnMappingStep({
           {total !== parsed ? ` of ${total.toLocaleString()}` : ''} rows
           {confidence > 0 && confidence < 100 ? ` · ${confidence}% column match` : ''}
           {parseResult.sheet_name ? ` · ${parseResult.sheet_name}` : ''}
+          {sourceErp ? ` · ${erpLabel(sourceErp)}` : ''}
         </p>
       </div>
 
@@ -72,6 +98,12 @@ export default function BomColumnMappingStep({
             </ModalNotice>
           ))
         : null}
+
+      {!hasMpn ? (
+        <ModalNotice tone="warn">
+          We couldn&apos;t find a part number column. Pick it below.
+        </ModalNotice>
+      ) : null}
 
       {headers.length > 0 ? (
         <div>
@@ -114,35 +146,50 @@ export default function BomColumnMappingStep({
       ) : null}
 
       <div>
-        <p className="mb-1 text-[13px] font-medium text-mk-ink">What each column is</p>
+        <p className="mb-1 text-[13px] font-medium text-mk-ink">
+          {sourceErp ? `${erpLabel(sourceErp)} fields → Prokuro` : 'What each column is'}
+        </p>
         <p className="mb-3 text-[12px] text-mk-ink-muted">
           Part number is required. Skip anything that is not a BOM field.
         </p>
         <div className="divide-y divide-mk-line rounded-[8px] bg-mk-raised px-4">
-          {mapping.map((col, idx) => (
-            <div key={col.canonical} className="flex flex-wrap items-center gap-3 py-3">
-              <span className="min-w-0 flex-1 text-[13px] font-medium text-mk-ink">{col.label}</span>
-              <AppMenu
-                label={col.detectedFrom ?? 'Skip'}
-                ariaLabel={col.label}
-                triggerClassName="min-w-[11rem] justify-between"
-                items={[
-                  { label: 'Skip', onSelect: () => setColumn(idx, null) },
-                  ...headers.map((header) => ({
-                    label: header,
-                    onSelect: () => setColumn(idx, header),
-                  })),
-                ]}
-              />
-            </div>
-          ))}
+          {mapping.map((col, idx) => {
+            const conf = fieldConfidence(col, parseResult.mapping_confidence)
+            return (
+              <div key={col.canonical} className="flex flex-wrap items-center gap-3 py-3">
+                <div className="min-w-0 flex-1">
+                  <span className="block text-[13px] font-medium text-mk-ink">{col.label}</span>
+                  <span className={`text-[11px] ${confidenceTone(conf)}`}>{conf} confidence</span>
+                </div>
+                <AppMenu
+                  label={col.detectedFrom ?? 'Skip'}
+                  ariaLabel={col.label}
+                  triggerClassName="min-w-[11rem] justify-between"
+                  items={[
+                    { label: 'Skip', onSelect: () => setColumn(idx, null) },
+                    ...headers.map((header) => ({
+                      label: header,
+                      onSelect: () => setColumn(idx, header),
+                    })),
+                  ]}
+                />
+              </div>
+            )
+          })}
         </div>
-        {!hasMpn ? (
-          <p className="mt-3 text-[13px] text-mk-amber">
-            Map a column to MPN / Part Number before we can analyze this file.
-          </p>
-        ) : null}
       </div>
+
+      {sourceErp && sourceErp !== 'other' && onSaveMappingChange ? (
+        <label className="flex items-start gap-2 text-[13px] text-mk-ink">
+          <input
+            type="checkbox"
+            checked={saveMapping}
+            onChange={(e) => onSaveMappingChange(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span>Save this mapping for future {erpLabel(sourceErp)} imports</span>
+        </label>
+      ) : null}
     </div>
   )
 }

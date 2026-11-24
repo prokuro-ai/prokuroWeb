@@ -124,12 +124,12 @@ async function readJsonBody(res: Response): Promise<unknown> {
 
 export async function parseFile(
   file: File,
-  options?: { columnMapping?: Record<string, string> },
+  options?: { columnMapping?: Record<string, string>; sourceErp?: string | null },
 ): Promise<ParseResult> {
-  const extra = options?.columnMapping
-    ? { column_mapping: JSON.stringify(options.columnMapping) }
-    : undefined
-  const res = await postFile(uploadEndpoint('parse'), file, extra)
+  const extra: Record<string, string> = {}
+  if (options?.columnMapping) extra.column_mapping = JSON.stringify(options.columnMapping)
+  if (options?.sourceErp) extra.source_erp = options.sourceErp
+  const res = await postFile(uploadEndpoint('parse'), file, Object.keys(extra).length ? extra : undefined)
   const body: unknown = await readJsonBody(res)
   if (res.ok) return body as ParseResult
 
@@ -140,12 +140,12 @@ export async function parseFile(
 
 export async function analyzeFile(
   file: File,
-  options?: { columnMapping?: Record<string, string> },
+  options?: { columnMapping?: Record<string, string>; sourceErp?: string | null },
 ): Promise<AnalyzeResult> {
-  const extra = options?.columnMapping
-    ? { column_mapping: JSON.stringify(options.columnMapping) }
-    : undefined
-  const res = await postFile(uploadEndpoint('analyze'), file, extra)
+  const extra: Record<string, string> = {}
+  if (options?.columnMapping) extra.column_mapping = JSON.stringify(options.columnMapping)
+  if (options?.sourceErp) extra.source_erp = options.sourceErp
+  const res = await postFile(uploadEndpoint('analyze'), file, Object.keys(extra).length ? extra : undefined)
   const body: unknown = await readJsonBody(res)
   if (!res.ok) throw new Error(await readErrorMessage(res, body))
   return body as AnalyzeResult
@@ -280,13 +280,20 @@ export async function addBomLine(
 export async function saveBom(
   file: File,
   analyze: AnalyzeResult,
-  options?: { name?: string; parse?: ParseResult | null },
+  options?: {
+    name?: string
+    parse?: ParseResult | null
+    sourceErp?: string | null
+    columnMapping?: Record<string, string> | null
+  },
 ): Promise<BomSummary> {
   const form = new FormData()
   form.append('file', file)
   form.append('analyze', JSON.stringify(analyze))
   if (options?.parse) form.append('parse', JSON.stringify(options.parse))
   if (options?.name) form.append('name', options.name)
+  if (options?.sourceErp) form.append('source_erp', options.sourceErp)
+  if (options?.columnMapping) form.append('column_mapping', JSON.stringify(options.columnMapping))
 
   const res = await fetch('/api/boms', {
     method: 'POST',
@@ -683,6 +690,75 @@ export async function importGoogleSheetTab(
   const payload = body as { filename?: string; csv?: string }
   if (!payload.csv) throw new Error('that sheet tab is empty')
   return { filename: payload.filename || 'sheet.csv', csv: payload.csv }
+}
+
+function erpPath(accountId: string, suffix = '') {
+  return `/api/accounts/${encodeURIComponent(accountId)}/erp${suffix}`
+}
+
+export async function getErpPrefs(accountId: string): Promise<import('./erp').ErpPrefs> {
+  const res = await fetch(erpPath(accountId), { headers: await authHeaders() })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  return body as import('./erp').ErpPrefs
+}
+
+export async function patchErpPrefs(
+  accountId: string,
+  patch: {
+    default_erp?: string | null
+    howto_collapsed?: boolean
+    onboarding_skipped?: boolean
+  },
+): Promise<import('./erp').ErpPrefs> {
+  const res = await fetch(erpPath(accountId), {
+    method: 'PATCH',
+    headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch),
+  })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  return body as import('./erp').ErpPrefs
+}
+
+export async function saveErpMapping(
+  accountId: string,
+  erp: string,
+  columnMapping: Record<string, string>,
+): Promise<import('./erp').SavedErpMapping> {
+  const res = await fetch(erpPath(accountId, `/mappings/${encodeURIComponent(erp)}`), {
+    method: 'PUT',
+    headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ column_mapping: columnMapping }),
+  })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  return body as import('./erp').SavedErpMapping
+}
+
+export async function deleteErpMapping(accountId: string, erp: string): Promise<void> {
+  const res = await fetch(erpPath(accountId, `/mappings/${encodeURIComponent(erp)}`), {
+    method: 'DELETE',
+    headers: await authHeaders(),
+  })
+  if (!res.ok && res.status !== 204) {
+    const body: unknown = await readJsonBody(res)
+    throw new Error(await readErrorMessage(res, body))
+  }
+}
+
+export async function requestErpLiveSync(
+  accountId: string,
+  erp: string,
+): Promise<{ ok: boolean; message: string }> {
+  const res = await fetch(erpPath(accountId, '/live-sync-interest'), {
+    method: 'POST',
+    headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ erp }),
+  })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  return body as { ok: boolean; message: string }
 }
 
 
