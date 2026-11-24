@@ -23,7 +23,7 @@ import {
 import { GOOGLE_OAUTH_FLAG_KEY, googleOauthNotice, googleOauthNoticeClass } from './helpers'
 
 export default function IntegrationsPane() {
-  const { team, canManage, canWrite } = useTeam()
+  const { team, canManage } = useTeam()
   const accountId = team?.account_id
   const [status, setStatus] = useState<GoogleSheetsStatus | null>(null)
   const [oauthFlag, setOauthFlag] = useState<string | null>(null)
@@ -194,7 +194,7 @@ export default function IntegrationsPane() {
               <span className="mb-1.5 block text-[12px] font-medium text-mk-ink-subtle">Default ERP</span>
               <select
                 value={erpPrefs.default_erp ?? 'other'}
-                disabled={!canWrite || erpBusy === 'default'}
+                disabled={!canManage || erpBusy === 'default'}
                 onChange={(e) => void setDefaultErp(e.target.value as ErpId)}
                 className={appField}
               >
@@ -218,7 +218,7 @@ export default function IntegrationsPane() {
                       <p className="text-[13px] font-medium text-mk-ink">{preset.label}</p>
                       <p className="text-[11px] text-mk-ink-subtle">File import ready</p>
                     </div>
-                    {canWrite ? (
+                    {canManage ? (
                       asked ? (
                         <p className="text-[12px] text-mk-ink-muted">We&apos;ll reach out.</p>
                       ) : (
@@ -232,7 +232,7 @@ export default function IntegrationsPane() {
                         </button>
                       )
                     ) : (
-                      <p className="text-[12px] text-mk-ink-subtle">Ask an editor to request sync</p>
+                      <p className="text-[12px] text-mk-ink-subtle">Owner or admin only</p>
                     )}
                   </div>
                 )

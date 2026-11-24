@@ -11,11 +11,13 @@ type Step = 'choose' | 'export'
 export default function ErpOnboarding({
   accountId,
   canWrite,
+  canManage,
   onSkip,
   onReadyToUpload,
 }: {
   accountId: string
   canWrite: boolean
+  canManage: boolean
   onSkip: () => void
   onReadyToUpload: (erp: ErpId) => void
 }) {
@@ -25,6 +27,10 @@ export default function ErpOnboarding({
   const [error, setError] = useState<string | null>(null)
 
   const choose = async (erp: ErpId) => {
+    if (!canManage) {
+      setError('Ask an owner or admin to set the default ERP.')
+      return
+    }
     setBusy(true)
     setError(null)
     try {
@@ -39,6 +45,10 @@ export default function ErpOnboarding({
   }
 
   const skip = async () => {
+    if (!canManage) {
+      onSkip()
+      return
+    }
     setBusy(true)
     setError(null)
     try {

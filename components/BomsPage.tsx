@@ -214,6 +214,7 @@ export default function BomsPage() {
               <ErpOnboarding
                 accountId={accountId}
                 canWrite={canWrite}
+                canManage={canManage}
                 onSkip={() => setOnboardingDismissed(true)}
                 onReadyToUpload={(erp) => openUpload('erp', erp)}
               />
