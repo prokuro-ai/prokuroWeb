@@ -32,6 +32,10 @@ export const appInput =
 export const appField =
   'w-full rounded-[8px] border border-mk-line bg-mk-canvas px-3 py-2 text-[13px] text-mk-ink placeholder:text-mk-ink-subtle focus:border-mk-accent focus:outline-none'
 
+/** Native <select> — hide OS chevron and leave room for a custom arrow. */
+export const appSelect =
+  'w-full appearance-none rounded-[8px] border border-mk-line bg-mk-canvas py-2 pl-3 pr-10 text-[13px] text-mk-ink focus:border-mk-accent focus:outline-none'
+
 export const appPage =
   'flex-1 overflow-y-auto bg-mk-canvas font-mk-sans text-mk-ink'
 

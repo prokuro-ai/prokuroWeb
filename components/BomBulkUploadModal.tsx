@@ -1,9 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { CheckCircle, Loader2, Upload, X, XCircle } from 'lucide-react'
+import { CheckCircle, ChevronDown, Loader2, Upload, X, XCircle } from 'lucide-react'
 import { AppModal, ModalNotice } from '@/components/AppModal'
-import { appField, appGhostBtn, appPrimaryBtn } from '@/components/app/chrome'
+import { appGhostBtn, appPrimaryBtn, appSelect } from '@/components/app/chrome'
 import BomColumnMappingStep from '@/components/BomColumnMappingStep'
 import BomGoogleSheetImport from '@/components/BomGoogleSheetImport'
 import ErpExportHowto from '@/components/erp/ErpExportHowto'
@@ -470,7 +470,7 @@ export default function BomBulkUploadModal({
       eyebrow={header.eyebrow}
       title={header.title}
       subtitle={header.subtitle}
-      maxWidth={step === 'mapping' ? 'xl' : 'md'}
+      maxWidth={step === 'mapping' ? 'xl' : topTab === 'erp' ? 'lg' : 'md'}
       closeDisabled={parsing || confirming}
       footer={footer}
     >
@@ -541,17 +541,23 @@ export default function BomBulkUploadModal({
             <div className="space-y-4">
               <label className="block">
                 <span className="mb-1.5 block text-[12px] font-medium text-mk-ink-subtle">ERP</span>
-                <select
-                  value={erpId}
-                  onChange={(e) => setErpId(e.target.value as ErpId)}
-                  className={appField}
-                >
-                  {ERP_PRESETS.map((preset) => (
-                    <option key={preset.id} value={preset.id}>
-                      {preset.label}
-                    </option>
-                  ))}
-                </select>
+                <span className="relative block">
+                  <select
+                    value={erpId}
+                    onChange={(e) => setErpId(e.target.value as ErpId)}
+                    className={appSelect}
+                  >
+                    {ERP_PRESETS.map((preset) => (
+                      <option key={preset.id} value={preset.id}>
+                        {preset.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-mk-ink-subtle"
+                    aria-hidden
+                  />
+                </span>
               </label>
 
               <ErpExportHowto

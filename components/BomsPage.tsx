@@ -70,9 +70,11 @@ export default function BomsPage() {
   const accountId = team?.account_id
 
   useEffect(() => {
-    if (!accountId || loading || boms.length > 0) return
+    if (!accountId || loading) return
     let cancelled = false
-    setErpLoading(true)
+    // Empty list: block on prefs so we can show ERP onboarding.
+    // With BOMs: still load prefs so the header can prefer "Import from ERP".
+    if (boms.length === 0) setErpLoading(true)
     getErpPrefs(accountId)
       .then((prefs) => {
         if (!cancelled) {
@@ -156,9 +158,24 @@ export default function BomsPage() {
           description={status ?? (loading ? undefined : 'Upload a BOM to see what to buy, drop, or watch.')}
           actions={
             canWrite && boms.length > 0 ? (
-              <button type="button" onClick={() => openUpload('file')} className={appPrimaryBtn}>
-                Upload BOM
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => openUpload(erpPrefs?.default_erp ? 'erp' : 'file')}
+                  className={appPrimaryBtn}
+                >
+                  {erpPrefs?.default_erp ? 'Import from ERP' : 'Upload BOM'}
+                </button>
+                {erpPrefs?.default_erp ? (
+                  <button type="button" onClick={() => openUpload('file')} className="mk-btn mk-btn--ghost">
+                    Upload file
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => openUpload('erp')} className="mk-btn mk-btn--ghost">
+                    Import from ERP
+                  </button>
+                )}
+              </div>
             ) : null
           }
         />

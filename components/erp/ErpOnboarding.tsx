@@ -108,13 +108,14 @@ export default function ErpOnboarding({
     <div className="mx-auto max-w-2xl space-y-6 py-8 text-left">
       <div>
         <p className="text-[12px] font-medium uppercase tracking-[0.08em] text-mk-ink-subtle">
-          First BOM
+          Account setup
         </p>
         <h2 className="mt-2 text-[22px] font-medium tracking-tight text-mk-ink">
           Where do your BOMs come from?
         </h2>
         <p className="mt-2 text-[14px] leading-relaxed text-mk-ink-muted">
-          Pick your ERP so we can recognize its export columns. You can change this later in Settings.
+          Set a default ERP once. Every later import opens with that preset — you can still switch ERP
+          in the upload dialog or in Settings.
         </p>
       </div>
 
