@@ -268,9 +268,8 @@ export default function BomBulkUploadModal({
     markItem(fileIndex, { status: 'processing', error: undefined })
 
     try {
-      if (accountId && activeErp && activeErp !== 'other') {
-        await patchErpPrefs(accountId, { default_erp: activeErp }).catch(() => {})
-      }
+      // Do not write default_erp here — picking a preset for one import must not
+      // overwrite the account default (set in onboarding / Settings).
       if (accountId && saveMapping && activeErp && activeErp !== 'other') {
         await saveErpMapping(accountId, activeErp, columnMapping).catch(() => {})
       }
