@@ -13,6 +13,10 @@ export interface BomSummary {
   /** Subset of `unknownCount` still awaiting enrichment. */
   pendingCount?: number
   riskBand?: string
+  /** ERP preset used at import, when the file came from an ERP export. */
+  sourceErp?: string | null
+  /** Confirmed header → Prokuro field mapping from import. */
+  columnMapping?: Record<string, string> | null
 }
 
 export interface FlaggedLineItem {
