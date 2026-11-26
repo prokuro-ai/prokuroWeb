@@ -279,6 +279,22 @@ export async function addBomLine(
   return body as BomLineMutationResult
 }
 
+/** Apply one need-by date to every line (or clear with empty string). */
+export async function setBomNeedByAll(
+  id: string,
+  version: number,
+  needBy: string,
+): Promise<BomRecord> {
+  const res = await bomWriteFetch(`/api/boms/${encodeURIComponent(id)}/need-by`, {
+    method: 'POST',
+    headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ version, need_by: needBy, apply_to_all: true }),
+  })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) await throwIfBomWriteFailed(res, body)
+  return body as BomRecord
+}
+
 export async function saveBom(
   file: File,
   analyze: AnalyzeResult,
