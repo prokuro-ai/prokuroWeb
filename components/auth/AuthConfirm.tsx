@@ -42,7 +42,7 @@ export default function AuthConfirm({
           label="Verification code"
           value={code}
           onChange={onCodeChange}
-          placeholder="6-digit code"
+          placeholder="Enter code"
           inputMode="numeric"
           autoComplete="one-time-code"
           error={error}
