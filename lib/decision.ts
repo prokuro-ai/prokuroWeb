@@ -204,8 +204,13 @@ export function buildLineDecision(line: AnalyzedLine): LineDecision {
     costNote = `At qty ${qty.toLocaleString()}, estimated duty is ${tariffLabel(line)} of unit cost (${line.hts_code ? `HTS ${line.hts_code}` : 'HTS pending'}). Re-spin cost depends on your CM quote.`
   } else if (line.total_duty_pct != null && line.total_duty_pct > 0) {
     costNote = `Estimated duty ${tariffLabel(line)}${line.hts_code ? ` under HTS ${line.hts_code}` : ''}. Add quantity to size tariff exposure.`
+  } else if (line.hts_code) {
+    const origin = line.country_of_origin
+      ? `COO ${line.country_of_origin}`
+      : 'country of origin unknown'
+    costNote = `HTS ${line.hts_code}. No additional duty estimated (${origin}).`
   } else {
-    costNote = 'No duty flagged on this line. Re-spin cost only applies if you change the MPN.'
+    costNote = 'No HTS or duty flagged on this line. Re-spin cost only applies if you change the MPN.'
   }
 
   return {
