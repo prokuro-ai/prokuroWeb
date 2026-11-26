@@ -5,7 +5,15 @@ import { ChevronDown, Search } from 'lucide-react'
 import { appColHead, appField, appSheet } from '@/components/app/chrome'
 import LineDetail from '@/components/app/LineDetail'
 import { leadLabel, lineStatusLabel, riskTone, stockHot, stockLabel } from '@/lib/bomLineDisplay'
-import { isAtRisk, isPendingLine, lifecycleLabel, lineRiskLevel, PENDING_LABEL, tariffLabel } from '@/lib/risk'
+import {
+  isAtRisk,
+  isPendingLine,
+  leadMissesNeedBy,
+  lifecycleLabel,
+  lineRiskLevel,
+  PENDING_LABEL,
+  tariffLabel,
+} from '@/lib/risk'
 import type { AnalyzedLine } from '@/lib/types'
 
 const FILTERS = [
@@ -27,7 +35,7 @@ function matchesFilter(line: AnalyzedLine, filter: FilterId): boolean {
   return lineRiskLevel(line) === filter
 }
 
-const COLS = ['Part', 'Manufacturer', 'Qty', 'Ref', 'Lifecycle', 'Stock', 'Lead', 'Duty', 'Risk'] as const
+const COLS = ['Part', 'Manufacturer', 'Qty', 'Need by', 'Ref', 'Lifecycle', 'Stock', 'Lead', 'Duty', 'Risk'] as const
 const COLUMN_COUNT = COLS.length
 
 export default function BomPartsTable({
@@ -202,6 +210,9 @@ export default function BomPartsTable({
                     <td className="px-4 py-2.5 text-right tabular-nums text-mk-ink-muted">
                       {line.quantity?.toLocaleString() ?? '—'}
                     </td>
+                    <td className="px-4 py-2.5 tabular-nums text-mk-ink-muted">
+                      {line.need_by?.trim() || '—'}
+                    </td>
                     <td className="px-4 py-2.5 text-mk-ink-muted">{line.refdes || '—'}</td>
                     <td
                       className={`px-4 py-2.5 ${
@@ -217,7 +228,13 @@ export default function BomPartsTable({
                     >
                       {stockLabel(line)}
                     </td>
-                    <td className="px-4 py-2.5 text-right tabular-nums text-mk-ink-muted">{leadLabel(line)}</td>
+                    <td
+                      className={`px-4 py-2.5 text-right tabular-nums ${
+                        leadMissesNeedBy(line) ? 'text-mk-red' : 'text-mk-ink-muted'
+                      }`}
+                    >
+                      {leadLabel(line)}
+                    </td>
                     <td
                       className={`px-4 py-2.5 text-right tabular-nums ${
                         duty !== '-' && duty !== '—' ? 'text-mk-red' : 'text-mk-ink-muted'

@@ -1,4 +1,11 @@
-import { isPendingLine, leadTimeWeeks, lineRiskLevel, PENDING_LABEL } from '@/lib/risk'
+import {
+  isPendingLine,
+  leadMissesNeedBy,
+  leadTimeWeeks,
+  lineRiskLevel,
+  PENDING_LABEL,
+  stockBelowBuildQty,
+} from '@/lib/risk'
 import type { AnalyzedLine, RiskLevel } from '@/lib/types'
 
 export function stockLabel(line: AnalyzedLine): string {
@@ -12,7 +19,7 @@ export function stockLabel(line: AnalyzedLine): string {
 export function stockHot(line: AnalyzedLine): boolean {
   if (isPendingLine(line)) return false
   const avail = line.availability_status?.toLowerCase() ?? ''
-  return avail === 'outofstock' || avail === 'nomatch'
+  return avail === 'outofstock' || avail === 'nomatch' || stockBelowBuildQty(line)
 }
 
 export function leadLabel(line: AnalyzedLine): string {

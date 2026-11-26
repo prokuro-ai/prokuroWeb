@@ -48,6 +48,8 @@ export type BomLinePatch = {
   mpn?: string
   manufacturer?: string
   quantity?: number
+  /** ISO date `YYYY-MM-DD`, or empty string to clear. */
+  need_by?: string
   refdes?: string
   description?: string
 }

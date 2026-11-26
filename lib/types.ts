@@ -153,6 +153,8 @@ export interface AnalyzedLine {
   mpn: string | null
   manufacturer: string | null
   quantity: number | null
+  /** Buyer need-by date for this MPN (`YYYY-MM-DD`). */
+  need_by?: string | null
   refdes: string | null
   description: string | null
   /** PCB footprint from the BOM. Older analyses omit it. */

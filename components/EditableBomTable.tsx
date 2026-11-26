@@ -15,7 +15,7 @@ import { lineStatusLabel, riskTone, stockHot, stockLabel } from '@/lib/bomLineDi
 import { isPendingLine, lifecycleLabel } from '@/lib/risk'
 import { Trash2, Plus } from 'lucide-react'
 
-type EditableField = 'mpn' | 'manufacturer' | 'quantity' | 'refdes' | 'description'
+type EditableField = 'mpn' | 'manufacturer' | 'quantity' | 'need_by' | 'refdes' | 'description'
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -33,6 +33,7 @@ function sameEditableFields(a: AnalyzedLine, b: AnalyzedLine): boolean {
     (a.mpn ?? '') === (b.mpn ?? '') &&
     (a.manufacturer ?? '') === (b.manufacturer ?? '') &&
     a.quantity === b.quantity &&
+    (a.need_by ?? '') === (b.need_by ?? '') &&
     (a.refdes ?? '') === (b.refdes ?? '') &&
     (a.description ?? '') === (b.description ?? '')
   )
@@ -235,6 +236,12 @@ export default function EditableBomTable({
         const parsed = Number(next)
         if (Number.isNaN(parsed)) throw new Error('Quantity must be a number')
         patch.quantity = parsed
+      } else if (field === 'need_by') {
+        const trimmed = next.trim()
+        if (trimmed && !/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+          throw new Error('Need-by must be YYYY-MM-DD')
+        }
+        patch.need_by = trimmed
       } else {
         patch[field] = next
       }
@@ -338,10 +345,10 @@ export default function EditableBomTable({
         </div>
       ) : null}
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[860px] border-collapse text-left text-[13px]">
+        <table className="w-full min-w-[960px] border-collapse text-left text-[13px]">
           <thead>
             <tr className="border-y border-mk-line">
-              {['Part', 'Manufacturer', 'Qty', 'Ref', 'Description', 'Lifecycle', 'Stock', 'Risk', ''].map(
+              {['Part', 'Manufacturer', 'Qty', 'Need by', 'Ref', 'Description', 'Lifecycle', 'Stock', 'Risk', ''].map(
                 (header) => (
                   <th
                     key={header || 'actions'}
@@ -378,6 +385,13 @@ export default function EditableBomTable({
                     <EditableCell
                       value={line.quantity != null ? String(line.quantity) : ''}
                       field="quantity"
+                      onCommit={(field, next) => handleFieldCommit(i, field, next)}
+                    />
+                  </td>
+                  <td className="px-3 py-2">
+                    <EditableCell
+                      value={line.need_by ?? ''}
+                      field="need_by"
                       onCommit={(field, next) => handleFieldCommit(i, field, next)}
                     />
                   </td>
