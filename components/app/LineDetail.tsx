@@ -46,8 +46,20 @@ export default function LineDetail({ line }: { line: AnalyzedLine }) {
         )}
       </div>
 
-      {(line.tariff_notes || line.entity_list_notes || line.tariff_disclaimer) && (
+      {(line.hts_code ||
+        line.tariff_notes ||
+        line.entity_list_notes ||
+        line.tariff_disclaimer) && (
         <div className="space-y-1 border-t border-mk-line/60 pt-4 text-[12px] leading-relaxed text-mk-ink-muted">
+          {line.hts_code ? (
+            <p>
+              HTS {line.hts_code}
+              {line.country_of_origin ? ` · COO ${line.country_of_origin}` : ''}
+              {line.total_duty_pct != null && line.total_duty_pct > 0
+                ? ` · estimated duty ${line.total_duty_pct}%`
+                : ''}
+            </p>
+          ) : null}
           {line.tariff_notes ? <p>{line.tariff_notes}</p> : null}
           {line.entity_list_notes ? <p className="text-mk-red">{line.entity_list_notes}</p> : null}
           {line.tariff_disclaimer ? <p className="text-mk-ink-subtle">{line.tariff_disclaimer}</p> : null}

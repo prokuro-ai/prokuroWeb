@@ -139,7 +139,12 @@ export default function BomPartsTable({
               const risk = lineRiskLevel(line)
               const life = isPendingLine(line) ? '—' : lifecycleLabel(line.lifecycle_status)
               const duty = isPendingLine(line) ? '—' : tariffLabel(line)
-              const expandable = isAtRisk(line)
+              // Expand any line with risk or tariff/HTS detail so HTS is reachable when duty is "-".
+              const expandable =
+                isAtRisk(line) ||
+                Boolean(line.hts_code) ||
+                Boolean(line.tariff_notes) ||
+                Boolean(line.entity_list_match)
               const open = expanded === line.row_index
               const detailId = `bom-line-detail-${line.row_index}`
               return (
