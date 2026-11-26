@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import BomExportMenu from '@/components/BomExportMenu'
 import BomPartsTable from '@/components/BomPartsTable'
 import EditableBomTable from '@/components/EditableBomTable'
+import NeedByPrompt from '@/components/NeedByPrompt'
 import { useAuth } from '@/components/AuthProvider'
 import { appContainer, appPrimaryBtn, appToolbarBtn, appToolbarBtnOn } from '@/components/app/chrome'
 import { Link } from '@/lib/navigation'
@@ -49,6 +50,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   const [editing, setEditing] = useState(false)
   const [pollStalled, setPollStalled] = useState(false)
   const [pollEpoch, setPollEpoch] = useState(0)
+  const [needByPromptOpen, setNeedByPromptOpen] = useState(false)
 
   const tabTitle = !loaded
     ? PAGE.bom
@@ -66,6 +68,8 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   // Restart whenever enrichment becomes pending again (e.g. after MPN edits).
   const needsPoll = Boolean(result && shouldPollBom(result))
   const pendingKeyRef = useRef('')
+
+  const needByStorageKey = `needby-prompt:${id}`
 
   const applyRecord = useCallback((record: { summary: BomSummary; analyze: AnalyzeResult }) => {
     const nextVersion = record.summary.version ?? 1
@@ -157,6 +161,22 @@ export default function BomResultPage({ id }: BomResultPageProps) {
       cancelled = true
     }
   }, [authLoading, user, id, router, applyRecord])
+
+  useEffect(() => {
+    if (!loaded || !result || !canWrite) {
+      setNeedByPromptOpen(false)
+      return
+    }
+    try {
+      if (sessionStorage.getItem(needByStorageKey)) {
+        setNeedByPromptOpen(false)
+        return
+      }
+    } catch {
+      // sessionStorage unavailable — still show once per mount
+    }
+    setNeedByPromptOpen(true)
+  }, [loaded, result, canWrite, needByStorageKey])
 
   useEffect(() => {
     if (!user || !id || !needsPoll) {
@@ -387,6 +407,42 @@ export default function BomResultPage({ id }: BomResultPageProps) {
                 {pendingCount === 1 ? 'It is' : 'They are'} not scored yet — this page updates as
                 results arrive.
               </p>
+            </div>
+          ) : null}
+
+          {needByPromptOpen ? (
+            <div className="mb-6 overflow-hidden border border-mk-line">
+              <NeedByPrompt
+                bomId={id}
+                version={version}
+                canWrite={canWrite}
+                onApplied={(record) => {
+                  try {
+                    sessionStorage.setItem(needByStorageKey, 'applied')
+                  } catch {
+                    /* ignore */
+                  }
+                  applyRecord(record)
+                  setNeedByPromptOpen(false)
+                }}
+                onPerPart={() => {
+                  try {
+                    sessionStorage.setItem(needByStorageKey, 'per_part')
+                  } catch {
+                    /* ignore */
+                  }
+                  setNeedByPromptOpen(false)
+                  setEditing(true)
+                }}
+                onSkip={() => {
+                  try {
+                    sessionStorage.setItem(needByStorageKey, 'skipped')
+                  } catch {
+                    /* ignore */
+                  }
+                  setNeedByPromptOpen(false)
+                }}
+              />
             </div>
           ) : null}
 

@@ -4,6 +4,7 @@ const CANONICAL_FIELDS: { canonical: string; label: string }[] = [
   { canonical: 'mpn', label: 'MPN / Part Number' },
   { canonical: 'manufacturer', label: 'Manufacturer' },
   { canonical: 'qty', label: 'Quantity' },
+  { canonical: 'need_by', label: 'Need by' },
   { canonical: 'refdes', label: 'Reference Designator' },
   { canonical: 'description', label: 'Description' },
   { canonical: 'footprint', label: 'Footprint' },
@@ -84,6 +85,7 @@ function previewValueForCanonical(
   if (canonical === 'mpn') return line.mpn ?? '-'
   if (canonical === 'manufacturer') return line.manufacturer ?? '-'
   if (canonical === 'qty') return line.quantity?.toString() ?? '-'
+  if (canonical === 'need_by') return line.need_by?.trim() || '-'
   if (canonical === 'refdes') return line.refdes ?? '-'
   if (canonical === 'description') return line.description ?? '-'
   if (canonical === 'footprint') return line.footprint ?? '-'
