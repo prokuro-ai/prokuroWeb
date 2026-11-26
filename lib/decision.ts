@@ -61,6 +61,7 @@ export function decisionHeadline(line: AnalyzedLine): string {
   if (line.total_duty_pct != null && line.total_duty_pct > 0) {
     return `Estimated duty is ${line.total_duty_pct}%.`
   }
+  // Gateway reasons (need-by miss, stock vs build qty, etc.) already carry the call.
   const reason = line.risk_reasons?.map((text) => text.trim()).find(Boolean)
   if (reason) return clipHeadline(/[.!?]$/.test(reason) ? reason : `${reason}.`)
   const risk = lineRiskLevel(line)
@@ -186,6 +187,11 @@ export function buildLineDecision(line: AnalyzedLine): LineDecision {
     nextAction = alternate
       ? `Check stock on ${alternate} and place a bridge buy if the original stays OOS.`
       : 'Confirm lead time with the franchise distributor and add a second source if lead slips.'
+  } else if (line.risk_reasons?.some((r) => /need-by/i.test(r)) && line.need_by) {
+    nextAction = `Pull demand forward or dual-source — factory lead misses need-by ${line.need_by}.`
+  } else if (line.risk_reasons?.some((r) => /build quantity/i.test(r))) {
+    nextAction =
+      'Cover the shortfall with a buy or alternate before releasing the build — stock is below quantity.'
   } else if (weeks != null && weeks > 30) {
     nextAction = 'Pull demand forward or dual-source — current factory lead will miss a normal build window.'
   } else if (line.total_duty_pct != null && line.total_duty_pct > 0) {

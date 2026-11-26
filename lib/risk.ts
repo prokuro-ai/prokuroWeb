@@ -144,6 +144,30 @@ export function isLongLead(line: AnalyzedLine): boolean {
   return line.factory_lead_days != null && line.factory_lead_days > 182
 }
 
+/** Stock under the line's build quantity (`quantity`). Matches gateway scoring. */
+export function stockBelowBuildQty(line: AnalyzedLine): boolean {
+  const qty = line.quantity
+  if (qty == null || qty <= 0) return false
+  return line.total_avail < qty
+}
+
+/**
+ * Factory lead would arrive after need-by. Uses local calendar date (UTC date on
+ * the server); client highlight is approximate for the same day.
+ */
+export function leadMissesNeedBy(line: AnalyzedLine): boolean {
+  const needBy = line.need_by?.trim()
+  const days = line.factory_lead_days
+  if (!needBy || days == null || days < 0) return false
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(needBy)) return false
+  const need = new Date(`${needBy}T00:00:00Z`)
+  if (Number.isNaN(need.getTime())) return false
+  const arrives = new Date()
+  arrives.setUTCHours(0, 0, 0, 0)
+  arrives.setUTCDate(arrives.getUTCDate() + days)
+  return arrives.getTime() > need.getTime()
+}
+
 export function tariffLabel(line: AnalyzedLine): string {
   return line.total_duty_pct != null && line.total_duty_pct > 0 ? `${line.total_duty_pct}%` : '-'
 }
