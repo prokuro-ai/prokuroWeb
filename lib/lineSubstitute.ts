@@ -19,6 +19,8 @@ export type LineSubstitute = {
   mpn: string
   approved: boolean
   detail?: string
+  /** Digi-Key label when known (e.g. Similar). Not an electrical guarantee from Prokuro. */
+  substituteType?: string
   extendedPrice?: number
 }
 
