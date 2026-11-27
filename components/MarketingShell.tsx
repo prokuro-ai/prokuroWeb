@@ -35,9 +35,9 @@ function NavLinks({
   )
 }
 
-export function MarketingFooter() {
+export function MarketingFooter({ surface = 'dark' }: { surface?: 'light' | 'dark' }) {
   return (
-    <footer data-surface="dark" className="border-t border-mk-line">
+    <footer data-surface={surface} className="border-t border-mk-line">
       <div className="mk-container py-16">
         <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr]">
           <div>
@@ -105,9 +105,11 @@ export function MarketingFooter() {
 export default function MarketingShell({
   children,
   surface = 'light',
+  footerSurface = 'dark',
 }: {
   children: React.ReactNode
   surface?: 'light' | 'dark'
+  footerSurface?: 'light' | 'dark'
 }) {
   const [open, setOpen] = useState(false)
   const [navSurface, setNavSurface] = useState<'light' | 'dark'>(surface)
@@ -195,7 +197,7 @@ export default function MarketingShell({
       </header>
 
       <div className="pt-14">{children}</div>
-      <MarketingFooter />
+      <MarketingFooter surface={footerSurface} />
     </div>
   )
 }

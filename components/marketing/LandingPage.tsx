@@ -5,13 +5,11 @@ import MarketingShell from '@/components/MarketingShell'
 import HeroSection from '@/components/marketing/sections/Hero'
 import AgentsSection from '@/components/marketing/sections/Agents'
 import TariffSection from '@/components/marketing/sections/Tariff'
-import HowItWorksSection from '@/components/marketing/sections/HowItWorks'
 import IntegrationsSection from '@/components/marketing/sections/Integrations'
 import PricingSection from '@/components/marketing/sections/Pricing'
 
 /**
- * Surfaces: dark hero + agents, light tariff, dark how-it-works + stack, light pricing.
- * Adjacent sections on the same surface read as one oversized block.
+ * Black and white alternate down the page. Hero stays dark.
  */
 export default function MarketingLanding() {
   return (
@@ -21,7 +19,6 @@ export default function MarketingLanding() {
           <HeroSection />
           <AgentsSection />
           <TariffSection />
-          <HowItWorksSection />
           <IntegrationsSection />
           <PricingSection />
         </main>

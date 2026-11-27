@@ -7,7 +7,7 @@ import { SCHEDULE_DEMO_PATH } from '@/lib/sales'
 
 export default function PricingSection() {
   return (
-    <section id="pricing" data-surface="light" className="mk-section">
+    <section id="pricing" data-surface="dark" className="mk-section">
       <div className="mk-container">
         <Reveal>
           <h2 className="mk-h2 max-w-[16ch]">Bring a BOM. We&apos;ll run it.</h2>

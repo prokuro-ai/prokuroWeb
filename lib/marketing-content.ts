@@ -1,6 +1,5 @@
 export const MARKETING_NAV_LINKS = [
   { href: '/#product', label: 'Product' },
-  { href: '/#how-it-works', label: 'How It Works' },
   { href: '/#stack', label: 'Integrations' },
   { href: '/#pricing', label: 'Talk to us' },
 ] as const

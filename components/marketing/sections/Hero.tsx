@@ -3,7 +3,9 @@
 import { ArrowRight } from 'lucide-react'
 import { motion, useReducedMotion } from 'framer-motion'
 import HeroVideo from '@/components/marketing/HeroVideo'
-import { MARKETING_HEADLINE, MARKETING_LEAD } from '@/lib/marketing-content'
+import { MARKETING_HEADLINE } from '@/lib/marketing-content'
+
+const HERO_LEAD = 'On the BOM you already run. Stock, lifecycle, and duty, then buy, drop, or watch.'
 import { MagneticCta } from '@/components/marketing/motion/primitives'
 import { SCHEDULE_DEMO_PATH } from '@/lib/sales'
 
@@ -42,7 +44,7 @@ export default function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
         >
-          {MARKETING_LEAD}
+          {HERO_LEAD}
         </motion.p>
 
         <motion.div

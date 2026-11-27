@@ -4,7 +4,7 @@ import Reveal from '@/components/marketing/motion/Reveal'
 
 export default function TariffSection() {
   return (
-    <section data-surface="light" className="mk-section">
+    <section data-surface="dark" className="mk-section">
       <div className="mk-container">
         <Reveal>
           <h2 className="mk-h2 max-w-[22ch]">Duty on the same line as stock.</h2>
