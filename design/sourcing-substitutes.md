@@ -4,8 +4,7 @@
 
 ## What it does
 
-Opening an out-of-stock, unmatched, or end-of-life line asks Digi-Key for that product's substitute list and shows up to three in-stock manufacturer part numbers in the expanded row, each quoted at the line qty with an on-line savings figure when the current part has a list price. Digi-Key's `substitute_type` (e.g. Similar) is shown — Prokuro does not re-validate electrical fit. AML parts stay labeled as AML. **Use** writes the chosen part onto that line and the line is looked up again. It is not marked as an approved alternate.
-
+Opening an out-of-stock, unmatched, or end-of-life line asks Digi-Key for that product's substitute list and shows up to three in-stock manufacturer part numbers in the expanded row. **Use** writes the chosen part onto that line and the line is looked up again. It is not marked as an approved alternate.
 
 When **Source this cart** cannot buy a line, the same list is quoted and the winner appears on the existing swap row. The buyer accepts it there for the cart. Covered lines are unchanged: only an approved AML part that saves at least 10% and $1 is proposed.
 

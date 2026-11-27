@@ -326,7 +326,6 @@ export async function saveBom(
 export type CatalogSubstitute = {
   mpn: string
   description?: string
-  substituteType?: string
   extendedPrice?: number
 }
 
@@ -349,16 +348,11 @@ export async function fetchSubstitutes(mpn: string, quantity: number): Promise<C
     if (!part || typeof part !== 'object' || !('mpn' in part) || typeof part.mpn !== 'string') continue
     const description =
       'description' in part && typeof part.description === 'string' ? part.description.trim() : ''
-    const substituteType =
-      'substitute_type' in part && typeof part.substitute_type === 'string'
-        ? part.substitute_type.trim()
-        : ''
     const extended =
       'extended_price' in part && typeof part.extended_price === 'number' ? part.extended_price : undefined
     out.push({
       mpn: part.mpn,
       ...(description ? { description } : {}),
-      ...(substituteType ? { substituteType } : {}),
       ...(extended != null ? { extendedPrice: extended } : {}),
     })
   }

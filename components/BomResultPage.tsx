@@ -179,11 +179,21 @@ export default function BomResultPage({ id }: BomResultPageProps) {
     }
   }, [authLoading, user, id, router, applyRecord])
 
-  // Need-by lives on the BOM (build schedule), not in sourcing. Do not auto-open
-  // the full panel — toolbar + compact strip stay available after Skip.
   useEffect(() => {
-    if (!canWrite) setNeedByPromptOpen(false)
-  }, [canWrite])
+    if (!loaded || !result || !canWrite) {
+      setNeedByPromptOpen(false)
+      return
+    }
+    try {
+      if (sessionStorage.getItem(needByStorageKey)) {
+        setNeedByPromptOpen(false)
+        return
+      }
+    } catch {
+      // sessionStorage unavailable — still show once per mount
+    }
+    setNeedByPromptOpen(true)
+  }, [loaded, result, canWrite, needByStorageKey])
 
   useEffect(() => {
     if (!user || !id || !needsPoll) {
@@ -266,7 +276,6 @@ export default function BomResultPage({ id }: BomResultPageProps) {
               mpn: item.mpn.trim(),
               approved: false,
               ...(item.description ? { detail: item.description } : {}),
-              ...(item.substituteType ? { substituteType: item.substituteType } : {}),
               ...(item.extendedPrice != null ? { extendedPrice: item.extendedPrice } : {}),
             })
           }
@@ -361,15 +370,6 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   const flagged = (result.summary.red_count ?? 0) + (result.summary.yellow_count ?? 0)
   const pendingCount = pendingLineCount(result)
   const price = bomPrice(result.lines)
-  const needByDates = [
-    ...new Set(
-      result.lines
-        .map((line) => line.need_by?.trim())
-        .filter((value): value is string => Boolean(value)),
-    ),
-  ]
-  const needByLabel =
-    needByDates.length === 0 ? null : needByDates.length === 1 ? needByDates[0] : 'mixed dates'
   // Nothing has come back yet, so the BOM is neither "Unscored" nor "Clear".
   const badge =
     pendingCount > 0 && flagged === 0 ? PENDING_BADGE : portfolioBadgeFromSummary(result.summary)
@@ -467,25 +467,9 @@ export default function BomResultPage({ id }: BomResultPageProps) {
                   ) : null}
                   <span className="mx-2 text-mk-line-strong">·</span>
                   {uploadedLabel}
-                  {needByLabel ? (
-                    <>
-                      <span className="mx-2 text-mk-line-strong">·</span>
-                      need by {needByLabel}
-                    </>
-                  ) : null}
                 </p>
               </div>
               <div className="ml-auto flex shrink-0 items-center gap-2">
-                {canWrite ? (
-                  <button
-                    type="button"
-                    onClick={() => setNeedByPromptOpen(true)}
-                    aria-pressed={needByPromptOpen}
-                    className={needByPromptOpen ? appToolbarBtnOn : appToolbarBtn}
-                  >
-                    Need by
-                  </button>
-                ) : null}
                 {canWrite ? (
                   <button
                     type="button"
@@ -549,21 +533,6 @@ export default function BomResultPage({ id }: BomResultPageProps) {
                 }}
               />
             </div>
-          ) : canWrite && !needByLabel ? (
-            <button
-              type="button"
-              onClick={() => setNeedByPromptOpen(true)}
-              className="mb-6 flex w-full items-center justify-between gap-3 border border-mk-line bg-mk-raised px-4 py-3 text-left transition-colors hover:bg-mk-canvas"
-            >
-              <span>
-                <span className="block text-[13px] font-medium text-mk-ink">Set a need-by date</span>
-                <span className="mt-0.5 block text-[12px] text-mk-ink-muted">
-                  Lead-time flags stay quiet until the board has a date. Lives on this BOM, not in
-                  sourcing.
-                </span>
-              </span>
-              <span className={appToolbarBtn}>Need by</span>
-            </button>
           ) : null}
 
           {editing ? (

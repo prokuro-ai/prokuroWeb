@@ -47,16 +47,6 @@ export function lineAwaitingPrice(line: AnalyzedLine): boolean {
   return line.price_breaks == null
 }
 
-/** Line extended minus alternate extended. Positive means the alternate is cheaper. */
-export function substituteSavingsDelta(
-  lineExtended: number | null,
-  alternateExtended: number | null | undefined,
-): number | null {
-  if (lineExtended == null || alternateExtended == null) return null
-  if (!Number.isFinite(lineExtended) || !Number.isFinite(alternateExtended)) return null
-  return lineExtended - alternateExtended
-}
-
 /** One clause for the alternate card. No savings claim when the current line has no price. */
 export function substituteCostNote(
   lineExtended: number | null,
@@ -64,11 +54,8 @@ export function substituteCostNote(
 ): string | null {
   if (alternateExtended == null || !Number.isFinite(alternateExtended)) return null
   if (lineExtended == null) return `${money(alternateExtended)} at your qty`
-  const delta = substituteSavingsDelta(lineExtended, alternateExtended)
-  if (delta == null) return null
-  if (Math.abs(delta) < 0.01) return `${money(alternateExtended)} · same as this line`
-  if (delta > 0) {
-    return `${money(alternateExtended)} · saves ${money(delta)} on this line`
-  }
-  return `${money(alternateExtended)} · costs ${money(-delta)} more on this line`
+  const delta = lineExtended - alternateExtended
+  if (Math.abs(delta) < 0.01) return 'Same price'
+  if (delta > 0) return `Saves ${money(delta)}`
+  return `Costs ${money(-delta)} more`
 }
