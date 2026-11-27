@@ -179,21 +179,11 @@ export default function BomResultPage({ id }: BomResultPageProps) {
     }
   }, [authLoading, user, id, router, applyRecord])
 
+  // Need-by is BOM build schedule (drives lead flags) — not sourcing.
+  // No auto-banner; toolbar + strip stay reopenable after Skip.
   useEffect(() => {
-    if (!loaded || !result || !canWrite) {
-      setNeedByPromptOpen(false)
-      return
-    }
-    try {
-      if (sessionStorage.getItem(needByStorageKey)) {
-        setNeedByPromptOpen(false)
-        return
-      }
-    } catch {
-      // sessionStorage unavailable — still show once per mount
-    }
-    setNeedByPromptOpen(true)
-  }, [loaded, result, canWrite, needByStorageKey])
+    if (!canWrite) setNeedByPromptOpen(false)
+  }, [canWrite])
 
   useEffect(() => {
     if (!user || !id || !needsPoll) {
@@ -370,6 +360,15 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   const flagged = (result.summary.red_count ?? 0) + (result.summary.yellow_count ?? 0)
   const pendingCount = pendingLineCount(result)
   const price = bomPrice(result.lines)
+  const needByDates = [
+    ...new Set(
+      result.lines
+        .map((line) => line.need_by?.trim())
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ]
+  const needByLabel =
+    needByDates.length === 0 ? null : needByDates.length === 1 ? needByDates[0] : 'mixed dates'
   // Nothing has come back yet, so the BOM is neither "Unscored" nor "Clear".
   const badge =
     pendingCount > 0 && flagged === 0 ? PENDING_BADGE : portfolioBadgeFromSummary(result.summary)
@@ -467,9 +466,25 @@ export default function BomResultPage({ id }: BomResultPageProps) {
                   ) : null}
                   <span className="mx-2 text-mk-line-strong">·</span>
                   {uploadedLabel}
+                  {needByLabel ? (
+                    <>
+                      <span className="mx-2 text-mk-line-strong">·</span>
+                      need by {needByLabel}
+                    </>
+                  ) : null}
                 </p>
               </div>
               <div className="ml-auto flex shrink-0 items-center gap-2">
+                {canWrite ? (
+                  <button
+                    type="button"
+                    onClick={() => setNeedByPromptOpen(true)}
+                    aria-pressed={needByPromptOpen}
+                    className={needByPromptOpen ? appToolbarBtnOn : appToolbarBtn}
+                  >
+                    Need by
+                  </button>
+                ) : null}
                 {canWrite ? (
                   <button
                     type="button"
@@ -533,6 +548,20 @@ export default function BomResultPage({ id }: BomResultPageProps) {
                 }}
               />
             </div>
+          ) : canWrite && !needByLabel ? (
+            <button
+              type="button"
+              onClick={() => setNeedByPromptOpen(true)}
+              className="mb-6 flex w-full items-center justify-between gap-3 border border-mk-line bg-mk-raised px-4 py-3 text-left transition-colors hover:bg-mk-canvas"
+            >
+              <span>
+                <span className="block text-[13px] font-medium text-mk-ink">Set need-by for lead flags</span>
+                <span className="mt-0.5 block text-[12px] text-mk-ink-muted">
+                  Factory lead only flags a miss once this board has a date. On this BOM — not sourcing.
+                </span>
+              </span>
+              <span className={appToolbarBtn}>Need by</span>
+            </button>
           ) : null}
 
           {editing ? (
