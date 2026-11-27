@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { DeleteBomButton } from '@/components/DeleteBomButton'
 import BomBulkUploadModal from '@/components/BomBulkUploadModal'
 import ErpOnboarding from '@/components/erp/ErpOnboarding'
@@ -55,10 +55,12 @@ function railColor(band: BomBand): string | null {
 
 export default function BomsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { boms, setBoms, loading, error } = useBoms()
   const { canWrite, canManage, team } = useTeam()
   const [uploadOpen, setUploadOpen] = useState(false)
   const [uploadTab, setUploadTab] = useState<'file' | 'erp'>('file')
+  const [uploadSheets, setUploadSheets] = useState(false)
   const [initialErp, setInitialErp] = useState<ErpId | null>(null)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<BomFilter>('All')
@@ -68,6 +70,15 @@ export default function BomsPage() {
   const [onboardingDismissed, setOnboardingDismissed] = useState(false)
 
   const accountId = team?.account_id
+
+  useEffect(() => {
+    if (searchParams.get('upload') !== 'sheets' || !canWrite) return
+    setUploadTab('file')
+    setUploadSheets(true)
+    setInitialErp(null)
+    setUploadOpen(true)
+    router.replace('/boms')
+  }, [searchParams, canWrite, router])
 
   useEffect(() => {
     if (!accountId || loading) return
@@ -109,6 +120,7 @@ export default function BomsPage() {
 
   const openUpload = (tab: 'file' | 'erp' = 'file', erp?: ErpId | null) => {
     setUploadTab(tab)
+    setUploadSheets(false)
     setInitialErp(erp ?? erpPrefs?.default_erp ?? null)
     setUploadOpen(true)
   }
@@ -322,12 +334,16 @@ export default function BomsPage() {
       </div>
       <BomBulkUploadModal
         open={uploadOpen}
-        onClose={() => setUploadOpen(false)}
+        onClose={() => {
+          setUploadOpen(false)
+          setUploadSheets(false)
+        }}
         onComplete={handleUploadComplete}
         accountId={accountId}
         canManage={canManage}
         initialTab={uploadTab}
         initialErp={initialErp}
+        initialSheets={uploadSheets}
       />
     </>
   )

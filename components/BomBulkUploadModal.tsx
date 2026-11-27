@@ -55,9 +55,16 @@ type BomBulkUploadModalProps = {
   canManage?: boolean
   initialTab?: TopTab
   initialErp?: ErpId | string | null
+  /** Resume after Google OAuth from this modal. */
+  initialSheets?: boolean
 }
 
-function initialSource(tab: TopTab, erp: ErpId | string | null | undefined): SourceChoice {
+function initialSource(
+  tab: TopTab,
+  erp: ErpId | string | null | undefined,
+  preferSheets?: boolean,
+): SourceChoice {
+  if (preferSheets) return 'sheets'
   if (tab === 'erp') return ((erp as ErpId) || 'other') as ErpId
   return 'other'
 }
@@ -82,6 +89,7 @@ export default function BomBulkUploadModal({
   canManage = false,
   initialTab = 'file',
   initialErp = null,
+  initialSheets = false,
 }: BomBulkUploadModalProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const savedRef = useRef<BomSummary[]>([])
@@ -99,7 +107,9 @@ export default function BomBulkUploadModal({
   const [mapping, setMapping] = useState<ColumnMapping[]>([])
   const [headers, setHeaders] = useState<string[]>([])
   const [preview, setPreview] = useState<string[][]>([])
-  const [source, setSource] = useState<SourceChoice>(() => initialSource(initialTab, initialErp))
+  const [source, setSource] = useState<SourceChoice>(() =>
+    initialSource(initialTab, initialErp, initialSheets),
+  )
   const [howtoCollapsed, setHowtoCollapsed] = useState(true)
   const [saveMapping, setSaveMapping] = useState(false)
   const [savedMappings, setSavedMappings] = useState<Record<string, Record<string, string>>>({})
@@ -121,16 +131,16 @@ export default function BomBulkUploadModal({
     setMapping([])
     setHeaders([])
     setPreview([])
-    setSource(initialSource(initialTab, initialErp))
+    setSource(initialSource(initialTab, initialErp, initialSheets))
     setHowtoCollapsed(true)
     setSaveMapping(false)
     savedRef.current = []
-  }, [initialErp, initialTab])
+  }, [initialErp, initialTab, initialSheets])
 
   useEffect(() => {
     if (!open) return
-    setSource(initialSource(initialTab, initialErp))
-  }, [open, initialTab, initialErp])
+    setSource(initialSource(initialTab, initialErp, initialSheets))
+  }, [open, initialTab, initialErp, initialSheets])
 
   useEffect(() => {
     if (!open || !accountId) return
