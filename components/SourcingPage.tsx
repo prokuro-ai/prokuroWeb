@@ -8,6 +8,7 @@ import { useTeam } from '@/hooks/use-team'
 import PageHeader from '@/components/app/PageHeader'
 import QtyInput from '@/components/app/QtyInput'
 import CartPanel, { type AiNote } from '@/components/sourcing/CartPanel'
+import OrdersPanel from '@/components/sourcing/OrdersPanel'
 import PartsCatalog from '@/components/sourcing/PartsCatalog'
 import SourcingPlanPanel from '@/components/sourcing/SourcingPlan'
 import { PAGE } from '@/lib/pageTitle'
@@ -89,6 +90,7 @@ export default function SourcingPage() {
   const [quote, setQuote] = useState<QuoteResponse | null>(null)
   const [quotedFor, setQuotedFor] = useState<string | null>(null)
   const [order, setOrder] = useState<PlaceOrderResponse | null>(null)
+  const [ordersRefresh, setOrdersRefresh] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
   const [lookupMpn, setLookupMpn] = useState('')
@@ -322,13 +324,13 @@ export default function SourcingPage() {
     setBusy('order')
     setError(null)
     try {
-      setOrder(
-        await placeOrder({
-          provider: SOURCING_PROVIDER,
-          lines: requestLines(),
-          purchase_order_number: poNumber.trim() || undefined,
-        }),
-      )
+      const placed = await placeOrder({
+        provider: SOURCING_PROVIDER,
+        lines: requestLines(),
+        purchase_order_number: poNumber.trim() || undefined,
+      })
+      setOrder(placed)
+      setOrdersRefresh((n) => n + 1)
     } catch (err) {
       setOrder(null)
       setError(err instanceof Error ? err.message : 'Order failed')
@@ -478,7 +480,7 @@ export default function SourcingPage() {
           />
         </div>
 
-        <aside className="lg:sticky lg:top-4">
+        <aside className="space-y-4 lg:sticky lg:top-4">
           <CartPanel
             cart={cart}
             quote={quote}
@@ -520,6 +522,7 @@ export default function SourcingPage() {
             aiBusy={aiBusy}
             aiNote={aiNote}
           />
+          <OrdersPanel refreshKey={ordersRefresh} />
         </aside>
       </div>
     </div>
