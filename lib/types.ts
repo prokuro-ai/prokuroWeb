@@ -226,6 +226,11 @@ export interface PurchaseLine {
   mpn: string
   quantity: number
   manufacturer?: string
+  need_by?: string
+  unit_price?: number
+  extended_price?: number
+  currency?: string
+  lead_time_days?: number
 }
 
 export interface QuoteLineResult {
@@ -237,6 +242,7 @@ export interface QuoteLineResult {
   extended_price?: number | null
   currency?: string | null
   available_quantity?: number | null
+  lead_time_days?: number | null
   error?: string | null
 }
 
@@ -276,10 +282,33 @@ export interface SuggestPartsResponse {
   message?: string | null
 }
 
+export interface ShippingAddress {
+  name?: string | null
+  company?: string | null
+  line1: string
+  line2?: string | null
+  city: string
+  region?: string | null
+  postal_code: string
+  country: string
+}
+
+export interface OrderLineSnapshot {
+  mpn: string
+  quantity: number
+  manufacturer?: string | null
+  need_by?: string | null
+  unit_price?: number | null
+  extended_price?: number | null
+  currency?: string | null
+  lead_time_days?: number | null
+}
+
 export interface PlaceOrderRequest {
   provider: PurchaseProviderId
   lines: PurchaseLine[]
   purchase_order_number?: string
+  ship_to?: ShippingAddress
 }
 
 export interface PlaceOrderResponse {
@@ -287,6 +316,14 @@ export interface PlaceOrderResponse {
   status: PurchaseStatus
   distributor_order_id?: string | null
   message?: string | null
+  order_id?: string | null
+  submitted_at?: string | null
+  purchase_order_number?: string | null
+  ship_to?: ShippingAddress | null
+  lines?: OrderLineSnapshot[]
+  tracking_number?: string | null
+  carrier?: string | null
+  estimated_delivery?: string | null
 }
 
 export interface SourcingRunRequest {

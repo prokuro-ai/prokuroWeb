@@ -273,15 +273,53 @@ export default function CartPanel({
           </div>
 
           {order ? (
-            <p className="text-[12px] text-mk-ink-muted">
-              {statusLabel(order.status)}.
-              {order.distributor_order_id ? ` Order ${order.distributor_order_id}.` : ''}
-              {buyerMessage(order.status, order.message)
-                ? ` ${buyerMessage(order.status, order.message)}`
-                : order.status === 'not_configured' || order.status === 'requires_distributor_credit'
-                  ? ' Pricing still works. Prokuro will place orders for you once ordering is on.'
-                  : ''}
-            </p>
+            <div className="space-y-2 rounded-lg border border-mk-line bg-mk-canvas px-3 py-2.5">
+              <p className="text-[12px] font-medium text-mk-ink">
+                {statusLabel(order.status)}
+                {order.order_id ? (
+                  <span className="ml-2 font-normal text-mk-ink-subtle">· {order.order_id}</span>
+                ) : null}
+              </p>
+              <p className="text-[12px] text-mk-ink-muted">
+                {order.distributor_order_id ? `Supplier order ${order.distributor_order_id}. ` : ''}
+                {order.purchase_order_number ? `PO ${order.purchase_order_number}. ` : ''}
+                {buyerMessage(order.status, order.message)
+                  ? buyerMessage(order.status, order.message)
+                  : order.status === 'not_configured' || order.status === 'requires_distributor_credit'
+                    ? 'Pricing still works. Prokuro will place orders for you once ordering is on.'
+                    : null}
+              </p>
+              {order.ship_to ? (
+                <p className="text-[12px] text-mk-ink-muted">
+                  Ship to {[order.ship_to.line1, order.ship_to.city, order.ship_to.region, order.ship_to.postal_code, order.ship_to.country]
+                    .filter(Boolean)
+                    .join(', ')}
+                </p>
+              ) : null}
+              {(order.lines?.length ?? 0) > 0 ? (
+                <ul className="divide-y divide-mk-line border-t border-mk-line pt-1">
+                  {order.lines!.map((line) => (
+                    <li key={`${line.mpn}-${line.quantity}`} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 py-1.5 text-[12px]">
+                      <span className="font-medium text-mk-ink">{line.mpn}</span>
+                      <span className="tabular-nums text-mk-ink-muted">
+                        {line.quantity.toLocaleString()} pcs
+                        {line.unit_price != null ? ` · ${money(line.unit_price, line.currency)}` : ''}
+                        {line.extended_price != null ? ` · ${money(line.extended_price, line.currency)} ext` : ''}
+                        {line.lead_time_days != null ? ` · ${line.lead_time_days}d lead` : ''}
+                        {line.need_by ? ` · need ${line.need_by}` : ''}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {order.tracking_number || order.carrier || order.estimated_delivery ? (
+                <p className="text-[12px] text-mk-ink-muted">
+                  {[order.carrier, order.tracking_number, order.estimated_delivery ? `ETA ${order.estimated_delivery}` : null]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </p>
+              ) : null}
+            </div>
           ) : null}
           {!canWrite ? <p className="text-[12px] text-mk-ink-subtle">{writeBlockedNote}</p> : null}
           {error ? <p className="text-[12px] text-mk-red">{error}</p> : null}
