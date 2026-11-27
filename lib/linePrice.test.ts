@@ -28,6 +28,12 @@ describe('unitPriceAt', () => {
     expect(unitPriceAt(line().price_breaks, 100)).toBe(0.08)
     expect(extendedPrice(line())).toBe(8)
   })
+
+  it('keeps a reel price when the line quantity is below every break', () => {
+    const breaks = [{ quantity: 4000, unit_price: 0.05 }]
+    expect(unitPriceAt(breaks, 12)).toBe(0.05)
+    expect(extendedPrice(line({ quantity: 12, price_breaks: breaks }))).toBeCloseTo(0.6)
+  })
 })
 
 describe('bomPrice', () => {

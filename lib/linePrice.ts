@@ -3,13 +3,17 @@ import type { AnalyzedLine } from '@/lib/types'
 
 export type PriceBreak = { quantity: number; unit_price: number }
 
-/** Highest break at or below the line quantity. A break above that quantity does not apply. */
+/** Highest break at or below the line quantity. A reel break above that quantity is still the unit price. */
 export function unitPriceAt(breaks: PriceBreak[] | null | undefined, quantity: number): number | null {
   if (!breaks?.length || !Number.isFinite(quantity) || quantity <= 0) return null
   const qty = Math.floor(quantity)
-  let unit: number | null = null
-  for (const br of [...breaks].sort((a, b) => a.quantity - b.quantity)) {
-    if (br.quantity <= qty && Number.isFinite(br.unit_price) && br.unit_price > 0) unit = br.unit_price
+  const ordered = [...breaks]
+    .filter((br) => Number.isFinite(br.unit_price) && br.unit_price > 0)
+    .sort((a, b) => a.quantity - b.quantity)
+  if (ordered.length === 0) return null
+  let unit = ordered[0].unit_price
+  for (const br of ordered) {
+    if (br.quantity <= qty) unit = br.unit_price
   }
   return unit
 }
