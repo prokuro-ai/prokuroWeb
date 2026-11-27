@@ -50,7 +50,90 @@ import {
   swappedInCart,
   type StoredPlan,
 } from '@/lib/sourcingPlan'
-import type { PartSuggestion, PlaceOrderResponse, QuoteResponse, SourcingRun } from '@/lib/types'
+import type {
+  PartSuggestion,
+  PlaceOrderResponse,
+  QuoteResponse,
+  ShippingAddress,
+  SourcingRun,
+} from '@/lib/types'
+
+const SHIP_TO_STORAGE_KEY = 'prokuro:buy-ship-to:v1'
+
+type ShipToDraft = {
+  name: string
+  company: string
+  line1: string
+  line2: string
+  city: string
+  region: string
+  postal_code: string
+  country: string
+}
+
+const EMPTY_SHIP_TO: ShipToDraft = {
+  name: '',
+  company: '',
+  line1: '',
+  line2: '',
+  city: '',
+  region: '',
+  postal_code: '',
+  country: '',
+}
+
+function parseStoredShipTo(raw: string | null): ShipToDraft {
+  if (!raw) return { ...EMPTY_SHIP_TO }
+  try {
+    const value: unknown = JSON.parse(raw)
+    if (!value || typeof value !== 'object') return { ...EMPTY_SHIP_TO }
+    const obj = value as Record<string, unknown>
+    const field = (key: keyof ShipToDraft) => (typeof obj[key] === 'string' ? obj[key] : '')
+    return {
+      name: field('name'),
+      company: field('company'),
+      line1: field('line1'),
+      line2: field('line2'),
+      city: field('city'),
+      region: field('region'),
+      postal_code: field('postal_code'),
+      country: field('country'),
+    }
+  } catch {
+    return { ...EMPTY_SHIP_TO }
+  }
+}
+
+/** Omit when blank; if any field is set, require line1 / city / postal / country. */
+function shipToForOrder(draft: ShipToDraft): { address?: ShippingAddress; error?: string } {
+  const trimmed: ShipToDraft = {
+    name: draft.name.trim(),
+    company: draft.company.trim(),
+    line1: draft.line1.trim(),
+    line2: draft.line2.trim(),
+    city: draft.city.trim(),
+    region: draft.region.trim(),
+    postal_code: draft.postal_code.trim(),
+    country: draft.country.trim(),
+  }
+  const anyFilled = Object.values(trimmed).some(Boolean)
+  if (!anyFilled) return {}
+  if (!trimmed.line1 || !trimmed.city || !trimmed.postal_code || !trimmed.country) {
+    return { error: 'Ship-to needs street, city, postal code, and country — or clear the fields.' }
+  }
+  return {
+    address: {
+      line1: trimmed.line1,
+      city: trimmed.city,
+      postal_code: trimmed.postal_code,
+      country: trimmed.country,
+      ...(trimmed.name ? { name: trimmed.name } : {}),
+      ...(trimmed.company ? { company: trimmed.company } : {}),
+      ...(trimmed.line2 ? { line2: trimmed.line2 } : {}),
+      ...(trimmed.region ? { region: trimmed.region } : {}),
+    },
+  }
+}
 
 function cartSignature(cart: CartLine[]): string {
   return `${cart.map((line) => `${line.key}:${line.quantity}:${line.fit ?? ''}`).join(',')}`
@@ -85,6 +168,7 @@ export default function SourcingPage() {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   const [hydrated, setHydrated] = useState(false)
   const [poNumber, setPoNumber] = useState('')
+  const [shipTo, setShipTo] = useState<ShipToDraft>(EMPTY_SHIP_TO)
   const [busy, setBusy] = useState<'quote' | 'order' | 'lookup' | null>(null)
   const [quote, setQuote] = useState<QuoteResponse | null>(null)
   const [quotedFor, setQuotedFor] = useState<string | null>(null)
@@ -106,6 +190,7 @@ export default function SourcingPage() {
 
   useEffect(() => {
     setCart(parseStoredCart(window.localStorage.getItem(CART_STORAGE_KEY)))
+    setShipTo(parseStoredShipTo(window.localStorage.getItem(SHIP_TO_STORAGE_KEY)))
     setDismissed(readDismissed())
     const stored = parseStoredPlan(window.localStorage.getItem(PLAN_STORAGE_KEY))
     if (stored) {
@@ -116,6 +201,11 @@ export default function SourcingPage() {
     }
     setHydrated(true)
   }, [resumeRun])
+
+  useEffect(() => {
+    if (!hydrated) return
+    window.localStorage.setItem(SHIP_TO_STORAGE_KEY, JSON.stringify(shipTo))
+  }, [shipTo, hydrated])
 
   useEffect(() => {
     if (phase.kind !== 'done') return
@@ -319,6 +409,12 @@ export default function SourcingPage() {
       )
       return
     }
+    const { address, error: shipError } = shipToForOrder(shipTo)
+    if (shipError) {
+      setOrder(null)
+      setError(shipError)
+      return
+    }
     setBusy('order')
     setError(null)
     try {
@@ -327,6 +423,7 @@ export default function SourcingPage() {
           provider: SOURCING_PROVIDER,
           lines: requestLines(),
           purchase_order_number: poNumber.trim() || undefined,
+          ...(address ? { ship_to: address } : {}),
         }),
       )
     } catch (err) {
@@ -490,6 +587,8 @@ export default function SourcingPage() {
             writeBlockedNote={writeBlockedNote}
             poNumber={poNumber}
             onPoNumber={setPoNumber}
+            shipTo={shipTo}
+            onShipTo={(field, value) => setShipTo((current) => ({ ...current, [field]: value }))}
             onQuantity={(key, quantity) => setCart((current) => setCartQuantity(current, key, quantity))}
             onFit={(key, fit) => setCart((current) => setCartFit(current, key, fit))}
             onRemove={(key) => setCart((current) => removeFromCart(current, key))}
