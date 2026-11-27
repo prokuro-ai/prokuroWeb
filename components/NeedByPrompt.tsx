@@ -15,7 +15,7 @@ type NeedByPromptProps = {
 
 /**
  * Asks whether one need-by date applies to every MPN on the board.
- * Lead-time flags only fire after a need-by exists on the line.
+ * Need-by is set here (not from the uploaded BOM). Lead flags need a date on the line.
  */
 export default function NeedByPrompt({
   bomId,

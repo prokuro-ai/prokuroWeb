@@ -108,8 +108,6 @@ export interface BomLine {
   mpn: string | null
   manufacturer: string | null
   quantity: number | null
-  /** Present when the file had a need-by / due-date column. */
-  need_by?: string | null
   refdes: string | null
   description: string | null
   footprint: string | null

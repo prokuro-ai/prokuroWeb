@@ -152,10 +152,12 @@ export function stockBelowBuildQty(line: AnalyzedLine): boolean {
 }
 
 /**
- * Factory lead would arrive after need-by. Uses local calendar date (UTC date on
- * the server); client highlight is approximate for the same day.
+ * Factory lead would arrive after need-by, and stock cannot cover the line.
+ * Matches gateway scoring (in-stock coverage skips this flag).
  */
 export function leadMissesNeedBy(line: AnalyzedLine): boolean {
+  const qty = line.quantity
+  if (qty != null && qty > 0 && line.total_avail >= qty) return false
   const needBy = line.need_by?.trim()
   const days = line.factory_lead_days
   if (!needBy || days == null || days < 0) return false

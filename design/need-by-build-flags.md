@@ -1,10 +1,7 @@
-# Need-by ingest + apply-to-all (web)
+# Need-by (web)
 
 Mirrors `prokuroBackend/design/need-by-build-flags.md`.
 
-- Column mapping includes **Need by**
-- BOM page banner asks: one date for all / per part / skip
-- Apply-all calls `POST /api/boms/{id}/need-by`
-- Per-line edit table still works; lead flags use line `need_by`
-
-No marketing/`docs/` impact.
+- Need-by is set in Prokuro only (banner + edit). Not ingested from BOM column mapping.
+- Apply-all calls `POST /api/boms/{id}/need-by`.
+- Lead highlight uses `leadMissesNeedBy`, which ignores factory lead when stock covers qty.
