@@ -12,7 +12,9 @@ import { appContainer, appPrimaryBtn, appToolbarBtn, appToolbarBtnOn } from '@/c
 import { partKey } from '@/lib/cart'
 import { Link } from '@/lib/navigation'
 import { BomConflictError, fetchSubstitutes, getBom, patchBomLine } from '@/lib/api'
+import { bomPrice, lineAwaitingPrice } from '@/lib/linePrice'
 import { lineNeedsSubstituteLookup, readStoredSubstitutes, type LineSubstitute } from '@/lib/lineSubstitute'
+import { money } from '@/lib/purchaseDisplay'
 import { useTeam } from '@/hooks/use-team'
 import { usePageTitle } from '@/hooks/use-page-title'
 import { formatUploadedAt } from '@/lib/format'
@@ -79,7 +81,9 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   }, [])
 
   // Restart whenever enrichment becomes pending again (e.g. after MPN edits).
-  const needsPoll = Boolean(result && shouldPollBom(result))
+  const needsPoll = Boolean(
+    result && (shouldPollBom(result) || result.lines.some(lineAwaitingPrice)),
+  )
   const pendingKeyRef = useRef('')
 
   const needByStorageKey = `needby-prompt:${id}`
@@ -259,7 +263,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
     if (!key || !mpn || substituteChecked.current.has(key)) return
     substituteChecked.current.add(key)
     setLookingUpKey(key)
-    void fetchSubstitutes(mpn)
+    void fetchSubstitutes(mpn, line.quantity ?? 1)
       .then((found) => {
         if (found.length === 0) return
         setDiscovered((prev) => {
@@ -272,6 +276,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
               mpn: item.mpn.trim(),
               approved: false,
               ...(item.description ? { detail: item.description } : {}),
+              ...(item.extendedPrice != null ? { extendedPrice: item.extendedPrice } : {}),
             })
           }
           if (merged.length > 0) next.set(key, merged.slice(0, 3))
@@ -364,6 +369,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
 
   const flagged = (result.summary.red_count ?? 0) + (result.summary.yellow_count ?? 0)
   const pendingCount = pendingLineCount(result)
+  const price = bomPrice(result.lines)
   // Nothing has come back yet, so the BOM is neither "Unscored" nor "Clear".
   const badge =
     pendingCount > 0 && flagged === 0 ? PENDING_BADGE : portfolioBadgeFromSummary(result.summary)
@@ -447,6 +453,18 @@ export default function BomResultPage({ id }: BomResultPageProps) {
                   <span className={flagged > 0 ? 'text-mk-red' : undefined}>{callLine}</span>
                   <span className="mx-2 text-mk-line-strong">·</span>
                   {result.lines.length.toLocaleString()} parts
+                  {price.priced > 0 ? (
+                    <>
+                      <span className="mx-2 text-mk-line-strong">·</span>
+                      {money(price.total)}
+                      {price.unpriced > 0 ? (
+                        <>
+                          <span className="mx-2 text-mk-line-strong">·</span>
+                          {price.unpriced.toLocaleString()} unpriced
+                        </>
+                      ) : null}
+                    </>
+                  ) : null}
                   <span className="mx-2 text-mk-line-strong">·</span>
                   {uploadedLabel}
                 </p>

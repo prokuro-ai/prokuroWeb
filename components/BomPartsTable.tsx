@@ -6,7 +6,9 @@ import { appColHead, appField, appSheet } from '@/components/app/chrome'
 import LineDetail from '@/components/app/LineDetail'
 import { leadLabel, lineStatusLabel, riskTone, stockHot, stockLabel } from '@/lib/bomLineDisplay'
 import { partKey } from '@/lib/cart'
+import { extendedPrice } from '@/lib/linePrice'
 import { lineNeedsSubstituteLookup, type LineSubstitute } from '@/lib/lineSubstitute'
+import { money } from '@/lib/purchaseDisplay'
 import {
   isAtRisk,
   isPendingLine,
@@ -37,7 +39,7 @@ function matchesFilter(line: AnalyzedLine, filter: FilterId): boolean {
   return lineRiskLevel(line) === filter
 }
 
-const COLS = ['Part', 'Manufacturer', 'Qty', 'Need by', 'Ref', 'Lifecycle', 'Stock', 'Lead', 'Duty', 'Risk'] as const
+const COLS = ['Part', 'Manufacturer', 'Qty', 'Need by', 'Ref', 'Lifecycle', 'Stock', 'Lead', 'Duty', 'Cost', 'Risk'] as const
 const COLUMN_COUNT = COLS.length
 
 export default function BomPartsTable({
@@ -153,7 +155,7 @@ export default function BomPartsTable({
                   key={header}
                   scope="col"
                   className={`${appColHead} whitespace-nowrap px-4 py-2.5 ${
-                    header === 'Qty' || header === 'Stock' || header === 'Lead' || header === 'Duty'
+                    header === 'Qty' || header === 'Stock' || header === 'Lead' || header === 'Duty' || header === 'Cost'
                       ? 'text-right'
                       : ''
                   }`}
@@ -168,6 +170,7 @@ export default function BomPartsTable({
               const risk = lineRiskLevel(line)
               const life = isPendingLine(line) ? '—' : lifecycleLabel(line.lifecycle_status)
               const duty = isPendingLine(line) ? '—' : tariffLabel(line)
+              const cost = extendedPrice(line)
               // Expand any line with risk or tariff/HTS detail so HTS is reachable when duty is "-".
               const expandable =
                 isAtRisk(line) ||
@@ -262,6 +265,9 @@ export default function BomPartsTable({
                       }`}
                     >
                       {duty}
+                    </td>
+                    <td className="px-4 py-2.5 text-right tabular-nums text-mk-ink-muted">
+                      {cost == null ? '—' : money(cost)}
                     </td>
                     <td className={`px-4 py-2.5 font-medium ${riskTone(risk)}`}>{lineStatusLabel(line)}</td>
                   </tr>

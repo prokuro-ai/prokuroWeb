@@ -8,6 +8,7 @@ import {
   thisWeekNextAction,
   whyThisScore,
 } from '@/lib/decision'
+import { extendedPrice, substituteCostNote } from '@/lib/linePrice'
 import { lineSubstitutes, type LineSubstitute } from '@/lib/lineSubstitute'
 import type { AnalyzedLine } from '@/lib/types'
 
@@ -31,6 +32,7 @@ export default function LineDetail({
   const offered = lineSubstitutes(line, substitutes)
   const offeredKeys = new Set(offered.map((item) => item.mpn.toUpperCase()))
   const prose = suggested && !offeredKeys.has(suggested.toUpperCase()) ? suggested : null
+  const lineExtended = extendedPrice(line)
 
   return (
     <div className="min-w-0 space-y-4">
@@ -52,18 +54,19 @@ export default function LineDetail({
         {prose ? <p className="mt-1.5 text-[13px] leading-relaxed text-mk-ink">Suggested: {prose}</p> : null}
         {offered.length > 0 ? (
           <div className="mt-1.5 space-y-2">
-            {offered.map((item) => (
+            {offered.map((item) => {
+              const cost = substituteCostNote(lineExtended, item.extendedPrice)
+              const sentence = `${item.approved ? 'On your AML.' : 'Not on your AML yet, so check it fits.'}${
+                item.detail ? ` ${item.detail}` : ''
+              }${cost ? ` ${cost}` : ''}`
+              return (
               <div
                 key={item.mpn}
                 className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-[8px] border border-mk-accent/25 bg-mk-accent/5 px-3 py-2"
               >
                 <div className="min-w-0 flex-1">
                   <p className="mk-data text-[13px] text-mk-ink">{item.mpn}</p>
-                  <p className="text-[12px] leading-relaxed text-mk-ink-subtle">
-                    {`${item.approved ? 'On your AML.' : 'Not on your AML yet, so check it fits.'}${
-                      item.detail ? ` ${item.detail}` : ''
-                    }`}
-                  </p>
+                  <p className="text-[12px] leading-relaxed text-mk-ink-subtle">{sentence}</p>
                 </div>
                 {onUseSubstitute ? (
                   <button
@@ -76,7 +79,8 @@ export default function LineDetail({
                   </button>
                 ) : null}
               </div>
-            ))}
+              )
+            })}
           </div>
         ) : prose ? null : lookingUp ? (
           <p className="mt-1.5 text-[13px] text-mk-ink-subtle">Looking up a replacement.</p>

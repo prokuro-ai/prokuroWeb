@@ -326,17 +326,18 @@ export async function saveBom(
 export type CatalogSubstitute = {
   mpn: string
   description?: string
+  extendedPrice?: number
 }
 
-/** In-stock manufacturer part numbers Digi-Key lists for this part. */
-export async function fetchSubstitutes(mpn: string): Promise<CatalogSubstitute[]> {
+/** In-stock manufacturer part numbers for this part, priced at the line quantity. */
+export async function fetchSubstitutes(mpn: string, quantity: number): Promise<CatalogSubstitute[]> {
   const res = await fetch('/api/purchase/substitutions', {
     method: 'POST',
     headers: {
       ...(await authHeaders()),
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ product_number: mpn, limit: 3 }),
+    body: JSON.stringify({ product_number: mpn, limit: 3, quantity: Math.max(1, Math.round(quantity)) }),
   })
   const body: unknown = await readJsonBody(res)
   if (!res.ok) throw new Error(await readErrorMessage(res, body))
@@ -347,7 +348,13 @@ export async function fetchSubstitutes(mpn: string): Promise<CatalogSubstitute[]
     if (!part || typeof part !== 'object' || !('mpn' in part) || typeof part.mpn !== 'string') continue
     const description =
       'description' in part && typeof part.description === 'string' ? part.description.trim() : ''
-    out.push(description ? { mpn: part.mpn, description } : { mpn: part.mpn })
+    const extended =
+      'extended_price' in part && typeof part.extended_price === 'number' ? part.extended_price : undefined
+    out.push({
+      mpn: part.mpn,
+      ...(description ? { description } : {}),
+      ...(extended != null ? { extendedPrice: extended } : {}),
+    })
   }
   return out.slice(0, 3)
 }

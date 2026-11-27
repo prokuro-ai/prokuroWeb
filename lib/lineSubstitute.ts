@@ -19,6 +19,7 @@ export type LineSubstitute = {
   mpn: string
   approved: boolean
   detail?: string
+  extendedPrice?: number
 }
 
 /** Part numbers the buyer can put on this line. Free-text advice is left out. */

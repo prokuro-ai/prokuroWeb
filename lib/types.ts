@@ -165,6 +165,8 @@ export interface AnalyzedLine {
   match_status: string
   factory_lead_days: number | null
   total_avail: number
+  /** List-price breaks. Omitted on older records. An empty list was fetched and has no list price. */
+  price_breaks?: { quantity: number; unit_price: number }[] | null
   /** Optional — gateway may omit when no seller offers are present. */
   top_sellers?: SellerOffer[]
   risk_level?: RiskLevel
