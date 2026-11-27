@@ -32,7 +32,7 @@ export function lineSubstitutes(line: AnalyzedLine, extra: LineSubstitute[] = []
 export function substitutesByMpn(raw: string | null): Map<string, LineSubstitute> {
   const stored = parseStoredPlan(raw)
   const map = new Map<string, LineSubstitute>()
-  for (const line of stored?.run?.plan.lines ?? []) {
+  for (const line of stored?.run?.plan?.lines ?? []) {
     const alternate = line.alternate
     if (!alternate || !MPN_LIKE.test(alternate.mpn)) continue
     const detail = alternate.description?.trim() || alternate.case_label?.trim()
