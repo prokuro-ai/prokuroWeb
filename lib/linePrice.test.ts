@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { bomPrice, extendedPrice, substituteCostNote, unitPriceAt } from '@/lib/linePrice'
+import {
+  bomPrice,
+  extendedPrice,
+  substituteCostNote,
+  substituteSavingsDelta,
+  unitPriceAt,
+} from '@/lib/linePrice'
 import type { AnalyzedLine } from '@/lib/types'
 
 const line = (overrides: Partial<AnalyzedLine> = {}): AnalyzedLine => ({
@@ -56,11 +62,13 @@ describe('bomPrice', () => {
 })
 
 describe('substituteCostNote', () => {
-  it('formats a cheaper alternate as a savings', () => {
-    expect(substituteCostNote(8, 6.4)).toBe('Saves $1.60')
+  it('formats a cheaper alternate as a savings on this line', () => {
+    expect(substituteCostNote(8, 6.4)).toBe('$6.40 · saves $1.60 on this line')
+    expect(substituteSavingsDelta(8, 6.4)).toBeCloseTo(1.6)
   })
 
   it('states the alternate price when the line has none', () => {
     expect(substituteCostNote(null, 18.2)).toBe('$18.20 at your qty')
+    expect(substituteSavingsDelta(null, 18.2)).toBeNull()
   })
 })

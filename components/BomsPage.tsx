@@ -158,24 +158,13 @@ export default function BomsPage() {
           description={status ?? (loading ? undefined : 'Upload a BOM to see what to buy, drop, or watch.')}
           actions={
             canWrite && boms.length > 0 ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => openUpload(erpPrefs?.default_erp ? 'erp' : 'file')}
-                  className={appPrimaryBtn}
-                >
-                  {erpPrefs?.default_erp ? 'Import from ERP' : 'Upload BOM'}
-                </button>
-                {erpPrefs?.default_erp ? (
-                  <button type="button" onClick={() => openUpload('file')} className="mk-btn mk-btn--ghost">
-                    Upload file
-                  </button>
-                ) : (
-                  <button type="button" onClick={() => openUpload('erp')} className="mk-btn mk-btn--ghost">
-                    Import from ERP
-                  </button>
-                )}
-              </div>
+              <button
+                type="button"
+                onClick={() => openUpload(erpPrefs?.default_erp ? 'erp' : 'file')}
+                className={appPrimaryBtn}
+              >
+                Upload BOM
+              </button>
             ) : null
           }
         />
@@ -242,14 +231,9 @@ export default function BomsPage() {
               description="Upload a BOM and we’ll tell you what to fix first."
               action={
                 canWrite ? (
-                  <div className="flex flex-wrap justify-center gap-3">
-                    <button type="button" onClick={() => openUpload('file')} className={appPrimaryBtn}>
-                      Upload BOM
-                    </button>
-                    <button type="button" onClick={() => openUpload('erp')} className="mk-btn mk-btn--ghost">
-                      Import from ERP
-                    </button>
-                  </div>
+                  <button type="button" onClick={() => openUpload('file')} className={appPrimaryBtn}>
+                    Upload BOM
+                  </button>
                 ) : (
                   <p className="text-[13px] text-mk-ink-subtle">Ask someone who can upload to add a BOM.</p>
                 )

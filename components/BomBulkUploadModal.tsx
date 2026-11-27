@@ -43,7 +43,9 @@ type QueueItem = {
 }
 
 type UploadStep = 'select' | 'mapping' | 'complete'
+/** Kept for BomsPage openers; mapped into a single source dropdown. */
 type TopTab = 'file' | 'erp'
+type SourceChoice = 'sheets' | ErpId
 
 type BomBulkUploadModalProps = {
   open: boolean
@@ -53,6 +55,11 @@ type BomBulkUploadModalProps = {
   canManage?: boolean
   initialTab?: TopTab
   initialErp?: ErpId | string | null
+}
+
+function initialSource(tab: TopTab, erp: ErpId | string | null | undefined): SourceChoice {
+  if (tab === 'erp') return ((erp as ErpId) || 'other') as ErpId
+  return 'other'
 }
 
 function queueKey(file: File) {
@@ -92,14 +99,13 @@ export default function BomBulkUploadModal({
   const [mapping, setMapping] = useState<ColumnMapping[]>([])
   const [headers, setHeaders] = useState<string[]>([])
   const [preview, setPreview] = useState<string[][]>([])
-  const [topTab, setTopTab] = useState<TopTab>(initialTab)
-  const [fileSource, setFileSource] = useState<'file' | 'sheet'>('file')
-  const [erpId, setErpId] = useState<ErpId>((initialErp as ErpId) || 'other')
-  const [howtoCollapsed, setHowtoCollapsed] = useState(false)
+  const [source, setSource] = useState<SourceChoice>(() => initialSource(initialTab, initialErp))
+  const [howtoCollapsed, setHowtoCollapsed] = useState(true)
   const [saveMapping, setSaveMapping] = useState(false)
   const [savedMappings, setSavedMappings] = useState<Record<string, Record<string, string>>>({})
 
-  const activeErp = topTab === 'erp' ? erpId : null
+  const activeErp: string | null =
+    source === 'sheets' || source === 'other' ? null : source
 
   const reset = useCallback(() => {
     setStep('select')
@@ -115,18 +121,15 @@ export default function BomBulkUploadModal({
     setMapping([])
     setHeaders([])
     setPreview([])
-    setTopTab(initialTab)
-    setFileSource('file')
-    setErpId((initialErp as ErpId) || 'other')
-    setHowtoCollapsed(false)
+    setSource(initialSource(initialTab, initialErp))
+    setHowtoCollapsed(true)
     setSaveMapping(false)
     savedRef.current = []
   }, [initialErp, initialTab])
 
   useEffect(() => {
     if (!open) return
-    setTopTab(initialTab)
-    if (initialErp) setErpId(initialErp as ErpId)
+    setSource(initialSource(initialTab, initialErp))
   }, [open, initialTab, initialErp])
 
   useEffect(() => {
@@ -135,8 +138,10 @@ export default function BomBulkUploadModal({
     getErpPrefs(accountId)
       .then((prefs) => {
         if (cancelled) return
-        if (prefs.default_erp && !initialErp) setErpId(prefs.default_erp)
-        setHowtoCollapsed(Boolean(prefs.howto_collapsed))
+        if (prefs.default_erp && initialTab === 'erp' && !initialErp) {
+          setSource(prefs.default_erp)
+        }
+        setHowtoCollapsed(prefs.howto_collapsed !== false)
         const next: Record<string, Record<string, string>> = {}
         for (const mapping of prefs.mappings) {
           next[mapping.erp] = mapping.column_mapping
@@ -147,7 +152,7 @@ export default function BomBulkUploadModal({
     return () => {
       cancelled = true
     }
-  }, [open, accountId, initialErp])
+  }, [open, accountId, initialErp, initialTab])
 
   const handleClose = () => {
     if (parsing || confirming) return
@@ -342,11 +347,13 @@ export default function BomBulkUploadModal({
     step === 'select'
       ? {
           eyebrow: 'New BOM',
-          title: topTab === 'erp' ? 'Import from ERP' : 'Upload a BOM',
+          title: 'Upload a BOM',
           subtitle:
-            topTab === 'erp'
-              ? `Export from ${erpLabel(erpId)}, then drop the file here. Next you will confirm column mapping.`
-              : 'Drop a CSV or Excel export. You can add more than one file. Next you will confirm which columns are part number, manufacturer, and quantity.',
+            source === 'sheets'
+              ? 'Pick a Google Sheet, then confirm columns.'
+              : activeErp
+                ? `Export from ${erpLabel(activeErp)}, drop the file, then confirm columns.`
+                : 'Drop a CSV or Excel file, or pick a source above. Next you confirm columns.',
         }
       : step === 'mapping'
         ? {
@@ -469,7 +476,7 @@ export default function BomBulkUploadModal({
       eyebrow={header.eyebrow}
       title={header.title}
       subtitle={header.subtitle}
-      maxWidth={step === 'mapping' ? 'xl' : topTab === 'erp' ? 'lg' : 'md'}
+      maxWidth={step === 'mapping' ? 'xl' : 'md'}
       closeDisabled={parsing || confirming}
       footer={footer}
     >
@@ -479,53 +486,36 @@ export default function BomBulkUploadModal({
 
       {step === 'select' ? (
         <>
-          <div className="mb-4 flex gap-1 rounded-[8px] bg-mk-raised p-1">
-            <button
-              type="button"
-              onClick={() => setTopTab('file')}
-              className={`flex-1 rounded-[6px] px-3 py-2 text-[13px] font-medium transition-colors ${
-                topTab === 'file' ? 'bg-mk-canvas text-mk-ink' : 'text-mk-ink-muted hover:text-mk-ink'
-              }`}
-            >
-              Upload file
-            </button>
-            <button
-              type="button"
-              onClick={() => setTopTab('erp')}
-              className={`flex-1 rounded-[6px] px-3 py-2 text-[13px] font-medium transition-colors ${
-                topTab === 'erp' ? 'bg-mk-canvas text-mk-ink' : 'text-mk-ink-muted hover:text-mk-ink'
-              }`}
-            >
-              Import from ERP
-            </button>
-          </div>
-
-          {topTab === 'file' ? (
-            <>
-              <div className="mb-4 flex gap-1 rounded-[8px] bg-mk-raised p-1">
-                <button
-                  type="button"
-                  onClick={() => setFileSource('file')}
-                  className={`flex-1 rounded-[6px] px-3 py-2 text-[13px] font-medium transition-colors ${
-                    fileSource === 'file' ? 'bg-mk-canvas text-mk-ink' : 'text-mk-ink-muted hover:text-mk-ink'
-                  }`}
+          <div className="space-y-4">
+            <label className="block">
+              <span className="mb-1.5 block text-[12px] font-medium text-mk-ink-subtle">Source</span>
+              <span className="relative block">
+                <select
+                  value={source}
+                  onChange={(e) => {
+                    const next = e.target.value as SourceChoice
+                    setSource(next)
+                    setItems([])
+                    setPickError(null)
+                  }}
+                  className={appSelect}
                 >
-                  File
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFileSource('sheet')}
-                  className={`flex-1 rounded-[6px] px-3 py-2 text-[13px] font-medium transition-colors ${
-                    fileSource === 'sheet' ? 'bg-mk-canvas text-mk-ink' : 'text-mk-ink-muted hover:text-mk-ink'
-                  }`}
-                >
-                  Google Sheet
-                </button>
-              </div>
+                  <option value="sheets">Google Sheets</option>
+                  {ERP_PRESETS.map((preset) => (
+                    <option key={preset.id} value={preset.id}>
+                      {preset.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-mk-ink-subtle"
+                  aria-hidden
+                />
+              </span>
+            </label>
 
-              {fileSource === 'file' ? (
-                dropzone
-              ) : accountId ? (
+            {source === 'sheets' ? (
+              accountId ? (
                 <BomGoogleSheetImport
                   accountId={accountId}
                   canManage={canManage}
@@ -534,43 +524,23 @@ export default function BomBulkUploadModal({
                 />
               ) : (
                 <p className="text-[13px] text-mk-ink-muted">Sign in to open a Google Sheet.</p>
-              )}
-            </>
-          ) : (
-            <div className="space-y-4">
-              <label className="block">
-                <span className="mb-1.5 block text-[12px] font-medium text-mk-ink-subtle">ERP</span>
-                <span className="relative block">
-                  <select
-                    value={erpId}
-                    onChange={(e) => setErpId(e.target.value as ErpId)}
-                    className={appSelect}
-                  >
-                    {ERP_PRESETS.map((preset) => (
-                      <option key={preset.id} value={preset.id}>
-                        {preset.label}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown
-                    className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-mk-ink-subtle"
-                    aria-hidden
+              )
+            ) : (
+              <>
+                {source !== 'other' ? (
+                  <ErpExportHowto
+                    erp={source}
+                    collapsed={howtoCollapsed}
+                    onToggle={() => {
+                      if (howtoCollapsed) setHowtoCollapsed(false)
+                      else void collapseHowto()
+                    }}
                   />
-                </span>
-              </label>
-
-              <ErpExportHowto
-                erp={erpId}
-                collapsed={howtoCollapsed}
-                onToggle={() => {
-                  if (howtoCollapsed) setHowtoCollapsed(false)
-                  else void collapseHowto()
-                }}
-              />
-
-              {dropzone}
-            </div>
-          )}
+                ) : null}
+                {dropzone}
+              </>
+            )}
+          </div>
 
           {items.length > 0 ? (
             <div className="mt-5">
