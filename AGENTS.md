@@ -22,6 +22,10 @@ When testing the deployed app, log in with a `@prokuro.ai` account. Those addres
 
 Story → tasks → one small PR per task, opened after the design doc. Never push to `main` directly; branch as `feat/<short-name>`. Whoever picks up a feature asks the other person for a sanity check before merge. Large PRs hide small mistakes — that is the entire reason for this rule.
 
+### Stack recreate is a new world
+
+Destroying `Prokuro` and redeploying mints new Cognito, Amplify app ID, ALB DNS, and ACM cert. Never hardcode those ARNs/IDs across deploys. After recreate: GoDaddy ACM validation CNAME, then CNAME `api` → new `AlbDnsName`; Amplify URL is `AmplifyAppId` from stack outputs. See CDK `AGENTS.md` (Gateway TLS).
+
 ## After frontend changes: always publish
 
 Pushing source to `main` alone does **not** update the live marketing site. Two deploy paths exist:
@@ -47,7 +51,7 @@ The Amplify app is created by the `Prokuro` stack, so it only exists while that 
 Amplify rebuilds on push to `main` when the GitHub webhook is connected. If the live app at `https://main.<appId>.amplifyapp.com` looks stale after a push, trigger a manual build:
 
 ```bash
-export AWS_PROFILE=prokuro
+export AWS_PROFILE=default
 aws amplify start-job \
   --app-id <AmplifyAppId> \
   --branch-name main \
@@ -64,6 +68,11 @@ See `prokuroInfrastructureCDK/docs/GO-LIVE.md` for SES / Stripe / domain blocker
 - [ ] Marketing/visual changes: `npm run pages:branch` + regenerated `docs/` committed in the same PR
 - [ ] Amplify build succeeded (auto or manual `start-job`) when SSR/product UI changed
 - [ ] Spot-check live URLs after deploy completes
+
+## Repo notes
+
+- Need-by is set in the product (banner / edit), not from a BOM file column. Column mapping must not offer Need by.
+- Do not name Digi-Key or Mouser in buyer-facing sourcing copy (`lib/purchaseDisplay.ts`).
 
 ## Do not
 

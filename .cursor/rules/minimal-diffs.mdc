@@ -1,0 +1,11 @@
+---
+description: Minimal diffs — only change what the task needs
+alwaysApply: true
+---
+
+# Minimal diffs
+
+- Only change files directly needed for the task.
+- No refactors, renames, new dependencies, or formatting changes unless asked.
+- Don't add comments, logging, or error handling that wasn't requested.
+- List every file you plan to touch before editing.
