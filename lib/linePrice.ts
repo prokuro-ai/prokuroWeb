@@ -29,6 +29,7 @@ export function bomPrice(lines: AnalyzedLine[]): { total: number; unpriced: numb
   let unpriced = 0
   let priced = 0
   for (const line of lines) {
+    if ((line.availability_status ?? '').toLowerCase() === 'outofstock') continue
     const extended = extendedPrice(line)
     if (extended == null) unpriced += 1
     else {

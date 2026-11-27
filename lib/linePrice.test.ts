@@ -43,6 +43,16 @@ describe('bomPrice', () => {
     expect(priced.unpriced).toBe(1)
     expect(priced.priced).toBe(1)
   })
+
+  it('leaves an out-of-stock line out of the total', () => {
+    const priced = bomPrice([
+      line(),
+      line({ row_index: 1, availability_status: 'OutOfStock', total_avail: 0 }),
+    ])
+    expect(priced.total).toBe(8)
+    expect(priced.priced).toBe(1)
+    expect(priced.unpriced).toBe(0)
+  })
 })
 
 describe('substituteCostNote', () => {
