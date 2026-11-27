@@ -1,6 +1,8 @@
 import type { TeamRole } from '@/lib/api'
 
 export const GOOGLE_OAUTH_FLAG_KEY = 'prokuro.google'
+/** Set before Sheets OAuth from the upload modal; AccountPage resumes there. */
+export const GOOGLE_UPLOAD_RESUME_KEY = 'prokuro.resumeUpload'
 
 export function googleOauthNotice(flag: string | null | undefined): string | null {
   if (flag === 'connected') return 'Google Sheets is connected for this account.'

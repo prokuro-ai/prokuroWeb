@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { appPrimaryBtn } from '@/components/app/chrome'
-import { useSettings } from '@/components/settings/SettingsContext'
+import { GOOGLE_UPLOAD_RESUME_KEY } from '@/components/settings/helpers'
 import {
   getGoogleSheetsStatus,
   GoogleSheetsRevokedError,
   importGoogleSheetTab,
   listGoogleSpreadsheets,
   listGoogleTabs,
+  startGoogleSheets,
   type GoogleSheetTab,
   type GoogleSpreadsheet,
 } from '@/lib/api'
@@ -25,7 +26,6 @@ export default function BomGoogleSheetImport({
   disabled?: boolean
   onFile: (file: File) => void
 }) {
-  const { openSettings } = useSettings()
   const [connected, setConnected] = useState<boolean | null>(null)
   const [spreadsheets, setSpreadsheets] = useState<GoogleSpreadsheet[]>([])
   const [tabs, setTabs] = useState<GoogleSheetTab[]>([])
@@ -33,6 +33,23 @@ export default function BomGoogleSheetImport({
   const [tab, setTab] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+
+  const handleConnect = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      try {
+        sessionStorage.setItem(GOOGLE_UPLOAD_RESUME_KEY, 'sheets')
+      } catch {
+        /* ignore */
+      }
+      const { url } = await startGoogleSheets(accountId)
+      window.location.href = url
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not start Google Sheets')
+      setBusy(false)
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -121,17 +138,18 @@ export default function BomGoogleSheetImport({
               <p className="mt-1 text-[12px] text-mk-ink-muted">
                 {error ??
                   (canManage
-                    ? 'Connect once in Settings. Then anyone who can upload can open a spreadsheet.'
-                    : 'Ask an owner or admin to connect it in Settings.')}
+                    ? 'Connect Google once for this account. You will come back here to pick a sheet.'
+                    : 'Ask an owner or admin to connect Google Sheets.')}
               </p>
             </div>
             {canManage ? (
               <button
                 type="button"
                 className={appPrimaryBtn}
-                onClick={() => openSettings('integrations')}
+                disabled={busy}
+                onClick={() => void handleConnect()}
               >
-                Connect
+                {busy ? 'Connecting…' : 'Connect'}
               </button>
             ) : null}
           </div>
