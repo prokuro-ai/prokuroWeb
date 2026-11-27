@@ -402,7 +402,7 @@ export async function placeOrder(request: PlaceOrderRequest): Promise<PlaceOrder
   return body as PlaceOrderResponse
 }
 
-function normalizeOrderRecord(raw: unknown): OrderRecord | null {
+export function normalizeOrderRecord(raw: unknown): OrderRecord | null {
   if (!raw || typeof raw !== 'object') return null
   const obj = raw as Record<string, unknown>
   const orderId =

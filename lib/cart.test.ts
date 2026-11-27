@@ -96,6 +96,24 @@ describe('cart edits', () => {
     expect(merged[0].need_by).toBe('2027-01-15')
   })
 
+  it('rejects invalid need-by strings and keeps a valid date when the other side is junk', () => {
+    expect(cartLineFrom({ mpn: 'X', need_by: '01/15/2027' }).need_by).toBeNull()
+    expect(cartLineFrom({ mpn: 'X', need_by: '2027-1-15' }).need_by).toBeNull()
+    expect(cartLineFrom({ mpn: 'X', need_by: ' 2027-01-15 ' }).need_by).toBe('2027-01-15')
+    expect(
+      addToCart(
+        [cartLineFrom({ mpn: 'X', need_by: '2027-06-01' }, 1)],
+        [cartLineFrom({ mpn: 'X', need_by: 'soon' }, 1)],
+      )[0].need_by,
+    ).toBe('2027-06-01')
+    expect(
+      addToCart(
+        [cartLineFrom({ mpn: 'X' }, 1)],
+        [cartLineFrom({ mpn: 'X', need_by: '2027-02-01' }, 1)],
+      )[0].need_by,
+    ).toBe('2027-02-01')
+  })
+
   it('drops stored carts that do not parse and treats a missing size as empty', () => {
     expect(parseStoredCart('not json')).toEqual([])
     expect(parseStoredCart('[{"mpn":"","quantity":2},{"mpn":"BSS138","quantity":2}]')).toEqual([
