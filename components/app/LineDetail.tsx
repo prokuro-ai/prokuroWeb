@@ -14,12 +14,14 @@ import type { AnalyzedLine } from '@/lib/types'
 export default function LineDetail({
   line,
   substitutes = [],
+  lookingUp = false,
   onUseSubstitute,
   usingMpn = null,
   error = null,
 }: {
   line: AnalyzedLine
   substitutes?: LineSubstitute[]
+  lookingUp?: boolean
   onUseSubstitute?: (mpn: string) => void
   usingMpn?: string | null
   error?: string | null
@@ -76,7 +78,9 @@ export default function LineDetail({
               </div>
             ))}
           </div>
-        ) : prose ? null : (
+        ) : prose ? null : lookingUp ? (
+          <p className="mt-1.5 text-[13px] text-mk-ink-subtle">Looking up a replacement.</p>
+        ) : (
           <p className="mt-1.5 text-[13px] text-mk-ink-subtle">{decision.recommendedAlternateNote}</p>
         )}
         {error ? <p className="mt-1.5 text-[12px] text-mk-red">{error}</p> : null}

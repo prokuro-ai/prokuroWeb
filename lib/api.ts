@@ -323,6 +323,35 @@ export async function saveBom(
   return body as BomSummary
 }
 
+export type CatalogSubstitute = {
+  mpn: string
+  description?: string
+}
+
+/** In-stock manufacturer part numbers Digi-Key lists for this part. */
+export async function fetchSubstitutes(mpn: string): Promise<CatalogSubstitute[]> {
+  const res = await fetch('/api/purchase/substitutions', {
+    method: 'POST',
+    headers: {
+      ...(await authHeaders()),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ product_number: mpn, limit: 3 }),
+  })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  const parts =
+    typeof body === 'object' && body && 'parts' in body && Array.isArray(body.parts) ? body.parts : []
+  const out: CatalogSubstitute[] = []
+  for (const part of parts) {
+    if (!part || typeof part !== 'object' || !('mpn' in part) || typeof part.mpn !== 'string') continue
+    const description =
+      'description' in part && typeof part.description === 'string' ? part.description.trim() : ''
+    out.push(description ? { mpn: part.mpn, description } : { mpn: part.mpn })
+  }
+  return out.slice(0, 3)
+}
+
 export async function quotePurchase(request: QuoteRequest): Promise<QuoteResponse> {
   const res = await fetch('/api/purchase/quote', {
     method: 'POST',

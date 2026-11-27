@@ -9,9 +9,10 @@ import EditableBomTable from '@/components/EditableBomTable'
 import NeedByPrompt from '@/components/NeedByPrompt'
 import { useAuth } from '@/components/AuthProvider'
 import { appContainer, appPrimaryBtn, appToolbarBtn, appToolbarBtnOn } from '@/components/app/chrome'
+import { partKey } from '@/lib/cart'
 import { Link } from '@/lib/navigation'
-import { BomConflictError, getBom, patchBomLine } from '@/lib/api'
-import { readStoredSubstitutes, type LineSubstitute } from '@/lib/lineSubstitute'
+import { BomConflictError, fetchSubstitutes, getBom, patchBomLine } from '@/lib/api'
+import { lineNeedsSubstituteLookup, readStoredSubstitutes, type LineSubstitute } from '@/lib/lineSubstitute'
 import { useTeam } from '@/hooks/use-team'
 import { usePageTitle } from '@/hooks/use-page-title'
 import { formatUploadedAt } from '@/lib/format'
@@ -49,7 +50,8 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   const [error, setError] = useState<string | null>(null)
   const [conflict, setConflict] = useState(false)
   const [editing, setEditing] = useState(false)
-  const [discovered, setDiscovered] = useState<Map<string, LineSubstitute>>(() => new Map())
+  const [discovered, setDiscovered] = useState<Map<string, LineSubstitute[]>>(() => new Map())
+  const [lookingUpKey, setLookingUpKey] = useState<string | null>(null)
   const [using, setUsing] = useState<{ row: number; mpn: string } | null>(null)
   const [substituteError, setSubstituteError] = useState<{ row: number; message: string } | null>(null)
   const [pollStalled, setPollStalled] = useState(false)
@@ -69,6 +71,7 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   /** Ignore GET/poll responses older than local edits (avoids version clobber → 409). */
   const knownVersionRef = useRef(1)
   const linesRef = useRef<AnalyzedLine[]>([])
+  const substituteChecked = useRef(new Set<string>())
   linesRef.current = result?.lines ?? []
 
   useEffect(() => {
@@ -248,6 +251,40 @@ export default function BomResultPage({ id }: BomResultPageProps) {
       if (timer) clearTimeout(timer)
     }
   }, [user, id, needsPoll, pollEpoch, applyRecord])
+
+  const requestSubstitutes = useCallback((line: AnalyzedLine) => {
+    if (!lineNeedsSubstituteLookup(line)) return
+    const key = partKey(line.mpn ?? '')
+    const mpn = line.mpn?.trim() ?? ''
+    if (!key || !mpn || substituteChecked.current.has(key)) return
+    substituteChecked.current.add(key)
+    setLookingUpKey(key)
+    void fetchSubstitutes(mpn)
+      .then((found) => {
+        if (found.length === 0) return
+        setDiscovered((prev) => {
+          const next = new Map(prev)
+          const merged = [...(next.get(key) ?? [])]
+          for (const item of found) {
+            const itemKey = partKey(item.mpn)
+            if (!itemKey || merged.some((existing) => partKey(existing.mpn) === itemKey)) continue
+            merged.push({
+              mpn: item.mpn.trim(),
+              approved: false,
+              ...(item.description ? { detail: item.description } : {}),
+            })
+          }
+          if (merged.length > 0) next.set(key, merged.slice(0, 3))
+          return next
+        })
+      })
+      .catch(() => {
+        substituteChecked.current.delete(key)
+      })
+      .finally(() => {
+        setLookingUpKey((current) => (current === key ? null : current))
+      })
+  }, [])
 
   async function useSubstitute(line: AnalyzedLine, mpn: string) {
     setUsing({ row: line.row_index, mpn })
@@ -497,6 +534,8 @@ export default function BomResultPage({ id }: BomResultPageProps) {
               lines={result.lines}
               initialExpanded={initialLine}
               substitutesByPart={discovered}
+              lookingUpKey={lookingUpKey}
+              onRequestSubstitutes={requestSubstitutes}
               onUseSubstitute={canWrite ? useSubstitute : undefined}
               using={using}
               substituteError={substituteError}

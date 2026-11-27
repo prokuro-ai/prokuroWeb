@@ -6,7 +6,7 @@ import { appColHead, appField, appSheet } from '@/components/app/chrome'
 import LineDetail from '@/components/app/LineDetail'
 import { leadLabel, lineStatusLabel, riskTone, stockHot, stockLabel } from '@/lib/bomLineDisplay'
 import { partKey } from '@/lib/cart'
-import type { LineSubstitute } from '@/lib/lineSubstitute'
+import { lineNeedsSubstituteLookup, type LineSubstitute } from '@/lib/lineSubstitute'
 import {
   isAtRisk,
   isPendingLine,
@@ -44,13 +44,17 @@ export default function BomPartsTable({
   lines,
   initialExpanded = null,
   substitutesByPart,
+  lookingUpKey = null,
+  onRequestSubstitutes,
   onUseSubstitute,
   using = null,
   substituteError = null,
 }: {
   lines: AnalyzedLine[]
   initialExpanded?: number | null
-  substitutesByPart?: ReadonlyMap<string, LineSubstitute>
+  substitutesByPart?: ReadonlyMap<string, LineSubstitute[]>
+  lookingUpKey?: string | null
+  onRequestSubstitutes?: (line: AnalyzedLine) => void
   onUseSubstitute?: (line: AnalyzedLine, mpn: string) => void
   using?: { row: number; mpn: string } | null
   substituteError?: { row: number; message: string } | null
@@ -66,6 +70,13 @@ export default function BomPartsTable({
       document.getElementById(`bom-line-${initialExpanded}`)?.scrollIntoView({ block: 'center' })
     })
   }, [initialExpanded])
+
+  useEffect(() => {
+    if (expanded == null || !onRequestSubstitutes) return
+    const line = lines.find((item) => item.row_index === expanded)
+    if (!line || !lineNeedsSubstituteLookup(line)) return
+    onRequestSubstitutes(line)
+  }, [expanded, lines, onRequestSubstitutes])
 
   const counts = useMemo(() => {
     const tally: Record<Exclude<FilterId, 'all'>, number> = {
@@ -260,11 +271,8 @@ export default function BomPartsTable({
                         <div className="bg-mk-raised px-4 py-4 mk:px-5 mk:py-5">
                           <LineDetail
                             line={line}
-                            substitutes={
-                              substitutesByPart?.get(partKey(line.mpn ?? ''))
-                                ? [substitutesByPart.get(partKey(line.mpn ?? ''))!]
-                                : []
-                            }
+                            substitutes={substitutesByPart?.get(partKey(line.mpn ?? '')) ?? []}
+                            lookingUp={lookingUpKey === partKey(line.mpn ?? '')}
                             onUseSubstitute={
                               onUseSubstitute ? (mpn) => onUseSubstitute(line, mpn) : undefined
                             }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { lineSubstitutes, substitutesByMpn } from '@/lib/lineSubstitute'
+import { lineNeedsSubstituteLookup, lineSubstitutes, substitutesByMpn } from '@/lib/lineSubstitute'
 import type { AnalyzedLine, SourcingPlan } from '@/lib/types'
 
 const line = (overrides: Partial<AnalyzedLine> = {}): AnalyzedLine => ({
@@ -40,6 +40,23 @@ describe('lineSubstitutes', () => {
   })
 })
 
+describe('lineNeedsSubstituteLookup', () => {
+  it('looks up an out-of-stock or end-of-life part, and skips one that can be bought', () => {
+    expect(lineNeedsSubstituteLookup(line())).toBe(true)
+    expect(
+      lineNeedsSubstituteLookup(line({ availability_status: 'instock', lifecycle_status: 'eol', total_avail: 100 })),
+    ).toBe(true)
+    expect(
+      lineNeedsSubstituteLookup(
+        line({ availability_status: 'instock', lifecycle_status: 'active', total_avail: 4000 }),
+      ),
+    ).toBe(false)
+    expect(lineNeedsSubstituteLookup(line({ availability_status: 'pending', match_status: 'pending', risk_level: 'unknown' }))).toBe(
+      false,
+    )
+  })
+})
+
 describe('substitutesByMpn', () => {
   it('reads the alternate off a stored sourcing plan', () => {
     const plan: SourcingPlan = {
@@ -71,10 +88,12 @@ describe('substitutesByMpn', () => {
       swaps: [],
       savedAt: Date.now(),
     })
-    expect(substitutesByMpn(raw).get('0603YC105KAT2A')).toEqual({
-      mpn: '06035C105KAT2A',
-      approved: false,
-      detail: 'CAP CER 1UF 50V X7R 0603',
-    })
+    expect(substitutesByMpn(raw).get('0603YC105KAT2A')).toEqual([
+      {
+        mpn: '06035C105KAT2A',
+        approved: false,
+        detail: 'CAP CER 1UF 50V X7R 0603',
+      },
+    ])
   })
 })

@@ -1,12 +1,12 @@
 # Sourcing substitutes
 
-**Status:** in progress. Digi-Key only. Shown on the sourcing plan and, after a run, in the expanded BOM line.
+**Status:** in progress. Digi-Key only. Shown in the expanded BOM line, and on the sourcing plan after a run.
 
 ## What it does
 
-When **Source this cart** cannot buy a line, Prokuro asks Digi-Key for that product's substitute list and quotes up to three in-stock manufacturer part numbers. The winner, if one can be bought in full, appears on the existing swap row. The buyer accepts it there for the cart. The same part also shows in the expanded BOM line, where **Use** writes it onto that line and the line is looked up again. It is not marked as an approved alternate.
+Opening an out-of-stock, unmatched, or end-of-life line asks Digi-Key for that product's substitute list and shows up to three in-stock manufacturer part numbers in the expanded row. **Use** writes the chosen part onto that line and the line is looked up again. It is not marked as an approved alternate.
 
-Covered lines are unchanged: only an approved AML part that saves at least 10% and $1 is proposed.
+When **Source this cart** cannot buy a line, the same list is quoted and the winner appears on the existing swap row. The buyer accepts it there for the cart. Covered lines are unchanged: only an approved AML part that saves at least 10% and $1 is proposed.
 
 The description-plus-package search still runs when the substitute list is empty or the call fails, and the line names a package.
 
@@ -24,8 +24,8 @@ The description-plus-package search still runs when the substitute list is empty
 - The substitutions call returns an HTTP error: the line stays as it was, and the package search still runs.
 - Digi-Key is not configured: no substitute call.
 - A substitute is the same part number as the line: it is dropped.
-- Accepting the swap changes the cart only. On the BOM, the expanded line shows the same part and **Use** writes it onto that line. The line then looks up the new part number. It is still not marked as an approved alternate.
+- Accepting the swap changes the cart only. On the BOM, opening the line looks the list up itself, and **Use** writes the chosen part onto that line. The line then looks up the new part number. It is still not marked as an approved alternate.
 
 ## Not in this change
 
-Parametric search, other-brand drop-ins, and calling Digi-Key from the score panel. Using a substitute on the BOM replaces that line's part number. It does not add the part to the approved list.
+Parametric search and other-brand drop-ins. Using a substitute on the BOM replaces that line's part number. It does not add the part to the approved list.
