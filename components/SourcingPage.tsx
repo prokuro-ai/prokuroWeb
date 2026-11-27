@@ -229,11 +229,22 @@ export default function SourcingPage() {
   }
 
   function requestLines() {
-    return cart.map((line) => ({
-      mpn: line.mpn,
-      quantity: line.quantity,
-      ...(line.manufacturer ? { manufacturer: line.manufacturer } : {}),
-    }))
+    const priced = new Map<string, NonNullable<QuoteResponse['lines']>[number]>()
+    if (quote && !quoteStale) {
+      for (const line of quote.lines ?? []) priced.set(line.mpn.trim().toUpperCase(), line)
+    }
+    return cart.map((line) => {
+      const q = priced.get(line.key) ?? priced.get(line.mpn.trim().toUpperCase())
+      return {
+        mpn: line.mpn,
+        quantity: line.quantity,
+        ...(line.manufacturer ? { manufacturer: line.manufacturer } : {}),
+        ...(q?.unit_price != null ? { unit_price: q.unit_price } : {}),
+        ...(q?.extended_price != null ? { extended_price: q.extended_price } : {}),
+        ...(q?.currency ? { currency: q.currency } : {}),
+        ...(q?.lead_time_days != null ? { lead_time_days: q.lead_time_days } : {}),
+      }
+    })
   }
 
   async function priceCart() {
