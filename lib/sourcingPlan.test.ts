@@ -228,8 +228,8 @@ describe('applyPlan', () => {
     ])
     const result = applyPlan(cart(['B2', 3], ['C3', 10]), sourced, new Set(['B2']))
     expect(result.cart).toEqual([
-      { key: 'C3', mpn: 'C3', manufacturer: null, description: null, fit: null, quantity: 10 },
-      { key: 'B2-ALT', mpn: 'B2-ALT', manufacturer: 'ST', description: '5V LDO', fit: null, quantity: 10 },
+      { key: 'C3', mpn: 'C3', manufacturer: null, description: null, fit: null, need_by: null, quantity: 10 },
+      { key: 'B2-ALT', mpn: 'B2-ALT', manufacturer: 'ST', description: '5V LDO', fit: null, need_by: null, quantity: 10 },
     ])
     expect(result.swapped).toBe(1)
     expect(planMatchesCart(sourced, result.cart)).toBe(true)

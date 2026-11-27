@@ -140,6 +140,16 @@ export default function CartPanel({
                           {[line.manufacturer, line.description].filter(Boolean).join(' · ')}
                         </p>
                       ) : null}
+                      {line.need_by || price?.lead_time_days != null ? (
+                        <p className="mt-0.5 text-[12px] text-mk-ink-subtle">
+                          {[
+                            line.need_by ? `Need by ${line.need_by}` : null,
+                            price?.lead_time_days != null ? `${price.lead_time_days}d lead` : null,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </p>
+                      ) : null}
                       <label className="mt-1.5 flex items-center gap-2 text-[12px] text-mk-ink-subtle">
                         <span className="shrink-0">Package</span>
                         <input

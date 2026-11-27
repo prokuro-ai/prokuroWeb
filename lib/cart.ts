@@ -14,6 +14,8 @@ export type CatalogPart = {
   description: string | null
   /** Shared footprint, or null when the boards disagree or none was given. */
   fit: string | null
+  /** Earliest BOM need-by across boards for this MPN, when set. */
+  need_by: string | null
   /** Worst-risk line across boards; drives stock, lifecycle and risk columns. */
   line: AnalyzedLine
   uses: PartUse[]
@@ -26,6 +28,8 @@ export type CartLine = {
   description: string | null
   /** Package or body size. Null means the run does not filter on size. */
   fit: string | null
+  /** Earliest need-by from the BOM(s) this line came from, when known. */
+  need_by: string | null
   quantity: number
 }
 
@@ -74,6 +78,7 @@ export function buildCatalog(boards: Board[]): CatalogPart[] {
           manufacturer: line.manufacturer,
           description: line.description,
           fit: cleanFit(line.footprint),
+          need_by: cleanNeedBy(line.need_by),
           line,
           uses: [use],
         })
@@ -83,6 +88,7 @@ export function buildCatalog(boards: Board[]): CatalogPart[] {
       existing.manufacturer ??= line.manufacturer
       existing.description ??= line.description
       existing.fit = mergeFit(existing.fit, line.footprint)
+      existing.need_by = mergeNeedBy(existing.need_by, line.need_by)
       if (RISK_RANK[lineRiskLevel(line)] > RISK_RANK[lineRiskLevel(existing.line)]) existing.line = line
     }
   }
@@ -115,8 +121,29 @@ export function mergeFit(current: string | null | undefined, incoming: string | 
   return left.toLowerCase() === right.toLowerCase() ? left : null
 }
 
+/** YYYY-MM-DD only; keeps the earliest date when both are set. */
+export function mergeNeedBy(current: string | null | undefined, incoming: string | null | undefined): string | null {
+  const left = cleanNeedBy(current)
+  const right = cleanNeedBy(incoming)
+  if (!left) return right
+  if (!right) return left
+  return left <= right ? left : right
+}
+
+export function cleanNeedBy(value: string | null | undefined): string | null {
+  const text = value?.trim() ?? ''
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null
+}
+
 export function cartLineFrom(
-  part: { mpn: string; manufacturer?: string | null; description?: string | null; fit?: string | null; footprint?: string | null },
+  part: {
+    mpn: string
+    manufacturer?: string | null
+    description?: string | null
+    fit?: string | null
+    footprint?: string | null
+    need_by?: string | null
+  },
   quantity: number,
 ): CartLine {
   const mpn = part.mpn.trim()
@@ -126,6 +153,7 @@ export function cartLineFrom(
     manufacturer: part.manufacturer ?? null,
     description: part.description ?? null,
     fit: cleanFit(part.fit ?? part.footprint),
+    need_by: cleanNeedBy(part.need_by),
     quantity: Math.max(1, Math.round(quantity)),
   }
 }
@@ -139,6 +167,7 @@ export function addToCart(cart: CartLine[], additions: CartLine[]): CartLine[] {
       existing.manufacturer ??= add.manufacturer
       existing.description ??= add.description
       existing.fit = mergeFit(existing.fit, add.fit)
+      existing.need_by = mergeNeedBy(existing.need_by, add.need_by)
     } else {
       next.push({ ...add })
     }
@@ -170,6 +199,7 @@ export function boardToCart(board: Board, builds: number): CartLine[] {
     if (existing) {
       existing.quantity += item.quantity
       existing.fit = mergeFit(existing.fit, item.fit)
+      existing.need_by = mergeNeedBy(existing.need_by, item.need_by)
     } else perBoard.set(item.key, item)
   }
   return [...perBoard.values()]

@@ -239,6 +239,7 @@ export default function SourcingPage() {
         mpn: line.mpn,
         quantity: line.quantity,
         ...(line.manufacturer ? { manufacturer: line.manufacturer } : {}),
+        ...(line.need_by ? { need_by: line.need_by } : {}),
         ...(q?.unit_price != null ? { unit_price: q.unit_price } : {}),
         ...(q?.extended_price != null ? { extended_price: q.extended_price } : {}),
         ...(q?.currency ? { currency: q.currency } : {}),
