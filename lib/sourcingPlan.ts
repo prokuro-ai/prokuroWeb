@@ -212,9 +212,11 @@ export function swapText(alternate: SourcingAlternate, line: SourcingPlanLine, c
       : 'suggested in the line brief'
   const cost = `${pcs(alternate.buy.quantity)} for ${money(alternate.buy.total, currency)}`
   const fit = alternate.case_label ? `. ${alternate.case_label}, same package you asked for` : ''
+  const spec =
+    alternate.discovered && alternate.description?.trim() ? `. ${alternate.description.trim()}` : ''
   if (alternate.reason === 'cheaper') {
     const saves = alternate.saves != null ? `, saves ${money(alternate.saves, currency)}` : ''
-    return `${alternate.mpn} (${source}) covers it: ${cost}${saves}${fit}`
+    return `${alternate.mpn} (${source}) covers it: ${cost}${saves}${fit}${spec}`
   }
   const why =
     line.status === 'not_found'
@@ -224,7 +226,13 @@ export function swapText(alternate: SourcingAlternate, line: SourcingPlanLine, c
         : line.status === 'does_not_fit'
           ? 'doesn’t match the package'
           : 'can’t be bought'
-  return `${line.mpn} ${why}. ${alternate.mpn} (${source}) is in stock: ${cost}${fit}`
+  return `${line.mpn} ${why}. ${alternate.mpn} (${source}) is in stock: ${cost}${fit}${spec}`
+}
+
+/** Shown beside an unapproved swap that we have not confirmed against a package. */
+export function swapCaution(alternate: SourcingAlternate): string | null {
+  if (alternate.approved || alternate.case_label) return null
+  return 'Not on your AML yet, so check it fits.'
 }
 
 /** Attention first, then the biggest spend, so the review starts where money and risk are. */

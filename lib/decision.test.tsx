@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach } from 'vitest'
 import LineDetail from '@/components/app/LineDetail'
 import {
@@ -197,8 +198,31 @@ describe('LineDetail', () => {
     expect(screen.getByText('Out of stock at tracked distributors')).toBeTruthy()
     expect(screen.getByText('Place a bridge buy this week.')).toBeTruthy()
     expect(screen.getByText('No duty on this line.')).toBeTruthy()
-    expect(screen.getByText(/TPS62840DLCT/)).toBeTruthy()
+    expect(screen.getByText('TPS62840DLCT')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Use TPS62840DLCT' })).toBeNull()
     expect(screen.queryByText('Qualify the alternate. Stock will not cover the run.')).toBeNull()
+  })
+
+  it('puts the suggested part on the line when asked', async () => {
+    const user = userEvent.setup()
+    const onUseSubstitute = vi.fn()
+    render(
+      <LineDetail
+        line={{
+          ...base,
+          availability_status: 'outofstock',
+          total_avail: 0,
+          risk_level: 'yellow',
+          brief: { headline: 'Stock is out.', alternate: '0603YC105JAT2A' },
+        }}
+        substitutes={[{ mpn: '06035C105KAT2A', approved: false, detail: 'CAP CER 1UF 50V X7R 0603' }]}
+        onUseSubstitute={onUseSubstitute}
+      />,
+    )
+    expect(screen.getByText(/CAP CER 1UF 50V X7R 0603/)).toBeTruthy()
+    expect(screen.getAllByText(/Not on your AML yet/).length).toBe(2)
+    await user.click(screen.getByRole('button', { name: 'Use 06035C105KAT2A' }))
+    expect(onUseSubstitute).toHaveBeenCalledWith('06035C105KAT2A')
   })
 
   it('shows pending copy when a flagged line has no brief', () => {

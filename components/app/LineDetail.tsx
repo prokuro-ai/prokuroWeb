@@ -1,5 +1,6 @@
 'use client'
 
+import { appTextBtn } from '@/components/app/chrome'
 import {
   briefAlternate,
   buildLineDecision,
@@ -7,11 +8,27 @@ import {
   thisWeekNextAction,
   whyThisScore,
 } from '@/lib/decision'
+import { lineSubstitutes, type LineSubstitute } from '@/lib/lineSubstitute'
 import type { AnalyzedLine } from '@/lib/types'
 
-export default function LineDetail({ line }: { line: AnalyzedLine }) {
+export default function LineDetail({
+  line,
+  substitutes = [],
+  onUseSubstitute,
+  usingMpn = null,
+  error = null,
+}: {
+  line: AnalyzedLine
+  substitutes?: LineSubstitute[]
+  onUseSubstitute?: (mpn: string) => void
+  usingMpn?: string | null
+  error?: string | null
+}) {
   const decision = buildLineDecision(line)
   const suggested = briefAlternate(line)
+  const offered = lineSubstitutes(line, substitutes)
+  const offeredKeys = new Set(offered.map((item) => item.mpn.toUpperCase()))
+  const prose = suggested && !offeredKeys.has(suggested.toUpperCase()) ? suggested : null
 
   return (
     <div className="min-w-0 space-y-4">
@@ -30,20 +47,39 @@ export default function LineDetail({ line }: { line: AnalyzedLine }) {
 
       <div>
         <p className="mk-eyebrow">Alternates from your AML</p>
-        {suggested ? (
-          <p className="mt-1.5 text-[13px] leading-relaxed text-mk-ink">Suggested: {suggested}</p>
-        ) : null}
-        {line.aml_candidates.length > 0 ? (
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {line.aml_candidates.map((mpn) => (
-              <span key={mpn} className="mk-data rounded-[6px] bg-mk-canvas px-2 py-1 text-[12px] text-mk-ink">
-                {mpn}
-              </span>
+        {prose ? <p className="mt-1.5 text-[13px] leading-relaxed text-mk-ink">Suggested: {prose}</p> : null}
+        {offered.length > 0 ? (
+          <div className="mt-1.5 space-y-2">
+            {offered.map((item) => (
+              <div
+                key={item.mpn}
+                className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-[8px] border border-mk-accent/25 bg-mk-accent/5 px-3 py-2"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="mk-data text-[13px] text-mk-ink">{item.mpn}</p>
+                  <p className="text-[12px] leading-relaxed text-mk-ink-subtle">
+                    {`${item.approved ? 'On your AML.' : 'Not on your AML yet, so check it fits.'}${
+                      item.detail ? ` ${item.detail}` : ''
+                    }`}
+                  </p>
+                </div>
+                {onUseSubstitute ? (
+                  <button
+                    type="button"
+                    className={appTextBtn}
+                    disabled={usingMpn != null}
+                    onClick={() => onUseSubstitute(item.mpn)}
+                  >
+                    {usingMpn === item.mpn ? 'Updating…' : `Use ${item.mpn}`}
+                  </button>
+                ) : null}
+              </div>
             ))}
           </div>
-        ) : (
+        ) : prose ? null : (
           <p className="mt-1.5 text-[13px] text-mk-ink-subtle">{decision.recommendedAlternateNote}</p>
         )}
+        {error ? <p className="mt-1.5 text-[12px] text-mk-red">{error}</p> : null}
       </div>
 
       {(line.hts_code ||

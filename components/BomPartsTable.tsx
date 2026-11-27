@@ -5,6 +5,8 @@ import { ChevronDown, Search } from 'lucide-react'
 import { appColHead, appField, appSheet } from '@/components/app/chrome'
 import LineDetail from '@/components/app/LineDetail'
 import { leadLabel, lineStatusLabel, riskTone, stockHot, stockLabel } from '@/lib/bomLineDisplay'
+import { partKey } from '@/lib/cart'
+import type { LineSubstitute } from '@/lib/lineSubstitute'
 import {
   isAtRisk,
   isPendingLine,
@@ -41,9 +43,17 @@ const COLUMN_COUNT = COLS.length
 export default function BomPartsTable({
   lines,
   initialExpanded = null,
+  substitutesByPart,
+  onUseSubstitute,
+  using = null,
+  substituteError = null,
 }: {
   lines: AnalyzedLine[]
   initialExpanded?: number | null
+  substitutesByPart?: ReadonlyMap<string, LineSubstitute>
+  onUseSubstitute?: (line: AnalyzedLine, mpn: string) => void
+  using?: { row: number; mpn: string } | null
+  substituteError?: { row: number; message: string } | null
 }) {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<FilterId>('all')
@@ -248,7 +258,19 @@ export default function BomPartsTable({
                     <tr id={detailId}>
                       <td colSpan={COLUMN_COUNT} className="border-b border-mk-line p-0">
                         <div className="bg-mk-raised px-4 py-4 mk:px-5 mk:py-5">
-                          <LineDetail line={line} />
+                          <LineDetail
+                            line={line}
+                            substitutes={
+                              substitutesByPart?.get(partKey(line.mpn ?? ''))
+                                ? [substitutesByPart.get(partKey(line.mpn ?? ''))!]
+                                : []
+                            }
+                            onUseSubstitute={
+                              onUseSubstitute ? (mpn) => onUseSubstitute(line, mpn) : undefined
+                            }
+                            usingMpn={using?.row === line.row_index ? using.mpn : null}
+                            error={substituteError?.row === line.row_index ? substituteError.message : null}
+                          />
                         </div>
                       </td>
                     </tr>

@@ -12,7 +12,7 @@ SCRUM-19 leftover UI still sits on unmerged web #6 / backend #10. This story doe
 
    Caveat: editors then see whatever Sheets that connecting admin’s Google can see. Store **which Prokuro user** connected it (`connected_by_user_id`, Prokuro email, timestamp) for audit. Do **not** store tokens per user.
 
-2. **Do not wait for `app.prokuro.ai`.** Callback hits the **gateway**, so the Google redirect URI is the gateway HTTPS origin, not Amplify and not `prokuro.ai`. First live URI after the next deploy: `https://<dist>.cloudfront.net/v1/integrations/google/callback`, plus `http://localhost:3000/v1/integrations/google/callback` for local. `app.prokuro.ai` is a later product hostname and does not resolve. **No live E2E until an explicit deploy go-ahead.**
+2. **Callback hits the gateway.** The live Google redirect URI is `https://api.prokuro.ai/v1/integrations/google/callback`. That name is a GoDaddy CNAME to the ALB. It is not Amplify, not apex `prokuro.ai`, and not `app.prokuro.ai`. Local callback is `http://localhost:3000/v1/integrations/google/callback`.
 
 3. **Import = same as file upload (`can_write`).** Owner-only import is a fake restriction today: the only roles are owner | admin | read_only, so `can_write` and `can_manage_team` are the same two people. `read_only` cannot import. When a real editor role exists, they import from the **account** grant and still cannot connect/disconnect.
 
@@ -49,7 +49,7 @@ One Dynamo item on `prokuro-members`: `pk=ACCOUNT#{account_id}`, `sk=INTEGRATION
 
 Audit attributes on that item: `connected_by_user_id`, `connected_by_email`, `connected_at`, `status` (`active` | `revoked`).
 
-Env (Sheets client, **separate** from `prokuro/google/oauth`): `GOOGLE_SHEETS_CLIENT_ID`, `GOOGLE_SHEETS_CLIENT_SECRET`, `GOOGLE_OAUTH_REDIRECT_URI` (`{GATEWAY_PUBLIC_URL}/v1/integrations/google/callback`), `GOOGLE_TOKEN_KEY`, `GOOGLE_OAUTH_SUCCESS_REDIRECT` (web origin after callback).
+Env (Sheets client, **separate** from `prokuro/google/oauth`): `GOOGLE_SHEETS_CLIENT_ID`, `GOOGLE_SHEETS_CLIENT_SECRET`, `GOOGLE_TOKEN_KEY`, `GOOGLE_OAUTH_SUCCESS_REDIRECT` (web origin after callback). Production `GOOGLE_OAUTH_REDIRECT_URI` is `https://api.prokuro.ai/v1/integrations/google/callback`, written by CDK. Local gateway sets the localhost callback itself.
 
 Failure: user revokes in Google → next API 401 → mark `revoked`, no retry storm. Missing refresh token on consent → do not store. Missing env → connect returns 503.
 
@@ -64,7 +64,7 @@ Failure: user revokes in Google → next API 401 → mark `revoked`, no retry st
 
 Until a deploy go-ahead: unit tests with a fake token endpoint. Failure cases in PR 1: deny consent, `read_only` on start/disconnect, account A’s id in account B’s URL → 404, status JSON has no token fields.
 
-Live Google + CloudFront URI is a later session.
+Live Google is checked against `https://api.prokuro.ai` once the GoDaddy records are in place.
 
 ## Out of scope
 

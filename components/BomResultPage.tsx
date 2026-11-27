@@ -10,7 +10,8 @@ import NeedByPrompt from '@/components/NeedByPrompt'
 import { useAuth } from '@/components/AuthProvider'
 import { appContainer, appPrimaryBtn, appToolbarBtn, appToolbarBtnOn } from '@/components/app/chrome'
 import { Link } from '@/lib/navigation'
-import { getBom } from '@/lib/api'
+import { BomConflictError, getBom, patchBomLine } from '@/lib/api'
+import { readStoredSubstitutes, type LineSubstitute } from '@/lib/lineSubstitute'
 import { useTeam } from '@/hooks/use-team'
 import { usePageTitle } from '@/hooks/use-page-title'
 import { formatUploadedAt } from '@/lib/format'
@@ -48,6 +49,9 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   const [error, setError] = useState<string | null>(null)
   const [conflict, setConflict] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [discovered, setDiscovered] = useState<Map<string, LineSubstitute>>(() => new Map())
+  const [using, setUsing] = useState<{ row: number; mpn: string } | null>(null)
+  const [substituteError, setSubstituteError] = useState<{ row: number; message: string } | null>(null)
   const [pollStalled, setPollStalled] = useState(false)
   const [pollEpoch, setPollEpoch] = useState(0)
   const [needByPromptOpen, setNeedByPromptOpen] = useState(false)
@@ -64,6 +68,12 @@ export default function BomResultPage({ id }: BomResultPageProps) {
   const pollFailures = useRef(0)
   /** Ignore GET/poll responses older than local edits (avoids version clobber → 409). */
   const knownVersionRef = useRef(1)
+  const linesRef = useRef<AnalyzedLine[]>([])
+  linesRef.current = result?.lines ?? []
+
+  useEffect(() => {
+    setDiscovered(readStoredSubstitutes())
+  }, [])
 
   // Restart whenever enrichment becomes pending again (e.g. after MPN edits).
   const needsPoll = Boolean(result && shouldPollBom(result))
@@ -238,6 +248,30 @@ export default function BomResultPage({ id }: BomResultPageProps) {
       if (timer) clearTimeout(timer)
     }
   }, [user, id, needsPoll, pollEpoch, applyRecord])
+
+  async function useSubstitute(line: AnalyzedLine, mpn: string) {
+    setUsing({ row: line.row_index, mpn })
+    setSubstituteError(null)
+    try {
+      const patched = await patchBomLine(id, line.row_index, {
+        version: knownVersionRef.current,
+        mpn,
+      })
+      knownVersionRef.current = patched.version
+      setVersion(patched.version)
+      handleLinesChange(
+        linesRef.current.map((item) => (item.row_index === patched.line.row_index ? patched.line : item)),
+      )
+    } catch (err) {
+      if (err instanceof BomConflictError) setConflict(true)
+      setSubstituteError({
+        row: line.row_index,
+        message: err instanceof Error ? err.message : 'Could not update this part.',
+      })
+    } finally {
+      setUsing(null)
+    }
+  }
 
   function handleLinesChange(lines: AnalyzedLine[]) {
     setResult((prev) => {
@@ -459,7 +493,14 @@ export default function BomResultPage({ id }: BomResultPageProps) {
               onConflict={() => setConflict(true)}
             />
           ) : (
-            <BomPartsTable lines={result.lines} initialExpanded={initialLine} />
+            <BomPartsTable
+              lines={result.lines}
+              initialExpanded={initialLine}
+              substitutesByPart={discovered}
+              onUseSubstitute={canWrite ? useSubstitute : undefined}
+              using={using}
+              substituteError={substituteError}
+            />
           )}
         </div>
       </div>

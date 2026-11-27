@@ -22,6 +22,7 @@ import {
   STATUS_ORDER,
   statusHint,
   swappedInCart,
+  swapCaution,
   swapText,
 } from '@/lib/sourcingPlan'
 import type { AnalyzedLine, SourcingAlternate, SourcingBuy, SourcingPlan, SourcingPlanLine } from '@/lib/types'
@@ -409,6 +410,17 @@ describe('status copy', () => {
     ).toBe(
       'B2 can’t be found. X9 (matches the package) is in stock: 10 for $4.00. 0402 (1005 Metric), same package you asked for',
     )
+    const discovered = alternate({
+      mpn: '06035C105KAT2A',
+      approved: false,
+      discovered: true,
+      description: 'CAP CER 1UF 50V X7R 0603',
+    })
+    expect(swapText(discovered, line, 'USD')).toBe(
+      'B2 can’t be found. 06035C105KAT2A (matches the package) is in stock: 10 for $4.00. CAP CER 1UF 50V X7R 0603',
+    )
+    expect(swapCaution(discovered)).toBe('Not on your AML yet, so check it fits.')
+    expect(swapCaution(alternate({ mpn: 'X9' }))).toBeNull()
   })
 })
 

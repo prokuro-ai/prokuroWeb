@@ -23,6 +23,7 @@ import {
   sortLines,
   STATUS_META,
   statusHint,
+  swapCaution,
   swapText,
   type Tone,
 } from '@/lib/sourcingPlan'
@@ -525,6 +526,7 @@ function PlanRow({
   const meta = STATUS_META[line.status]
   const alternate = line.alternate ?? null
   const active = swapped && alternate ? alternate : null
+  const caution = alternate && !active ? swapCaution(alternate) : null
   const buy = active ? active.buy : (line.buy ?? null)
   const listedAs =
     buy && !active && partKey(buy.mpn) !== partKey(line.mpn) && !line.notes.some((note) => note.kind === 'matched_as')
@@ -614,9 +616,7 @@ function PlanRow({
             {active
               ? `Buying ${alternate.mpn} ${alternate.approved ? 'from your AML' : 'from the line brief'} instead of ${line.mpn}.`
               : swapText(alternate, line, currency)}
-            {!alternate.approved && !active && !alternate.case_label ? (
-              <span className="text-mk-ink-subtle"> Not on your AML yet, so check it fits.</span>
-            ) : null}
+            {caution ? <span className="text-mk-ink-subtle"> {caution}</span> : null}
           </p>
           {locked ? (
             <span className="text-[12px] font-medium text-mk-green">In your cart</span>

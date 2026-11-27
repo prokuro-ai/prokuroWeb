@@ -69,7 +69,7 @@ One run uses one purchasing action no matter how many lines it has. That matters
 - **Malformed or newer-version plan:** the web normalises every plan from the network or storage. Unknown statuses read as "Not checked", unknown notes are dropped, counts are recomputed, and non-finite prices become 0. A newer gateway can't crash the page.
 - **Input that trips the distributor firewall** (`<script>`, `../`): rejected by `safe_part_number` in the gateway and purchasing before any request. HTML error bodies are summarised, never shown raw.
 - **CSV export:** cells that start with `= + - @` are prefixed so spreadsheets don't run them as formulas.
-- **Limits:** 200 unique parts per run, quantity 1 to 1,000,000, 40 alternate lookups per run.
+- **Limits:** 200 unique parts per run, quantity 1 to 1,000,000, 40 alternate lookups per run. Mouser is asked about at most 25 lines, the ones where a second price can change the buy, because its search API allows about 30 calls a minute. A 429 is retried once and is never stored as "not found".
 
 ## Verification so far
 
