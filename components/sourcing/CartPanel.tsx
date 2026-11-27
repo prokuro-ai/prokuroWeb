@@ -45,6 +45,8 @@ export default function CartPanel({
   writeBlockedNote,
   poNumber,
   onPoNumber,
+  shipTo,
+  onShipTo,
   onQuantity,
   onFit,
   onRemove,
@@ -74,6 +76,20 @@ export default function CartPanel({
   writeBlockedNote: ReactNode
   poNumber: string
   onPoNumber: (value: string) => void
+  shipTo: {
+    name: string
+    company: string
+    line1: string
+    line2: string
+    city: string
+    region: string
+    postal_code: string
+    country: string
+  }
+  onShipTo: (
+    field: 'name' | 'company' | 'line1' | 'line2' | 'city' | 'region' | 'postal_code' | 'country',
+    value: string,
+  ) => void
   onQuantity: (key: string, quantity: number) => void
   onFit: (key: string, fit: string) => void
   onRemove: (key: string) => void
@@ -138,6 +154,16 @@ export default function CartPanel({
                       {line.manufacturer || line.description ? (
                         <p className="truncate text-[12px] text-mk-ink-subtle">
                           {[line.manufacturer, line.description].filter(Boolean).join(' · ')}
+                        </p>
+                      ) : null}
+                      {line.need_by || price?.lead_time_days != null ? (
+                        <p className="mt-0.5 text-[12px] text-mk-ink-subtle">
+                          {[
+                            line.need_by ? `Need by ${line.need_by}` : null,
+                            price?.lead_time_days != null ? `${price.lead_time_days}d lead` : null,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
                         </p>
                       ) : null}
                       <label className="mt-1.5 flex items-center gap-2 text-[12px] text-mk-ink-subtle">
@@ -252,6 +278,68 @@ export default function CartPanel({
                 Compares sources, price breaks, packages, and approved alternates for every line.
               </p>
             ) : null}
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-[12px] font-medium text-mk-ink">Ship to (optional)</p>
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                value={shipTo.name}
+                onChange={(event) => onShipTo('name', event.target.value)}
+                placeholder="Name"
+                aria-label="Ship-to name"
+                className={appField}
+              />
+              <input
+                value={shipTo.company}
+                onChange={(event) => onShipTo('company', event.target.value)}
+                placeholder="Company"
+                aria-label="Ship-to company"
+                className={appField}
+              />
+              <input
+                value={shipTo.line1}
+                onChange={(event) => onShipTo('line1', event.target.value)}
+                placeholder="Street"
+                aria-label="Ship-to street"
+                className={`${appField} col-span-2`}
+              />
+              <input
+                value={shipTo.line2}
+                onChange={(event) => onShipTo('line2', event.target.value)}
+                placeholder="Apt / suite"
+                aria-label="Ship-to line 2"
+                className={`${appField} col-span-2`}
+              />
+              <input
+                value={shipTo.city}
+                onChange={(event) => onShipTo('city', event.target.value)}
+                placeholder="City"
+                aria-label="Ship-to city"
+                className={appField}
+              />
+              <input
+                value={shipTo.region}
+                onChange={(event) => onShipTo('region', event.target.value)}
+                placeholder="State / region"
+                aria-label="Ship-to region"
+                className={appField}
+              />
+              <input
+                value={shipTo.postal_code}
+                onChange={(event) => onShipTo('postal_code', event.target.value)}
+                placeholder="Postal code"
+                aria-label="Ship-to postal code"
+                className={appField}
+              />
+              <input
+                value={shipTo.country}
+                onChange={(event) => onShipTo('country', event.target.value)}
+                placeholder="Country (US)"
+                aria-label="Ship-to country"
+                className={appField}
+              />
+            </div>
           </div>
 
           <div className="flex items-center gap-2">

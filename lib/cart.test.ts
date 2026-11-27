@@ -77,11 +77,51 @@ describe('cart edits', () => {
     ])
   })
 
+  it('carries the earliest need-by from BOM lines into the cart and catalog', () => {
+    const boards: Board[] = [
+      {
+        id: 'a',
+        name: 'A',
+        lines: [line({ mpn: 'LM7805CT', need_by: '2027-03-01' })],
+      },
+      {
+        id: 'b',
+        name: 'B',
+        lines: [line({ mpn: 'LM7805CT', need_by: '2027-01-15' })],
+      },
+    ]
+    expect(buildCatalog(boards)[0].need_by).toBe('2027-01-15')
+    expect(boardToCart(boards[0], 1)[0].need_by).toBe('2027-03-01')
+    const merged = addToCart(boardToCart(boards[0], 1), boardToCart(boards[1], 1))
+    expect(merged[0].need_by).toBe('2027-01-15')
+  })
+
+  it('rejects invalid need-by strings and keeps a valid date when the other side is junk', () => {
+    expect(cartLineFrom({ mpn: 'X', need_by: '01/15/2027' }).need_by).toBeNull()
+    expect(cartLineFrom({ mpn: 'X', need_by: '2027-1-15' }).need_by).toBeNull()
+    expect(cartLineFrom({ mpn: 'X', need_by: ' 2027-01-15 ' }).need_by).toBe('2027-01-15')
+    expect(
+      addToCart(
+        [cartLineFrom({ mpn: 'X', need_by: '2027-06-01' }, 1)],
+        [cartLineFrom({ mpn: 'X', need_by: 'soon' }, 1)],
+      )[0].need_by,
+    ).toBe('2027-06-01')
+    expect(
+      addToCart(
+        [cartLineFrom({ mpn: 'X' }, 1)],
+        [cartLineFrom({ mpn: 'X', need_by: '2027-02-01' }, 1)],
+      )[0].need_by,
+    ).toBe('2027-02-01')
+  })
+
   it('drops stored carts that do not parse and treats a missing size as empty', () => {
     expect(parseStoredCart('not json')).toEqual([])
     expect(parseStoredCart('[{"mpn":"","quantity":2},{"mpn":"BSS138","quantity":2}]')).toEqual([
-      expect.objectContaining({ key: 'BSS138', quantity: 2, fit: null }),
+      expect.objectContaining({ key: 'BSS138', quantity: 2, fit: null, need_by: null }),
     ])
+    expect(
+      parseStoredCart('[{"mpn":"BSS138","quantity":2,"need_by":"2027-01-15"}]'),
+    ).toEqual([expect.objectContaining({ key: 'BSS138', need_by: '2027-01-15' })])
   })
 
   it('keeps a shared footprint and clears one the boards disagree on', () => {

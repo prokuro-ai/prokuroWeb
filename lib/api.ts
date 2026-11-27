@@ -6,6 +6,7 @@ import type {
   BomSummary,
   FlaggedLines,
   ParseResult,
+  OrderRecord,
   PlaceOrderRequest,
   PlaceOrderResponse,
   QuoteRequest,
@@ -399,6 +400,53 @@ export async function placeOrder(request: PlaceOrderRequest): Promise<PlaceOrder
   const body: unknown = await readJsonBody(res)
   if (!res.ok) throw new Error(await readErrorMessage(res, body))
   return body as PlaceOrderResponse
+}
+
+export function normalizeOrderRecord(raw: unknown): OrderRecord | null {
+  if (!raw || typeof raw !== 'object') return null
+  const obj = raw as Record<string, unknown>
+  const orderId =
+    (typeof obj.order_id === 'string' && obj.order_id) ||
+    (typeof obj.orderId === 'string' && obj.orderId) ||
+    ''
+  const accountId =
+    (typeof obj.account_id === 'string' && obj.account_id) ||
+    (typeof obj.accountId === 'string' && obj.accountId) ||
+    ''
+  if (!orderId || !obj.response || typeof obj.response !== 'object') return null
+  return {
+    order_id: orderId,
+    account_id: accountId,
+    response: obj.response as PlaceOrderResponse,
+  }
+}
+
+export async function listOrders(): Promise<OrderRecord[]> {
+  const res = await fetch('/api/purchase/orders', {
+    method: 'GET',
+    headers: await authHeaders(),
+    cache: 'no-store',
+  })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  const orders =
+    body && typeof body === 'object' && Array.isArray((body as { orders?: unknown }).orders)
+      ? (body as { orders: unknown[] }).orders
+      : []
+  return orders.map(normalizeOrderRecord).filter((order): order is OrderRecord => order != null)
+}
+
+export async function getOrder(orderId: string): Promise<OrderRecord> {
+  const res = await fetch(`/api/purchase/orders/${encodeURIComponent(orderId)}`, {
+    method: 'GET',
+    headers: await authHeaders(),
+    cache: 'no-store',
+  })
+  const body: unknown = await readJsonBody(res)
+  if (!res.ok) throw new Error(await readErrorMessage(res, body))
+  const order = normalizeOrderRecord(body)
+  if (!order) throw new Error('Order response was incomplete')
+  return order
 }
 
 /** `status` is the HTTP status; `runId` is set when a run is already going (409). */

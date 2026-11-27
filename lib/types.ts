@@ -326,6 +326,13 @@ export interface PlaceOrderResponse {
   estimated_delivery?: string | null
 }
 
+/** Account-scoped confirmation from `GET /v1/purchase/orders`. */
+export interface OrderRecord {
+  order_id: string
+  account_id: string
+  response: PlaceOrderResponse
+}
+
 export interface SourcingRunRequest {
   lines: {
     mpn: string
