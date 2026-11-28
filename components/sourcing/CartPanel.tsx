@@ -3,11 +3,12 @@
 import { useState, type ReactNode } from 'react'
 import { Sparkles, X } from 'lucide-react'
 import QtyInput from '@/components/app/QtyInput'
-import { appField, appGhostBtn, appPrimaryBtn, appSheet, appTextBtn } from '@/components/app/chrome'
+import { appField, appPrimaryBtn, appSheet, appTextBtn } from '@/components/app/chrome'
 import type { CartLine, Suggestion } from '@/lib/cart'
 import { MAX_RUN_LINES, type CartPlanLine, type Tone } from '@/lib/sourcingPlan'
 import { buyerMessage, money, statusLabel } from '@/lib/purchaseDisplay'
-import type { PlaceOrderResponse, QuoteLineResult, QuoteResponse } from '@/lib/types'
+import { supplierLinkKeyword, supplierSearchUrl, SUPPLIER_LINK_LABEL } from '@/lib/supplierLink'
+import type { QuoteLineResult, QuoteResponse } from '@/lib/types'
 
 const PLAN_TONE: Record<Tone, string> = {
   good: 'text-mk-green',
@@ -38,15 +39,10 @@ export default function CartPanel({
   cart,
   quote,
   quoteStale,
-  order,
   busy,
   error,
   canWrite,
   writeBlockedNote,
-  poNumber,
-  onPoNumber,
-  shipTo,
-  onShipTo,
   onQuantity,
   onFit,
   onRemove,
@@ -58,7 +54,6 @@ export default function CartPanel({
   planView,
   planTotal,
   hasPlan,
-  onOrder,
   suggestions,
   onAcceptSuggestion,
   onDismissSuggestion,
@@ -69,27 +64,10 @@ export default function CartPanel({
   cart: CartLine[]
   quote: QuoteResponse | null
   quoteStale: boolean
-  order: PlaceOrderResponse | null
-  busy: 'quote' | 'order' | 'lookup' | null
+  busy: 'quote' | 'lookup' | null
   error: string | null
   canWrite: boolean
   writeBlockedNote: ReactNode
-  poNumber: string
-  onPoNumber: (value: string) => void
-  shipTo: {
-    name: string
-    company: string
-    line1: string
-    line2: string
-    city: string
-    region: string
-    postal_code: string
-    country: string
-  }
-  onShipTo: (
-    field: 'name' | 'company' | 'line1' | 'line2' | 'city' | 'region' | 'postal_code' | 'country',
-    value: string,
-  ) => void
   onQuantity: (key: string, quantity: number) => void
   onFit: (key: string, fit: string) => void
   onRemove: (key: string) => void
@@ -102,7 +80,6 @@ export default function CartPanel({
   planView: Map<string, CartPlanLine> | null
   planTotal: { total: number; currency: string } | null
   hasPlan: boolean
-  onOrder: () => void
   suggestions: Suggestion[]
   onAcceptSuggestion: (suggestion: Suggestion) => void
   onDismissSuggestion: (suggestion: Suggestion) => void
@@ -141,11 +118,20 @@ export default function CartPanel({
           <ul className="max-h-[22rem] overflow-y-auto">
             {cart.map((line) => {
               const planned = planView?.get(line.key)
-              const price = planned ? undefined : priced.get(line.key)
+              const quoteLine = priced.get(line.key)
+              const price = planned ? undefined : quoteLine
               const short =
                 price?.available_quantity != null && price.available_quantity < line.quantity
                   ? price.available_quantity
                   : null
+              // Every cart MPN can open the supplier site — buy happens there, not via Place order.
+              const supplierUrl = supplierSearchUrl(
+                supplierLinkKeyword({
+                  cartMpn: line.mpn,
+                  matchedMpn: quoteLine && !quoteLine.error ? quoteLine.matched_mpn : null,
+                  planBuyMpn: planned?.buy?.mpn,
+                }),
+              )
               return (
                 <li key={line.key} className="border-b border-mk-line px-4 py-2.5 last:border-b-0">
                   <div className="flex items-start gap-2">
@@ -177,6 +163,16 @@ export default function CartPanel({
                           className={`${appField} h-7 w-36 px-2 text-[12px]`}
                         />
                       </label>
+                      {supplierUrl ? (
+                        <a
+                          href={supplierUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-1.5 inline-block text-[12px] font-medium text-mk-accent hover:text-mk-accent-hover"
+                        >
+                          {SUPPLIER_LINK_LABEL}
+                        </a>
+                      ) : null}
                     </div>
                     <CartQty line={line} onQuantity={onQuantity} />
                     <button
@@ -275,140 +271,12 @@ export default function CartPanel({
               </p>
             ) : cart.length > 0 && canWrite ? (
               <p className="mt-1.5 text-[12px] text-mk-ink-subtle">
-                Compares sources, price breaks, packages, and approved alternates for every line.
+                Compares sources, price breaks, packages, and approved alternates for every line. Buy on the supplier
+                page for each priced part.
               </p>
             ) : null}
           </div>
 
-          <div className="space-y-2">
-            <p className="text-[12px] font-medium text-mk-ink">Ship to (optional)</p>
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                value={shipTo.name}
-                onChange={(event) => onShipTo('name', event.target.value)}
-                placeholder="Name"
-                aria-label="Ship-to name"
-                className={appField}
-              />
-              <input
-                value={shipTo.company}
-                onChange={(event) => onShipTo('company', event.target.value)}
-                placeholder="Company"
-                aria-label="Ship-to company"
-                className={appField}
-              />
-              <input
-                value={shipTo.line1}
-                onChange={(event) => onShipTo('line1', event.target.value)}
-                placeholder="Street"
-                aria-label="Ship-to street"
-                className={`${appField} col-span-2`}
-              />
-              <input
-                value={shipTo.line2}
-                onChange={(event) => onShipTo('line2', event.target.value)}
-                placeholder="Apt / suite"
-                aria-label="Ship-to line 2"
-                className={`${appField} col-span-2`}
-              />
-              <input
-                value={shipTo.city}
-                onChange={(event) => onShipTo('city', event.target.value)}
-                placeholder="City"
-                aria-label="Ship-to city"
-                className={appField}
-              />
-              <input
-                value={shipTo.region}
-                onChange={(event) => onShipTo('region', event.target.value)}
-                placeholder="State / region"
-                aria-label="Ship-to region"
-                className={appField}
-              />
-              <input
-                value={shipTo.postal_code}
-                onChange={(event) => onShipTo('postal_code', event.target.value)}
-                placeholder="Postal code"
-                aria-label="Ship-to postal code"
-                className={appField}
-              />
-              <input
-                value={shipTo.country}
-                onChange={(event) => onShipTo('country', event.target.value)}
-                placeholder="Country (US)"
-                aria-label="Ship-to country"
-                className={appField}
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              value={poNumber}
-              onChange={(event) => onPoNumber(event.target.value)}
-              placeholder="PO number (optional)"
-              aria-label="PO number"
-              className={appField}
-            />
-            <button
-              type="button"
-              disabled={cart.length === 0 || busy !== null || sourcing || !canWrite}
-              onClick={onOrder}
-              className={`${appGhostBtn} shrink-0`}
-            >
-              {busy === 'order' ? 'Sending…' : 'Place order'}
-            </button>
-          </div>
-
-          {order ? (
-            <div className="space-y-2 rounded-lg border border-mk-line bg-mk-canvas px-3 py-2.5">
-              <p className="text-[12px] font-medium text-mk-ink">
-                {statusLabel(order.status)}
-                {order.order_id ? (
-                  <span className="ml-2 font-normal text-mk-ink-subtle">· {order.order_id}</span>
-                ) : null}
-              </p>
-              <p className="text-[12px] text-mk-ink-muted">
-                {order.distributor_order_id ? `Supplier order ${order.distributor_order_id}. ` : ''}
-                {order.purchase_order_number ? `PO ${order.purchase_order_number}. ` : ''}
-                {buyerMessage(order.status, order.message)
-                  ? buyerMessage(order.status, order.message)
-                  : order.status === 'not_configured' || order.status === 'requires_distributor_credit'
-                    ? 'Pricing still works. Prokuro will place orders for you once ordering is on.'
-                    : null}
-              </p>
-              {order.ship_to ? (
-                <p className="text-[12px] text-mk-ink-muted">
-                  Ship to {[order.ship_to.line1, order.ship_to.city, order.ship_to.region, order.ship_to.postal_code, order.ship_to.country]
-                    .filter(Boolean)
-                    .join(', ')}
-                </p>
-              ) : null}
-              {(order.lines?.length ?? 0) > 0 ? (
-                <ul className="divide-y divide-mk-line border-t border-mk-line pt-1">
-                  {order.lines!.map((line) => (
-                    <li key={`${line.mpn}-${line.quantity}`} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 py-1.5 text-[12px]">
-                      <span className="font-medium text-mk-ink">{line.mpn}</span>
-                      <span className="tabular-nums text-mk-ink-muted">
-                        {line.quantity.toLocaleString()} pcs
-                        {line.unit_price != null ? ` · ${money(line.unit_price, line.currency)}` : ''}
-                        {line.extended_price != null ? ` · ${money(line.extended_price, line.currency)} ext` : ''}
-                        {line.lead_time_days != null ? ` · ${line.lead_time_days}d lead` : ''}
-                        {line.need_by ? ` · need ${line.need_by}` : ''}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-              {order.tracking_number || order.carrier || order.estimated_delivery ? (
-                <p className="text-[12px] text-mk-ink-muted">
-                  {[order.carrier, order.tracking_number, order.estimated_delivery ? `ETA ${order.estimated_delivery}` : null]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
           {!canWrite ? <p className="text-[12px] text-mk-ink-subtle">{writeBlockedNote}</p> : null}
           {error ? <p className="text-[12px] text-mk-red">{error}</p> : null}
         </div>
@@ -432,7 +300,7 @@ export default function CartPanel({
               </button>
             </div>
             <p className="mt-0.5 text-[12px] text-mk-ink-subtle">
-              Based on what’s in the cart. AI picks are checked for price and stock first. Check before you order.
+              Based on what’s in the cart. AI picks are checked for price and stock first.
             </p>
           </div>
           {aiBusy ? (

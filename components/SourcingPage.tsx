@@ -1,14 +1,13 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { placeOrder, quotePurchase, suggestParts } from '@/lib/api'
+import { quotePurchase, suggestParts } from '@/lib/api'
 import { useBuyBoards } from '@/hooks/use-buy-boards'
 import { useSourcingRun } from '@/hooks/use-sourcing-run'
 import { useTeam } from '@/hooks/use-team'
 import PageHeader from '@/components/app/PageHeader'
 import QtyInput from '@/components/app/QtyInput'
 import CartPanel, { type AiNote } from '@/components/sourcing/CartPanel'
-import OrdersPanel from '@/components/sourcing/OrdersPanel'
 import PartsCatalog from '@/components/sourcing/PartsCatalog'
 import SourcingPlanPanel from '@/components/sourcing/SourcingPlan'
 import { PAGE } from '@/lib/pageTitle'
@@ -29,7 +28,6 @@ import {
   cartLineFrom,
   DISMISSED_STORAGE_KEY,
   parseStoredCart,
-  partKey,
   removeFromCart,
   setCartFit,
   setCartQuantity,
@@ -51,14 +49,7 @@ import {
   swappedInCart,
   type StoredPlan,
 } from '@/lib/sourcingPlan'
-import {
-  EMPTY_SHIP_TO,
-  parseStoredShipTo,
-  SHIP_TO_STORAGE_KEY,
-  shipToForOrder,
-  type ShipToDraft,
-} from '@/lib/shipTo'
-import type { PartSuggestion, PlaceOrderResponse, QuoteResponse, SourcingRun } from '@/lib/types'
+import type { PartSuggestion, QuoteResponse, SourcingRun } from '@/lib/types'
 
 function cartSignature(cart: CartLine[]): string {
   return `${cart.map((line) => `${line.key}:${line.quantity}:${line.fit ?? ''}`).join(',')}`
@@ -92,13 +83,9 @@ export default function SourcingPage() {
   const [cart, setCart] = useState<CartLine[]>([])
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   const [hydrated, setHydrated] = useState(false)
-  const [poNumber, setPoNumber] = useState('')
-  const [shipTo, setShipTo] = useState<ShipToDraft>(EMPTY_SHIP_TO)
-  const [busy, setBusy] = useState<'quote' | 'order' | 'lookup' | null>(null)
+  const [busy, setBusy] = useState<'quote' | 'lookup' | null>(null)
   const [quote, setQuote] = useState<QuoteResponse | null>(null)
   const [quotedFor, setQuotedFor] = useState<string | null>(null)
-  const [order, setOrder] = useState<PlaceOrderResponse | null>(null)
-  const [ordersRefresh, setOrdersRefresh] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
   const [lookupMpn, setLookupMpn] = useState('')
@@ -116,7 +103,6 @@ export default function SourcingPage() {
 
   useEffect(() => {
     setCart(parseStoredCart(window.localStorage.getItem(CART_STORAGE_KEY)))
-    setShipTo(parseStoredShipTo(window.localStorage.getItem(SHIP_TO_STORAGE_KEY)))
     setDismissed(readDismissed())
     const stored = parseStoredPlan(window.localStorage.getItem(PLAN_STORAGE_KEY))
     if (stored) {
@@ -127,11 +113,6 @@ export default function SourcingPage() {
     }
     setHydrated(true)
   }, [resumeRun])
-
-  useEffect(() => {
-    if (!hydrated) return
-    window.localStorage.setItem(SHIP_TO_STORAGE_KEY, JSON.stringify(shipTo))
-  }, [shipTo, hydrated])
 
   useEffect(() => {
     if (phase.kind !== 'done') return
@@ -237,7 +218,6 @@ export default function SourcingPage() {
 
   function add(lines: CartLine[]) {
     setCart((current) => addToCart(current, lines))
-    setOrder(null)
   }
 
   function dismiss(suggestion: Suggestion) {
@@ -267,7 +247,6 @@ export default function SourcingPage() {
   async function priceCart() {
     setBusy('quote')
     setError(null)
-    setOrder(null)
     const signature = cartSignature(cart)
     try {
       setQuote(await quotePurchase({ provider: SOURCING_PROVIDER, lines: requestLines() }))
@@ -283,7 +262,6 @@ export default function SourcingPage() {
   async function sourceCart() {
     if (!canSource) return
     setError(null)
-    setOrder(null)
     setAppliedNote(null)
     window.requestAnimationFrame(() => planRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' }))
     const outcome = await startRun(runRequest(cart, catalog))
@@ -294,7 +272,6 @@ export default function SourcingPage() {
     if (!plan || !planCurrent) return
     const result = applyPlan(cart, plan, activeSwaps)
     setCart(result.cart)
-    setOrder(null)
     const parts = [
       result.raised > 0 ? `${result.raised} ${result.raised === 1 ? 'line' : 'lines'} raised to the planned quantity` : null,
       result.swapped > 0 ? `${result.swapped} ${result.swapped === 1 ? 'alternate' : 'alternates'} swapped in` : null,
@@ -308,57 +285,6 @@ export default function SourcingPage() {
     setPlanAt(null)
     setSwaps(new Set())
     setAppliedNote(null)
-  }
-
-  function packageAllowsOrder(line: CartLine): boolean {
-    if (!line.fit?.trim()) return true
-    if (!plan || !planCurrent) return false
-    const row = plan.lines.find((item) => partKey(item.mpn) === line.key)
-    if (row?.status === 'ready') return true
-    return plan.lines.some(
-      (item) =>
-        !!item.alternate &&
-        activeSwaps.has(partKey(item.mpn)) &&
-        partKey(item.alternate.mpn) === line.key,
-    )
-  }
-
-  async function submitOrder() {
-    const blocked = cart.filter((line) => !packageAllowsOrder(line))
-    if (blocked.length > 0) {
-      setOrder(null)
-      setError(
-        !plan || !planCurrent
-          ? 'Source this cart before ordering. The package has to be checked first.'
-          : `${blocked.map((line) => line.mpn).join(', ')} ${
-              blocked.length === 1 ? 'doesn’t match' : 'don’t match'
-            } the package, so the order wasn’t sent. Accept a part that fits, or clear the package.`,
-      )
-      return
-    }
-    const { address, error: shipError } = shipToForOrder(shipTo)
-    if (shipError) {
-      setOrder(null)
-      setError(shipError)
-      return
-    }
-    setBusy('order')
-    setError(null)
-    try {
-      const placed = await placeOrder({
-        provider: SOURCING_PROVIDER,
-        lines: requestLines(),
-        purchase_order_number: poNumber.trim() || undefined,
-        ...(address ? { ship_to: address } : {}),
-      })
-      setOrder(placed)
-      setOrdersRefresh((n) => n + 1)
-    } catch (err) {
-      setOrder(null)
-      setError(err instanceof Error ? err.message : 'Order failed')
-    } finally {
-      setBusy(null)
-    }
   }
 
   async function runLookup(event: React.FormEvent) {
@@ -387,7 +313,7 @@ export default function SourcingPage() {
         </button>
       </>
     ) : teamLoaded ? (
-      'Your seat can browse and build a cart, not price or order.'
+      'Your seat can browse and build a cart, not price parts.'
     ) : (
       'Checking your seat…'
     )
@@ -396,7 +322,7 @@ export default function SourcingPage() {
     <div className={appPage}>
       <PageHeader
         title={PAGE.sourcing}
-        description="Every part on your boards, at the best price we can find. Build a cart, price it, and place the order once ordering is switched on for your account."
+        description="Every part on your boards, at the best price we can find. Build a cart, source it, then open the supplier page for each line to buy."
       />
 
       <div className={`${appContainer} grid grid-cols-[minmax(0,1fr)] gap-5 py-5 mk:py-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start`}>
@@ -502,20 +428,15 @@ export default function SourcingPage() {
           />
         </div>
 
-        <aside className="space-y-4 lg:sticky lg:top-4">
+        <aside className="lg:sticky lg:top-4">
           <CartPanel
             cart={cart}
             quote={quote}
             quoteStale={quoteStale}
-            order={order}
             busy={busy}
             error={error}
             canWrite={canWrite}
             writeBlockedNote={writeBlockedNote}
-            poNumber={poNumber}
-            onPoNumber={setPoNumber}
-            shipTo={shipTo}
-            onShipTo={(field, value) => setShipTo((current) => ({ ...current, [field]: value }))}
             onQuantity={(key, quantity) => setCart((current) => setCartQuantity(current, key, quantity))}
             onFit={(key, fit) => setCart((current) => setCartFit(current, key, fit))}
             onRemove={(key) => setCart((current) => removeFromCart(current, key))}
@@ -526,7 +447,6 @@ export default function SourcingPage() {
               setAiParts([])
               setAiNote(null)
               setQuote(null)
-              setOrder(null)
             }}
             onSource={() => void sourceCart()}
             sourcing={sourcingBusy}
@@ -535,7 +455,6 @@ export default function SourcingPage() {
             planView={planView}
             hasPlan={plan != null}
             planTotal={plan && planCurrent ? { total: plannedTotal(plan, activeSwaps), currency: plan.currency } : null}
-            onOrder={() => void submitOrder()}
             suggestions={suggestions}
             onAcceptSuggestion={(suggestion) => {
               add(suggestion.add)
@@ -546,7 +465,6 @@ export default function SourcingPage() {
             aiBusy={aiBusy}
             aiNote={aiNote}
           />
-          <OrdersPanel refreshKey={ordersRefresh} />
         </aside>
       </div>
     </div>

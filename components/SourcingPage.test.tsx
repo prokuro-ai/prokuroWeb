@@ -14,7 +14,6 @@ vi.mock('@/lib/api', async (importOriginal) => {
     startSourcingRun: vi.fn(),
     getSourcingRun: vi.fn(),
     quotePurchase: vi.fn(),
-    placeOrder: vi.fn(),
     suggestParts: vi.fn(),
   }
 })
