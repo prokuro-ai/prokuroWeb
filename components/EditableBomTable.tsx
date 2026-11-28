@@ -112,7 +112,7 @@ function EditableCell({
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={() => {
-            if (saveState !== 'error' && saveState !== 'saving') void commit()
+            if (saveState !== 'saving') void commit()
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {

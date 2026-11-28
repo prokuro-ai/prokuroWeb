@@ -312,8 +312,9 @@ export function applyPlan(cart: CartLine[], plan: SourcingPlan, swaps: ReadonlyS
           {
             mpn: line.alternate.mpn,
             manufacturer: line.alternate.manufacturer ?? null,
-            description: line.alternate.description ?? `Alternate for ${item.mpn}`,
+            description: line.alternate.description ?? item.description ?? `Alternate for ${item.mpn}`,
             fit: item.fit,
+            need_by: item.need_by,
           },
           Math.max(line.alternate.buy.quantity, 1),
         ),

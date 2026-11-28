@@ -285,14 +285,16 @@ export default function BomResultPage({ id }: BomResultPageProps) {
     setUsing({ row: line.row_index, mpn })
     setSubstituteError(null)
     try {
-      const patched = await patchBomLine(id, line.row_index, {
+      const lineIndex = linesRef.current.findIndex((item) => item.row_index === line.row_index)
+      if (lineIndex < 0) throw new Error('Could not find this line on the BOM.')
+      const patched = await patchBomLine(id, lineIndex, {
         version: knownVersionRef.current,
         mpn,
       })
       knownVersionRef.current = patched.version
       setVersion(patched.version)
       handleLinesChange(
-        linesRef.current.map((item) => (item.row_index === patched.line.row_index ? patched.line : item)),
+        linesRef.current.map((item, i) => (i === lineIndex ? patched.line : item)),
       )
     } catch (err) {
       if (err instanceof BomConflictError) setConflict(true)

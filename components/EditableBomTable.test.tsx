@@ -168,6 +168,48 @@ describe('EditableBomTable save failure handling', () => {
     })
   })
 
+  it('after an invalid need-by, clearing the cell and blurring saves empty', async () => {
+    const user = userEvent.setup()
+    vi.mocked(patchBomLine).mockResolvedValue({
+      version: 2,
+      lineIndex: 0,
+      line: { ...sampleLine, need_by: null },
+    })
+
+    render(
+      <EditableBomTable
+        bomId="bom-1"
+        version={1}
+        lines={[{ ...sampleLine, need_by: '2027-01-15' }]}
+        onLinesChange={vi.fn()}
+        onVersionChange={vi.fn()}
+        onConflict={vi.fn()}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: '2027-01-15' }))
+    const input = screen.getByDisplayValue('2027-01-15')
+    await user.clear(input)
+    await user.type(input, '202')
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    await waitFor(() => {
+      expect(screen.getByText('Need-by must be YYYY-MM-DD')).toBeInTheDocument()
+    })
+    expect(patchBomLine).not.toHaveBeenCalled()
+
+    await user.clear(input)
+    fireEvent.blur(input)
+
+    await waitFor(() => {
+      expect(patchBomLine).toHaveBeenCalledWith(
+        'bom-1',
+        0,
+        expect.objectContaining({ version: 1, need_by: '' }),
+      )
+    })
+  })
+
   it('serializes sibling cell saves so the second uses the bumped version', async () => {
     const user = userEvent.setup()
     let releaseFirst!: (value: {
