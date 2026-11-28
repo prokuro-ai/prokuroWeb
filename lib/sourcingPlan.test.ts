@@ -235,6 +235,27 @@ describe('applyPlan', () => {
     expect(planMatchesCart(sourced, result.cart)).toBe(true)
   })
 
+  it('keeps the original line need-by when swapping in an alternate', () => {
+    const sourced = plan([
+      planLine({
+        mpn: 'GRM',
+        status: 'out_of_stock',
+        buy: null,
+        alternate: alternate({ mpn: 'KGM', description: null }),
+      }),
+    ])
+    const withDate = [{ ...cartLineFrom({ mpn: 'GRM', description: '0.1uF' }, 20), need_by: '2027-02-01' }]
+    const result = applyPlan(withDate, sourced, new Set(['GRM']))
+    expect(result.cart).toEqual([
+      expect.objectContaining({
+        mpn: 'KGM',
+        need_by: '2027-02-01',
+        description: '0.1uF',
+        quantity: 10,
+      }),
+    ])
+  })
+
   it('merges two lines swapped for the same part and the plan still matches', () => {
     const sourced = plan([
       planLine({ mpn: 'A1', status: 'not_found', buy: null, alternate: alternate({ mpn: 'X9' }) }),
