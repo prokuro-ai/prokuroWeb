@@ -118,21 +118,20 @@ export default function CartPanel({
           <ul className="max-h-[22rem] overflow-y-auto">
             {cart.map((line) => {
               const planned = planView?.get(line.key)
-              const price = planned ? undefined : priced.get(line.key)
+              const quoteLine = priced.get(line.key)
+              const price = planned ? undefined : quoteLine
               const short =
                 price?.available_quantity != null && price.available_quantity < line.quantity
                   ? price.available_quantity
                   : null
-              const supplierUrl =
-                planned?.buy || (price && !price.error)
-                  ? supplierSearchUrl(
-                      supplierLinkKeyword({
-                        cartMpn: line.mpn,
-                        matchedMpn: price?.matched_mpn,
-                        planBuyMpn: planned?.buy?.mpn,
-                      }),
-                    )
-                  : null
+              // Every cart MPN can open the supplier site — buy happens there, not via Place order.
+              const supplierUrl = supplierSearchUrl(
+                supplierLinkKeyword({
+                  cartMpn: line.mpn,
+                  matchedMpn: quoteLine && !quoteLine.error ? quoteLine.matched_mpn : null,
+                  planBuyMpn: planned?.buy?.mpn,
+                }),
+              )
               return (
                 <li key={line.key} className="border-b border-mk-line px-4 py-2.5 last:border-b-0">
                   <div className="flex items-start gap-2">

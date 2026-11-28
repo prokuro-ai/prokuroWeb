@@ -21,7 +21,7 @@ describe('supplierSearchUrl', () => {
 })
 
 describe('supplierLinkKeyword', () => {
-  it('prefers matched, then plan buy, then cart', () => {
+  it('prefers matched, then plan buy, then cart (miss/OOS still get cart MPN)', () => {
     expect(
       supplierLinkKeyword({
         cartMpn: 'CART',
@@ -31,6 +31,7 @@ describe('supplierLinkKeyword', () => {
     ).toBe('MATCHED')
     expect(supplierLinkKeyword({ cartMpn: 'CART', planBuyMpn: 'PLAN' })).toBe('PLAN')
     expect(supplierLinkKeyword({ cartMpn: ' CART ' })).toBe('CART')
+    expect(supplierLinkKeyword({ cartMpn: 'MISS-MPN' })).toBe('MISS-MPN')
     expect(supplierLinkKeyword({ cartMpn: '  ', matchedMpn: '  ' })).toBeNull()
   })
 })
