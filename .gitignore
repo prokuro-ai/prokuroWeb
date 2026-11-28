@@ -12,6 +12,10 @@ tsconfig.tsbuildinfo
 .data
 
 # Chrome / local smoke prompts — keep on disk, never commit
-**/CHROME*.md
-**/LOCAL-ONLY*.md
-**/CHAT-HANDOFF*.md
+# Scoped names only — do not blanket-ignore design/*.md
+CHROME*.md
+LOCAL-ONLY*.md
+CHAT-HANDOFF*.md
+datasets/CHROME*.md
+datasets/LOCAL-ONLY*.md
+datasets/CHAT-HANDOFF*.md
