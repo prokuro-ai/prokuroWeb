@@ -10,3 +10,12 @@ tsconfig.tsbuildinfo
 .env.local
 .env
 .data
+
+# Chrome / local smoke prompts — keep on disk, never commit
+# Leading slash = repo root only; design/*.md stays trackable
+/CHROME*.md
+/LOCAL-ONLY*.md
+/CHAT-HANDOFF*.md
+/datasets/CHROME*.md
+/datasets/LOCAL-ONLY*.md
+/datasets/CHAT-HANDOFF*.md
