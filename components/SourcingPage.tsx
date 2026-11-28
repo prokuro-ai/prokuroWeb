@@ -380,40 +380,71 @@ export default function SourcingPage() {
             <p className="mt-1.5 text-[12px] text-mk-ink-subtle">Each lookup uses one quote from your monthly sourcing allowance.</p>
 
             {lookupError ? <p className="mt-2 text-[13px] text-mk-red">{lookupError}</p> : null}
-            {lookup && lookupLine && !lookupLine.error && lookupLine.unit_price != null ? (
-              <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-mk-line pt-3">
-                <div className="min-w-0 flex-1">
-                  <p className="mk-data text-mk-ink">{lookupLine.matched_mpn ?? lookupLine.mpn}</p>
-                  <p className="text-[12px] tabular-nums text-mk-ink-subtle">
-                    {money(lookupLine.unit_price, lookupLine.currency ?? lookup.currency)} ea at qty 1 ·{' '}
-                    {lookupLine.available_quantity?.toLocaleString() ?? 'unknown'} in stock
-                  </p>
-                </div>
-                <QtyInput label="Quantity" value={lookupQty} onChange={setLookupQty} />
-                <button
-                  type="button"
-                  className={appTextBtn}
-                  onClick={() => {
-                    add([
-                      cartLineFrom(
-                        { mpn: lookupLine.matched_mpn ?? lookupLine.mpn },
-                        Number.parseInt(lookupQty, 10) || 1,
-                      ),
-                    ])
-                    setLookup(null)
-                    setLookupMpn('')
-                    setLookupQty('1')
-                  }}
-                >
-                  Add to cart
-                </button>
+            {lookup && lookupLine ? (
+              <div className="mt-3 space-y-2 border-t border-mk-line pt-3">
+                {lookupLine.unit_price != null ? (
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="mk-data text-mk-ink">{lookupLine.matched_mpn ?? lookupLine.mpn}</p>
+                      <p className="text-[12px] tabular-nums text-mk-ink-subtle">
+                        {money(lookupLine.unit_price, lookupLine.currency ?? lookup.currency)} ea at qty 1 ·{' '}
+                        {lookupLine.available_quantity != null && lookupLine.available_quantity > 0
+                          ? `${lookupLine.available_quantity.toLocaleString()} in stock`
+                          : 'supplier shows no stock right now'}
+                      </p>
+                      {lookupLine.error ? (
+                        <p className="mt-0.5 text-[12px] text-mk-amber">
+                          Still add it — open the supplier page from the cart to buy.
+                        </p>
+                      ) : null}
+                    </div>
+                    <QtyInput label="Quantity" value={lookupQty} onChange={setLookupQty} />
+                    <button
+                      type="button"
+                      className={appTextBtn}
+                      onClick={() => {
+                        add([
+                          cartLineFrom(
+                            { mpn: lookupLine.matched_mpn ?? lookupLine.mpn },
+                            Number.parseInt(lookupQty, 10) || 1,
+                          ),
+                        ])
+                        setLookup(null)
+                        setLookupMpn('')
+                        setLookupQty('1')
+                      }}
+                    >
+                      Add to cart
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                    <p className="min-w-0 flex-1 text-[13px] text-mk-ink-muted">
+                      {lookupLine.error
+                        ? 'No live price for this part. You can still add it and open the supplier page from the cart.'
+                        : (buyerMessage(lookup.status, lookup.message) ?? `${statusLabel(lookup.status)}.`)}
+                    </p>
+                    <QtyInput label="Quantity" value={lookupQty} onChange={setLookupQty} />
+                    <button
+                      type="button"
+                      className={appTextBtn}
+                      onClick={() => {
+                        add([
+                          cartLineFrom(
+                            { mpn: lookupLine.matched_mpn ?? lookupLine.mpn },
+                            Number.parseInt(lookupQty, 10) || 1,
+                          ),
+                        ])
+                        setLookup(null)
+                        setLookupMpn('')
+                        setLookupQty('1')
+                      }}
+                    >
+                      Add to cart
+                    </button>
+                  </div>
+                )}
               </div>
-            ) : lookup ? (
-              <p className="mt-2 text-[13px] text-mk-ink-muted">
-                {lookupLine?.error
-                  ? 'No price found for this part number. Check it and try again.'
-                  : (buyerMessage(lookup.status, lookup.message) ?? `${statusLabel(lookup.status)}.`)}
-              </p>
             ) : null}
           </form>
 
